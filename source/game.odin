@@ -1,4 +1,3 @@
-#+feature dynamic-literals
 package main
 
 import "types/color"
@@ -214,6 +213,7 @@ drawEntityDefault :: proc(e: ^game.Entity) {
 		drawOffset = e.drawOffset,
 		flipX = e.flipX,
 		pivot = e.drawPivot,
+		zLayer = game.ZLayer.playspace,
 	)
 }
 
@@ -300,7 +300,7 @@ setupPlayer :: proc(e: ^game.Entity) {
 	}
 
 	e.drawProc = proc(e: ^game.Entity) {
-		drawSprite(e.pos, .shadow_medium, col = {1, 1, 1, 0.2})
+		drawSprite(e.pos, .shadow_medium, col = {1, 1, 1, 0.2}, zLayer = game.ZLayer.shadow)
 		drawEntityDefault(e)
 	}
 }
