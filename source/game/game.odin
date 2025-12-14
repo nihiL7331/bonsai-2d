@@ -90,6 +90,8 @@ gameDraw :: proc() {
 		game.SpriteName.bg_repeat_tex0,
 	)
 
+	drawFrame.reset.sortedLayers = {.playspace, .shadow}
+
 	{
 		drawFrame.reset.coordSpace = {
 			proj     = gmath.Mat4(1),

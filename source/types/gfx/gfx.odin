@@ -16,6 +16,7 @@ DrawFrame :: struct {
 		activeScissor: gmath.Rect,
 		activeFlags:   game.QuadFlags,
 		shaderData:    ShaderGlobals,
+		sortedLayers:  bit_set[game.ZLayer],
 	},
 }
 

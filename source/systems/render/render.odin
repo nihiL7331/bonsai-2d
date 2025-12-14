@@ -6,6 +6,7 @@ import tt "../../libs/stb/truetype"
 import "core:fmt"
 import "core:log"
 import "core:mem"
+import "core:slice"
 
 import sg "../../sokol/gfx"
 import sglue "../../sokol/glue"
@@ -44,6 +45,12 @@ getSpriteOffset :: proc(sprite: game.SpriteName) -> (offset: gmath.Vec2, pivot: 
 	offset = data.offset
 	pivot = data.pivot
 	return
+}
+
+ySortCompare :: proc(a, b: gfx.Quad) -> bool {
+	ay := min(a[0].pos.y, a[1].pos.y, a[2].pos.y, a[3].pos.y)
+	by := min(b[0].pos.y, b[1].pos.y, b[2].pos.y, b[3].pos.y)
+	return ay > by
 }
 
 
@@ -155,21 +162,16 @@ coreRenderFrameStart :: proc() {
 coreRenderFrameEnd :: proc() {
 	drawFrame := getDrawFrame()
 
-	totalQuadCount := 0
-
-	for quadsInLayer in drawFrame.reset.quads {
-		totalQuadCount += len(quadsInLayer)
-	}
-
-	if totalQuadCount > MAX_QUADS {
-		log.errorf("Quad limit exceeded. Attempted: %v, Max: %v", totalQuadCount, MAX_QUADS)
-		totalQuadCount = MAX_QUADS
-	}
-
 	quadIndex := 0
-	for quadsInLayer in drawFrame.reset.quads {
+
+	for &quadsInLayer, layerIndex in drawFrame.reset.quads {
 		count := len(quadsInLayer)
 		if count == 0 do continue
+
+		currentLayer := game.ZLayer(layerIndex)
+		if currentLayer in drawFrame.reset.sortedLayers {
+			slice.sort_by(quadsInLayer[:], ySortCompare)
+		}
 
 		spaceLeft := MAX_QUADS - quadIndex
 		if count > spaceLeft {
