@@ -91,8 +91,8 @@ void main() {
 
   if (hasFlag(flags, FLAG_backgroundPixels)) {
     float wrapLength = 128.0; // repeat every 128px
-    vec2 tilingUv = fract(worldPixel / wrapLength);
-    vec2 finalUv = localUvToAtlasUv(tilingUv, bgRepeatTexAtlasUv);
+    vec2 ratio = worldPixel / wrapLength;
+    vec2 finalUv = localUvToAtlasUv(ratio, bgRepeatTexAtlasUv);
 
     vec4 img = texture(sampler2D(uTex, uDefaultSampler), finalUv);
     oColor.rgb = img.rgb;
