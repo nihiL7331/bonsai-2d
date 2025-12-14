@@ -268,6 +268,7 @@ getInputVector :: proc() -> gmath.Vec2 {
 	}
 }
 
+@(private)
 _actualInputState: Input
 
 inputEventCallback :: proc "c" (event: ^sapp.Event) {
