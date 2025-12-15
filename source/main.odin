@@ -42,6 +42,7 @@
 // - configuration/settings system
 // - steamworks support
 // - multiple font support
+// - palette swapping
 
 package main
 
@@ -52,10 +53,11 @@ import sapp "sokol/app"
 import sg "sokol/gfx"
 import slog "sokol/log"
 
+import "core"
+import "core/input"
+import "core/render"
 import gameapp "game"
 import "platform/web"
-import "systems/input"
-import "systems/render"
 import "types/game"
 import "utils"
 
@@ -84,14 +86,15 @@ main :: proc() {
 		opt = {.Level, .Short_File_Path, .Line, .Procedure},
 	)
 	odinContext = context
+	coreContext := core.initCoreContext()
 
 	desc: sapp.Desc
 	desc.init_cb = init
 	desc.frame_cb = frame
 	desc.event_cb = event
 	desc.cleanup_cb = cleanup
-	desc.width = i32(game.windowWidth)
-	desc.height = i32(game.windowHeight)
+	desc.width = coreContext.windowWidth
+	desc.height = coreContext.windowHeight
 	desc.sample_count = 4
 	desc.window_title = gameapp.WINDOW_TITLE
 	desc.icon.sokol_default = true
@@ -106,13 +109,13 @@ main :: proc() {
 init :: proc "c" () {
 	context = odinContext
 
+	coreContext := core.getCoreContext()
 	_actualGameState = new(game.GameState)
 
 	// we instantly update windowWidth and windowHeight to fix scale issues on web
-	w := sapp.width()
-	h := sapp.height()
-	game.windowWidth = int(w)
-	game.windowHeight = int(h)
+	coreContext.windowWidth = sapp.width()
+	coreContext.windowHeight = sapp.height()
+
 
 	input.initState()
 	render.renderInit()
@@ -135,7 +138,7 @@ frame :: proc "c" () {
 		}
 	}
 
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 
 	coreContext.deltaTime = f32(frameTime)
 	coreContext.gameState = _actualGameState
@@ -157,8 +160,9 @@ event :: proc "c" (e: ^sapp.Event) {
 	context = odinContext
 
 	if e.type == .RESIZED {
-		game.windowWidth = int(e.window_width)
-		game.windowHeight = int(e.window_height)
+		coreContext := core.getCoreContext()
+		coreContext.windowWidth = i32(e.window_width)
+		coreContext.windowHeight = i32(e.window_height)
 	}
 
 	input.inputEventCallback(e)

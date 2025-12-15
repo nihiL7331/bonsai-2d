@@ -1,7 +1,8 @@
 package game
 
+import "../core"
+import "../core/render"
 import "../systems/camera"
-import "../systems/render"
 import "../types/game"
 import "../types/gmath"
 import "../utils"
@@ -13,7 +14,7 @@ VERSION :: "v0.0.0"
 WINDOW_TITLE :: "Blueprint"
 
 appFrame :: proc() {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 	drawFrame := render.getDrawFrame()
 
 	// right now we are just calling the game update, but in future this is where you'd do a big
@@ -44,7 +45,7 @@ appFrame :: proc() {
 }
 
 gameUpdate :: proc() {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 	drawFrame := render.getDrawFrame()
 
 	coreContext.gameState.scratch = {}

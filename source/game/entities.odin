@@ -1,13 +1,13 @@
 package game
 
-import "../systems/input"
-import "../systems/render"
+import "../core"
+import "../core/input"
+import "../core/render"
 import "../types/game"
 import "../types/gmath"
-import "../utils"
 
 getPlayer :: proc() -> ^game.Entity {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 	return entityFromHandle(coreContext.gameState.playerHandle)
 }
 
@@ -18,7 +18,7 @@ setupPlayer :: proc(e: ^game.Entity) {
 	e.drawPivot = gmath.Pivot.bottomCenter
 
 	e.updateProc = proc(e: ^game.Entity) {
-		coreContext := utils.getCoreContext()
+		coreContext := core.getCoreContext()
 
 		inputDir := input.getInputVector()
 		e.pos += inputDir * 100.0 * coreContext.deltaTime

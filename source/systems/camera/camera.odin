@@ -1,6 +1,7 @@
 package camera
 
-import "../../types/game" // for window size in globals
+import "../../core"
+import "../../types/game"
 import "../../types/gfx"
 import "../../types/gmath"
 import "../../utils"
@@ -38,17 +39,18 @@ getScreenSpace :: proc() -> gfx.CoordSpace {
 }
 
 getWorldSpaceProj :: proc() -> gmath.Mat4 {
+	coreContext := core.getCoreContext()
 	return linalg.matrix_ortho3d_f32(
-		f32(game.windowWidth) * -0.5,
-		f32(game.windowWidth) * 0.5,
-		f32(game.windowHeight) * -0.5,
-		f32(game.windowHeight) * 0.5,
+		f32(coreContext.windowWidth) * -0.5,
+		f32(coreContext.windowWidth) * 0.5,
+		f32(coreContext.windowHeight) * -0.5,
+		f32(coreContext.windowHeight) * 0.5,
 		-1,
 		1,
 	)
 }
 getWorldSpaceCamera :: proc() -> gmath.Mat4 {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 
 	cam := gmath.Mat4(1)
 	cam *= utils.xFormTranslate(coreContext.gameState.camPos)
@@ -56,11 +58,13 @@ getWorldSpaceCamera :: proc() -> gmath.Mat4 {
 	return cam
 }
 getCameraZoom :: proc() -> f32 {
-	return f32(game.GAME_HEIGHT) / f32(game.windowHeight)
+	coreContext := core.getCoreContext()
+	return f32(game.GAME_HEIGHT) / f32(coreContext.windowHeight)
 }
 
 getScreenSpaceProj :: proc() -> gmath.Mat4 {
-	aspect := f32(game.windowWidth) / f32(game.windowHeight)
+	coreContext := core.getCoreContext()
+	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
 	viewHeight := f32(game.GAME_HEIGHT)
 	viewWidth := viewHeight * aspect
@@ -81,7 +85,7 @@ initCamera :: proc() {
 }
 
 updateCamera :: proc() {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 
 	if _camera.followRate > 0 {
 		t := 1.0 - math.exp_f32(-_camera.followRate * coreContext.deltaTime)
@@ -92,7 +96,7 @@ updateCamera :: proc() {
 
 	bounds, ok := _camera.bounds.?
 	if ok {
-		aspect := f32(game.windowWidth) / f32(game.windowHeight)
+		aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
 		halfW := f32(game.GAME_HEIGHT) / 2
 		halfH := halfW * aspect

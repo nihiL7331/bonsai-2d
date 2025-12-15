@@ -2,7 +2,8 @@ package game
 
 import "core:fmt"
 
-import "../systems/render"
+import "../core"
+import "../core/render"
 import "../types/color"
 import "../types/game"
 import "../types/gmath"
@@ -11,7 +12,7 @@ import "../utils"
 _zeroEntity: game.Entity
 
 getAllEntities :: proc() -> []game.EntityHandle {
-	return utils.getCoreContext().gameState.scratch.allEntities
+	return core.getCoreContext().gameState.scratch.allEntities
 }
 
 isValid :: proc {
@@ -49,7 +50,7 @@ entityFromHandle :: proc(
 	entity: ^game.Entity,
 	ok: bool,
 ) #optional_ok {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 
 	if handle.index <= 0 || handle.index > coreContext.gameState.entityTopCount {
 		return &_zeroEntity, false
@@ -64,7 +65,7 @@ entityFromHandle :: proc(
 }
 
 rebuildScratchHelpers :: proc() {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 
 	allEnts := make(
 		[dynamic]game.EntityHandle,
@@ -80,7 +81,7 @@ rebuildScratchHelpers :: proc() {
 }
 
 entityCreate :: proc(kind: game.EntityKind) -> ^game.Entity {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 	index := -1
 	if len(coreContext.gameState.entityFreeList) > 0 {
 		index = pop(&coreContext.gameState.entityFreeList)
@@ -216,7 +217,7 @@ updateEntityAnimation :: proc(e: ^game.Entity) {
 }
 
 entityDestroy :: proc(e: ^game.Entity) {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 
 	append(&coreContext.gameState.entityFreeList, e.handle.index)
 	e^ = {}

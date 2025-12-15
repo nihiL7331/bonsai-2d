@@ -1,12 +1,12 @@
 package utils
 
-import utils "."
+import "../core"
 import "core:time"
 
-appNow :: utils.secondsSinceInit
+appNow :: secondsSinceInit
 
 now :: proc() -> f64 {
-	coreContext := utils.getCoreContext()
+	coreContext := core.getCoreContext()
 
 	return coreContext.gameState.gameTimeElapsed
 }

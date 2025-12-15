@@ -20,7 +20,7 @@ import "../../utils"
 
 RenderState :: struct {
 	passAction: sg.Pass_Action,
-	pip:        sg.Pipeline,
+	pip:        sg.Pipeline, //TODO: separate pipeline for shadows so that their alpha dont add
 	bind:       sg.Bindings,
 }
 renderState: RenderState

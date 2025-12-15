@@ -1,10 +1,12 @@
 package utils
 
+import "../core"
 import "../types/game"
 import "../types/gmath"
 
 screenPivot :: proc(pivot: gmath.Pivot) -> (x, y: f32) {
-	aspect := f32(game.windowWidth) / f32(game.windowHeight)
+	coreContext := core.getCoreContext()
+	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
 	viewHeight := f32(game.GAME_HEIGHT)
 	viewWidth := viewHeight * aspect
