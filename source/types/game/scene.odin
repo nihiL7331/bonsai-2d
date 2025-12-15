@@ -1,14 +1,16 @@
 package game_types
 
 SceneKind :: enum {
+	None,
 	Splash,
-	MainMenu,
+	MainMenu, //TODO:
 	Gameplay,
 }
 
 Scene :: struct {
-	init:   proc(),
-	update: proc(),
-	draw:   proc(),
-	exit:   proc(),
+	data:   rawptr,
+	init:   proc(data: rawptr),
+	update: proc(data: rawptr),
+	draw:   proc(data: rawptr),
+	exit:   proc(data: rawptr),
 }

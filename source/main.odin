@@ -34,7 +34,6 @@
 // - particle system
 // - asset hot reloading
 // - spatial hash grid for collisions
-// - scene/state manager
 // - tweening system
 // - web localstorage implementation
 // - debug console (microui)
@@ -43,6 +42,8 @@
 // - steamworks support
 // - multiple font support
 // - palette swapping
+// - make cleaner scene manager examples
+// - autogenerate scene names in generateAssets.odin
 
 package main
 
