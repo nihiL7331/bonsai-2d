@@ -118,7 +118,7 @@ init :: proc "c" () {
 
 
 	input.initState()
-	render.renderInit()
+	render.init()
 }
 
 frameTime: f64

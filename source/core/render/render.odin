@@ -32,6 +32,23 @@ getDrawFrame :: proc() -> ^gfx.DrawFrame {
 	return &_drawFrame
 }
 
+_setCoordSpaceDefault :: proc() {
+	_drawFrame.reset.coordSpace = {
+		proj     = gmath.Mat4(1),
+		camera   = gmath.Mat4(1),
+		viewProj = gmath.Mat4(1),
+	}
+}
+
+_setCoordSpaceValue :: proc(coordSpace: gfx.CoordSpace) {
+	_drawFrame.reset.coordSpace = coordSpace
+}
+
+setCoordSpace :: proc {
+	_setCoordSpaceValue,
+	_setCoordSpaceDefault,
+}
+
 getFrameCount :: proc(sprite: game.SpriteName) -> int {
 	frameCount := game.spriteData[sprite].frameCount
 	if frameCount == 0 {
@@ -76,7 +93,7 @@ clearCol: gmath.Vec4
 sprites: [game.SpriteName]game.Sprite
 
 
-renderInit :: proc() {
+init :: proc() {
 	sg.setup(
 		{
 			environment = sglue.environment(),
