@@ -8,7 +8,7 @@ import "../systems/camera"
 import "../systems/entities"
 import "../types/game"
 import "../types/gmath"
-import "entityData"
+import prefabs "entities"
 
 import "core:fmt"
 import "core:math/linalg"
@@ -19,10 +19,10 @@ WINDOW_TITLE :: "Blueprint"
 init :: proc() {
 	coreContext := core.getCoreContext()
 
-	player := entityData.spawnPlayer()
+	player := prefabs.spawnPlayer()
 	coreContext.gameState.world.playerHandle = player.handle
 
-	entityData.spawnThing()
+	prefabs.spawnThing()
 
 	camera.init()
 }
