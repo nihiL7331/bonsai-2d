@@ -43,7 +43,6 @@
 // - steamworks support
 // - multiple font support
 // - palette swapping
-// - get rid of utils directory
 
 package main
 
@@ -151,8 +150,8 @@ frame :: proc "c" () {
 		sapp.toggle_fullscreen()
 	}
 
-	coreContext.gameState.gameTimeElapsed += f64(coreContext.deltaTime)
-	coreContext.gameState.ticks += 1
+	coreContext.gameState.time.gameTimeElapsed += f64(coreContext.deltaTime)
+	coreContext.gameState.time.ticks += 1
 
 	render.coreRenderFrameStart()
 	gameapp.update()

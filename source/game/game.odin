@@ -20,7 +20,7 @@ init :: proc() {
 	coreContext := core.getCoreContext()
 
 	player := entityData.spawnPlayer()
-	coreContext.gameState.playerHandle = player.handle
+	coreContext.gameState.world.playerHandle = player.handle
 
 	entityData.spawnThing()
 
@@ -32,7 +32,7 @@ update :: proc() {
 
 	entities.updateAll()
 
-	player := entities.entityFromHandle(coreContext.gameState.playerHandle)
+	player := entities.entityFromHandle(coreContext.gameState.world.playerHandle)
 	camera.follow(player.pos)
 	camera.update()
 }

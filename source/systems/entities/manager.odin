@@ -43,11 +43,11 @@ entityFromHandle :: proc(
 ) #optional_ok {
 	coreContext := core.getCoreContext()
 
-	if handle.index <= 0 || handle.index > coreContext.gameState.entityTopCount {
+	if handle.index <= 0 || handle.index > coreContext.gameState.entities.topCount {
 		return &_zeroEntity, false
 	}
 
-	ent := &coreContext.gameState.entities[handle.index]
+	ent := &coreContext.gameState.entities.data[handle.index]
 	if ent.handle.id != handle.id {
 		return &_zeroEntity, false
 	}
@@ -61,10 +61,10 @@ rebuildScratchHelpers :: proc() {
 	allEnts := make(
 		[dynamic]game.EntityHandle,
 		0,
-		len(coreContext.gameState.entities),
+		len(coreContext.gameState.entities.data),
 		allocator = context.temp_allocator,
 	)
-	for &e in coreContext.gameState.entities {
+	for &e in coreContext.gameState.entities.data {
 		if !isValid(e) do continue
 		append(&allEnts, e.handle)
 	}
@@ -74,23 +74,23 @@ rebuildScratchHelpers :: proc() {
 create :: proc(kind: game.EntityKind) -> ^game.Entity {
 	coreContext := core.getCoreContext()
 	index := -1
-	if len(coreContext.gameState.entityFreeList) > 0 {
-		index = pop(&coreContext.gameState.entityFreeList)
+	if len(coreContext.gameState.entities.freeList) > 0 {
+		index = pop(&coreContext.gameState.entities.freeList)
 	}
 
 	if index == -1 {
 		assert(
-			coreContext.gameState.entityTopCount + 1 < game.MAX_ENTITIES,
+			coreContext.gameState.entities.topCount + 1 < game.MAX_ENTITIES,
 			"Ran out of entities.",
 		)
-		coreContext.gameState.entityTopCount += 1
-		index = coreContext.gameState.entityTopCount
+		coreContext.gameState.entities.topCount += 1
+		index = coreContext.gameState.entities.topCount
 	}
 
-	ent := &coreContext.gameState.entities[index]
+	ent := &coreContext.gameState.entities.data[index]
 	ent.handle.index = index
-	ent.handle.id = coreContext.gameState.latestEntityId + 1
-	coreContext.gameState.latestEntityId = ent.handle.id
+	ent.handle.id = coreContext.gameState.entities.latestId + 1
+	coreContext.gameState.entities.latestId = ent.handle.id
 
 	ent.kind = kind
 	ent.drawPivot = gmath.Pivot.bottomCenter
@@ -213,7 +213,7 @@ updateAnimation :: proc(e: ^game.Entity) {
 destroy :: proc(e: ^game.Entity) {
 	coreContext := core.getCoreContext()
 
-	append(&coreContext.gameState.entityFreeList, e.handle.index)
+	append(&coreContext.gameState.entities.freeList, e.handle.index)
 	e^ = {}
 }
 

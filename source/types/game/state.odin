@@ -3,15 +3,30 @@ package game_types
 import "../gmath"
 
 GameState :: struct {
+	time:     ^TimeState,
+	scratch:  ^ScratchState,
+	entities: ^EntityStorage,
+	world:    ^WorldState,
+}
+
+TimeState :: struct {
 	ticks:           u64,
 	gameTimeElapsed: f64,
-	camPos:          gmath.Vec2,
-	entityTopCount:  int,
-	latestEntityId:  int,
-	entities:        [MAX_ENTITIES]Entity,
-	entityFreeList:  [dynamic]int,
-	playerHandle:    EntityHandle,
-	scratch:         struct {
-		allEntities: []EntityHandle,
-	},
+}
+
+ScratchState :: struct {
+	// rebuilt every frame
+	allEntities: []EntityHandle,
+}
+
+EntityStorage :: struct {
+	topCount: int,
+	latestId: int,
+	data:     [MAX_ENTITIES]Entity,
+	freeList: [dynamic]int,
+}
+
+WorldState :: struct {
+	playerHandle: EntityHandle,
+	camPos:       gmath.Vec2,
 }

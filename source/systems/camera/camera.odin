@@ -52,7 +52,7 @@ getWorldSpaceCamera :: proc() -> gmath.Mat4 {
 	coreContext := core.getCoreContext()
 
 	cam := gmath.Mat4(1)
-	cam *= gmath.xFormTranslate(coreContext.gameState.camPos)
+	cam *= gmath.xFormTranslate(coreContext.gameState.world.camPos)
 	cam *= gmath.xFormScale(getCameraZoom())
 	return cam
 }
@@ -144,7 +144,7 @@ update :: proc() {
 		}
 	}
 
-	coreContext.gameState.camPos = _camera.position
+	coreContext.gameState.world.camPos = _camera.position
 
 	//TODO:
 	// if _camera.shakeTimer > 0 {
