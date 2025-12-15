@@ -8,7 +8,6 @@ import "../systems/camera"
 import "../systems/entities"
 import "../types/game"
 import "../types/gmath"
-import "../utils"
 import "entityData"
 
 import "core:fmt"
@@ -71,7 +70,7 @@ drawUiLayer :: proc() {
 
 	render.setCoordSpace(camera.getScreenSpace())
 
-	x, y := utils.screenPivot(gmath.Pivot.topRight)
+	x, y := camera.screenPivot(gmath.Pivot.topRight)
 	fpsText := fmt.tprintf("FPS: %.2f", 1.0 / coreContext.deltaTime)
 	render.drawText(
 		{x - 2, y - 2},

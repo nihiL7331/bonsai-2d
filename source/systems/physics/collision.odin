@@ -1,4 +1,4 @@
-package shape
+package physics
 
 import "core:math"
 import "core:math/linalg"

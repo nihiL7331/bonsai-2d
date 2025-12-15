@@ -3,8 +3,6 @@ package render
 import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
-import "../../utils"
-import "../../utils/shape"
 
 drawSprite :: proc(
 	pos: gmath.Vec2,
@@ -30,11 +28,11 @@ drawSprite :: proc(
 	rectSize.x /= f32(frameCount)
 
 	_xForm := gmath.Mat4(1)
-	_xForm *= utils.xFormTranslate(pos)
-	_xForm *= utils.xFormScale(gmath.Vec2{flipX ? -1.0 : 1.0, 1.0})
+	_xForm *= gmath.xFormTranslate(pos)
+	_xForm *= gmath.xFormScale(gmath.Vec2{flipX ? -1.0 : 1.0, 1.0})
 	_xForm *= xForm
-	_xForm *= utils.xFormTranslate(rectSize * -utils.scaleFromPivot(pivot))
-	_xForm *= utils.xFormTranslate(-drawOffset)
+	_xForm *= gmath.xFormTranslate(rectSize * -gmath.scaleFromPivot(pivot))
+	_xForm *= gmath.xFormTranslate(-drawOffset)
 
 	drawRectXForm(
 		_xForm,
@@ -70,14 +68,14 @@ drawRect :: proc(
 	cropRight: f32 = 0.0,
 	zLayerQueue := -1,
 ) {
-	xForm := utils.xFormTranslate(rect.xy)
-	size := shape.rectSize(rect)
+	xForm := gmath.xFormTranslate(rect.xy)
+	size := gmath.rectSize(rect)
 
 	if outlineCol != {} {
 		size := size
 		xForm := xForm
 		size += gmath.Vec2(2)
-		xForm *= utils.xFormTranslate(gmath.Vec2(-1))
+		xForm *= gmath.xFormTranslate(gmath.Vec2(-1))
 		drawRectXForm(
 			xForm,
 			size,
@@ -123,17 +121,17 @@ drawSpriteInRect :: proc(
 ) {
 	imgSize := getSpriteSize(sprite)
 
-	rect := shape.rectMake(pos, size)
+	rect := gmath.rectMake(pos, size)
 
 	{ 	// padding
-		rect = shape.rectShift(rect, -rect.xy)
+		rect = gmath.rectShift(rect, -rect.xy)
 		rect.xy += size * paddingPercent * 0.5
 		rect.zw -= size * paddingPercent * 0.5
-		rect = shape.rectShift(rect, pos)
+		rect = gmath.rectShift(rect, pos)
 	}
 
 	{ 	//shrink rect if sprite is too small
-		rectSize := shape.rectSize(rect)
+		rectSize := gmath.rectSize(rect)
 		sizeDiffX := rectSize.x - imgSize.x
 		if sizeDiffX < 0 {
 			sizeDiffX = 0
@@ -146,24 +144,24 @@ drawSpriteInRect :: proc(
 		sizeDiff := gmath.Vec2{sizeDiffX, sizeDiffY}
 
 		offset := rect.xy
-		rect = shape.rectShift(rect, -rect.xy)
+		rect = gmath.rectShift(rect, -rect.xy)
 		rect.xy += sizeDiff * 0.5
 		rect.zw -= sizeDiff * 0.5
-		rect = shape.rectShift(rect, offset)
+		rect = gmath.rectShift(rect, offset)
 	}
 
 	if imgSize.x > imgSize.y {
-		rectSize := shape.rectSize(rect)
+		rectSize := gmath.rectSize(rect)
 		rect.w = rect.y + (rectSize.x * (imgSize.y / imgSize.x))
 
 		newHeight := rect.w - rect.y
-		rect = shape.rectShift(rect, gmath.Vec2{0, (rectSize.y - newHeight) * 0.5})
+		rect = gmath.rectShift(rect, gmath.Vec2{0, (rectSize.y - newHeight) * 0.5})
 	} else if imgSize.y > imgSize.x {
-		rectSize := shape.rectSize(rect)
+		rectSize := gmath.rectSize(rect)
 		rect.z = rect.x + (rectSize.y * (imgSize.x / imgSize.y))
 
 		newWidth := rect.z - rect.x
-		rect = shape.rectShift(rect, gmath.Vec2{0, (rectSize.x - newWidth) * 0.5})
+		rect = gmath.rectShift(rect, gmath.Vec2{0, (rectSize.x - newWidth) * 0.5})
 	}
 
 	drawRect(
@@ -207,10 +205,10 @@ drawRectXForm :: proc(
 		frameCount := getFrameCount(sprite)
 		frameSize := size
 		frameSize.x /= f32(frameCount)
-		uvSize := shape.rectSize(uv)
+		uvSize := gmath.rectSize(uv)
 		uvFrameSize := uvSize * gmath.Vec2{frameSize.x / size.x, 1.0}
 		uv.zw = uv.xy + uvFrameSize
-		uv = shape.rectShift(uv, gmath.Vec2{f32(animIndex) * uvFrameSize.x, 0})
+		uv = gmath.rectShift(uv, gmath.Vec2{f32(animIndex) * uvFrameSize.x, 0})
 	}
 
 	assert(drawFrame.reset.coordSpace != {}, "No coord space set.")
@@ -220,7 +218,7 @@ drawRectXForm :: proc(
 	{
 		if cropTop != 0.0 {
 			newHeight := size.y * (1.0 - cropTop)
-			uvSize := shape.rectSize(uv)
+			uvSize := gmath.rectSize(uv)
 
 			uv.w -= uvSize.y * cropTop
 			size.y = newHeight
@@ -229,23 +227,23 @@ drawRectXForm :: proc(
 			crop := size.x * cropLeft
 			size.x -= crop
 
-			uvSize := shape.rectSize(uv)
+			uvSize := gmath.rectSize(uv)
 			uv.x += uvSize.x * cropLeft
 
-			localToClipSpace *= utils.xFormTranslate(gmath.Vec2{crop, 0})
+			localToClipSpace *= gmath.xFormTranslate(gmath.Vec2{crop, 0})
 		}
 		if cropBottom != 0.0 {
 			crop := size.y * (1.0 - cropBottom)
 			diff: f32 = crop - size.y
 			size.y = crop
-			uvSize := shape.rectSize(uv)
+			uvSize := gmath.rectSize(uv)
 
 			uv.y += uvSize.y * cropBottom
-			localToClipSpace *= utils.xFormTranslate(gmath.Vec2{0, -diff})
+			localToClipSpace *= gmath.xFormTranslate(gmath.Vec2{0, -diff})
 		}
 		if cropRight != 0.0 {
 			size.x *= 1.0 - cropRight
-			uvSize := shape.rectSize(uv)
+			uvSize := gmath.rectSize(uv)
 			uv.z -= uvSize.x * cropRight
 		}
 	}

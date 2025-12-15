@@ -13,10 +13,10 @@ import sglue "../../libs/sokol/glue"
 import slog "../../libs/sokol/log"
 
 import io "../../platform"
+import "../../types/color"
 import "../../types/game"
 import "../../types/gfx"
 import "../../types/gmath"
-import "../../utils"
 
 RenderState :: struct {
 	passAction: sg.Pass_Action,
@@ -75,7 +75,7 @@ getSpriteCenterMass :: proc(sprite: game.SpriteName) -> gmath.Vec2 {
 	size := getSpriteSize(sprite)
 	offset, pivot := getSpriteOffset(sprite)
 
-	center := size * utils.scaleFromPivot(pivot)
+	center := size * gmath.scaleFromPivot(pivot)
 	center -= offset
 
 	return center
@@ -164,7 +164,7 @@ init :: proc() {
 	}
 	renderState.pip = sg.make_pipeline(pipelineDesc)
 
-	clearCol = utils.hexToRGBA(0x16161dff)
+	clearCol = color.hexToRGBA(0x16161dff)
 
 	// default pass action
 	renderState.passAction = {

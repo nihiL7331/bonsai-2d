@@ -1,6 +1,6 @@
-package utils
+package clock
 
-import "../core"
+import core "../"
 import "core:time"
 
 appNow :: secondsSinceInit

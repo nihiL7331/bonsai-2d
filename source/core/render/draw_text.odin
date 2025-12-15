@@ -3,7 +3,6 @@ package render
 import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
-import "../../utils"
 
 import tt "../../libs/stb/truetype"
 
@@ -106,7 +105,7 @@ drawTextNoDropShadow :: proc(
 		totalSize.y = max(totalSize.y, topRight.y)
 	}
 
-	pivotOffset := totalSize * -utils.scaleFromPivot(pivot)
+	pivotOffset := totalSize * -gmath.scaleFromPivot(pivot)
 
 	x: f32
 	y: f32
@@ -141,9 +140,9 @@ drawTextNoDropShadow :: proc(
 		uv := gmath.Vec4{q.s0, q.t1, q.s1, q.t0}
 
 		xForm := gmath.Mat4(1)
-		xForm *= utils.xFormTranslate(pos)
-		xForm *= utils.xFormScale(gmath.Vec2{auto_cast scale, auto_cast scale})
-		xForm *= utils.xFormTranslate(offsetToRenderAt)
+		xForm *= gmath.xFormTranslate(pos)
+		xForm *= gmath.xFormScale(gmath.Vec2{auto_cast scale, auto_cast scale})
+		xForm *= gmath.xFormTranslate(offsetToRenderAt)
 
 		drawRectXForm(xForm, size, uv = uv, texIndex = 1, colOverride = colOverride, col = col)
 

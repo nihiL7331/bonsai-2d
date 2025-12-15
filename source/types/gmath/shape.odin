@@ -1,25 +1,30 @@
-package shape
+package gmath
 
-import utils "../"
-import "../../types/gmath"
+Shape :: union {
+	Rect,
+	Circle,
+}
 
-rectGetCenter :: proc(rect: gmath.Vec4) -> gmath.Vec2 {
+Circle :: struct {
+	pos:    Vec2,
+	radius: f32,
+}
+
+Rect :: Vec4
+
+rectGetCenter :: proc(rect: Vec4) -> Vec2 {
 	min := rect.xy
 	max := rect.zw
 	return {min.x + 0.5 * (max.x - min.x), min.y + 0.5 * (max.y - min.y)}
 }
 
-rectMakeWithPos :: proc(
-	pos: gmath.Vec2,
-	size: gmath.Vec2,
-	pivot := gmath.Pivot.bottomLeft,
-) -> gmath.Vec4 {
-	rect := gmath.Vec4{0, 0, size.x, size.y}
-	rect = rectShift(rect, pos - utils.scaleFromPivot(pivot) * size)
+rectMakeWithPos :: proc(pos: Vec2, size: Vec2, pivot := Pivot.bottomLeft) -> Vec4 {
+	rect := Vec4{0, 0, size.x, size.y}
+	rect = rectShift(rect, pos - scaleFromPivot(pivot) * size)
 	return rect
 }
 
-rectMakeWithSize :: proc(size: gmath.Vec2, pivot: gmath.Pivot) -> gmath.Vec4 {
+rectMakeWithSize :: proc(size: Vec2, pivot: Pivot) -> Vec4 {
 	return rectMake({}, size, pivot)
 }
 
@@ -28,15 +33,15 @@ rectMake :: proc {
 	rectMakeWithSize,
 }
 
-rectShift :: proc(rect: gmath.Vec4, amount: gmath.Vec2) -> gmath.Vec4 {
+rectShift :: proc(rect: Vec4, amount: Vec2) -> Vec4 {
 	return {rect.x + amount.x, rect.y + amount.y, rect.z + amount.x, rect.w + amount.y}
 }
 
-rectSize :: proc(rect: gmath.Rect) -> gmath.Vec2 {
+rectSize :: proc(rect: Rect) -> Vec2 {
 	return {abs(rect.x - rect.z), abs(rect.y - rect.w)}
 }
 
-rectScale :: proc(rect: gmath.Rect, scale: f32) -> gmath.Rect {
+rectScale :: proc(rect: Rect, scale: f32) -> Rect {
 	rect := rect
 	origin := rect.xy
 	rect = rectShift(rect, -origin)
@@ -47,7 +52,7 @@ rectScale :: proc(rect: gmath.Rect, scale: f32) -> gmath.Rect {
 	return rect
 }
 
-rectScaleVec2 :: proc(rect: gmath.Rect, scale: gmath.Vec2) -> gmath.Rect {
+rectScaleVec2 :: proc(rect: Rect, scale: Vec2) -> Rect {
 	rect := rect
 	origin := rect.xy
 	rect = rectShift(rect, -origin)
@@ -61,28 +66,28 @@ rectScaleVec2 :: proc(rect: gmath.Rect, scale: gmath.Vec2) -> gmath.Rect {
 	return rect
 }
 
-rectExpand :: proc(rect: gmath.Rect, amount: f32) -> gmath.Rect {
+rectExpand :: proc(rect: Rect, amount: f32) -> Rect {
 	rect := rect
 	rect.xy -= amount
 	rect.zw += amount
 	return rect
 }
 
-circleShift :: proc(circle: gmath.Circle, amount: gmath.Vec2) -> gmath.Circle {
+circleShift :: proc(circle: Circle, amount: Vec2) -> Circle {
 	circle := circle
 	circle.pos += amount
 	return circle
 }
 
-shift :: proc(s: gmath.Shape, amount: gmath.Vec2) -> gmath.Shape {
+shift :: proc(s: Shape, amount: Vec2) -> Shape {
 	if s == {} || amount == {} {
 		return s
 	}
 
 	switch shape in s {
-	case gmath.Rect:
+	case Rect:
 		return rectShift(shape, amount)
-	case gmath.Circle:
+	case Circle:
 		return circleShift(shape, amount)
 	case:
 		{

@@ -43,6 +43,7 @@
 // - steamworks support
 // - multiple font support
 // - palette swapping
+// - get rid of utils directory
 
 package main
 
@@ -54,12 +55,13 @@ import sg "libs/sokol/gfx"
 import slog "libs/sokol/log"
 
 import "core"
+import "core/clock"
 import "core/input"
 import "core/render"
+
 import gameapp "game"
 import "platform/web"
 import "types/game"
-import "utils"
 
 _ :: web
 
@@ -130,7 +132,7 @@ frame :: proc "c" () {
 	context = odinContext
 
 	{ 	// calculate the delta time
-		currentTime := utils.secondsSinceInit()
+		currentTime := clock.secondsSinceInit()
 		frameTime = currentTime - lastFrameTime
 		lastFrameTime = currentTime
 

@@ -3,11 +3,11 @@ package entities
 import "core:fmt"
 
 import "../../core"
+import "../../core/clock"
 import "../../core/render"
 import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
-import "../../utils"
 
 @(private)
 _zeroEntity: game.Entity
@@ -106,7 +106,7 @@ drawEntityDefault :: proc(e: ^game.Entity) {
 		return
 	}
 
-	xForm := utils.xFormRotate(e.rotation)
+	xForm := gmath.xFormRotate(e.rotation)
 
 	drawSpriteEntity(
 		e,
@@ -196,10 +196,10 @@ updateAnimation :: proc(e: ^game.Entity) {
 
 	if isPlaying {
 		if e.nextFrameEndTime == 0 {
-			e.nextFrameEndTime = utils.now() + f64(e.frameDuration)
+			e.nextFrameEndTime = clock.now() + f64(e.frameDuration)
 		}
 
-		if utils.endTimeUp(e.nextFrameEndTime) {
+		if clock.endTimeUp(e.nextFrameEndTime) {
 			e.animIndex += 1
 			e.nextFrameEndTime = 0
 
