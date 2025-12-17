@@ -137,7 +137,12 @@ Button :: proc(label: string) -> bool {
 	return result
 }
 
-Slider :: proc(val: ^f32, min, max: f32, label: string) {
+Slider :: proc(
+	val: ^f32,
+	min, max: f32,
+	label: string,
+	fillColor: gmath.Vec4 = _STYLE[.SLIDER_FILL],
+) {
 	parent := state.currentContainer
 
 	if parent == nil {
@@ -154,7 +159,6 @@ Slider :: proc(val: ^f32, min, max: f32, label: string) {
 	size := gmath.Vec2{parent.rect.z - parent.rect.x - _PADDING * 2, _SLIDER_HEIGHT}
 	rect := gmath.rectMake(screenPos, size)
 	backgroundColor := _STYLE[.SLIDER_BACKGROUND]
-	fillColor := _STYLE[.SLIDER_FILL]
 
 	id := getId(label)
 	if gmath.rectContains(rect, gmath.Vec2{state.mouseX, state.mouseY}) &&
@@ -255,6 +259,33 @@ Checkbox :: proc(val: ^bool, label: string) {
 			col = _STYLE[.TEXT],
 		)
 	}
+}
+
+Header :: proc(label: string) { 	// technically a subheader, this one isn't draggable
+	parent := state.currentContainer
+
+	if parent == nil {
+		log.error("No parent container set. Checkbox", label, "can't be drawn.")
+		return
+	} else if parent.rect.y > parent.rect.w - parent.cursor.y {
+		log.error("Header", label, "overflowed out of container.")
+		return
+	}
+	parent.cursor.y += _HEADER_HEIGHT + _SPACING
+	screenPos := gmath.Vec2 {
+		(parent.rect.x + parent.rect.z) / 2,
+		parent.rect.w - parent.cursor.y + _HEADER_HEIGHT / 2,
+	}
+
+
+	textColor := _STYLE[.HEADER]
+	render.drawText(
+		screenPos,
+		label,
+		col = textColor,
+		scale = 0.5,
+		pivot = gmath.Pivot.centerCenter,
+	)
 }
 
 CloseButton :: proc(id: u32) -> bool { 	//we separate this from button for easier positioning
