@@ -3,10 +3,8 @@ package game_types
 import "../gmath"
 
 GameState :: struct {
-	time:     TimeState,
-	scratch:  ScratchState,
-	entities: ^EntityStorage,
-	world:    ^WorldState,
+	time:  TimeState,
+	world: ^WorldState,
 }
 
 TimeState :: struct {
@@ -14,20 +12,7 @@ TimeState :: struct {
 	gameTimeElapsed: f64,
 }
 
-ScratchState :: struct {
-	// rebuilt every frame
-	allEntities: []EntityHandle,
-}
-
-EntityStorage :: struct {
-	topCount: int,
-	latestId: int,
-	data:     [MAX_ENTITIES]Entity,
-	freeList: [dynamic]int,
-}
-
 WorldState :: struct {
-	playerHandle: EntityHandle,
 	camPos:       gmath.Vec2,
 	currentScene: ^Scene,
 	nextScene:    ^Scene,

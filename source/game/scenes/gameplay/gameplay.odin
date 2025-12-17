@@ -1,6 +1,5 @@
 package gameplay
 
-import "../../../core"
 import "../../../core/render"
 
 import prefabs "../../../game/entities"
@@ -17,10 +16,10 @@ Data :: struct {}
 
 init :: proc(data: rawptr) {
 	// state := (^Data)(data)
-	coreContext := core.getCoreContext()
 
+	entities.entityInitCore()
 	player := prefabs.spawnPlayer()
-	coreContext.gameState.world.playerHandle = player.handle
+	entities.setPlayerHandle(player.handle)
 	prefabs.spawnThing()
 
 	camera.init()
@@ -28,11 +27,10 @@ init :: proc(data: rawptr) {
 
 update :: proc(data: rawptr) {
 	// state := (^Data)(data)
-	coreContext := core.getCoreContext()
 
 	entities.updateAll()
 
-	player := entities.entityFromHandle(coreContext.gameState.world.playerHandle)
+	player := entities.getPlayer()
 	camera.follow(player.pos)
 	camera.update()
 }
@@ -49,6 +47,8 @@ draw :: proc(data: rawptr) {
 
 exit :: proc(data: rawptr) {
 	// state := (^Data)(data)
+
+	entities.cleanup()
 }
 
 drawBackgroundLayer :: proc() {

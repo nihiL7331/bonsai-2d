@@ -117,7 +117,6 @@ Button :: proc(label: string) -> bool {
 		textColor = _STYLE[.ACTIVE_TEXT]
 
 		if input.keyReleased(input.KeyCode.LEFT_MOUSE) {
-			log.info("clicked")
 			result = true
 			state.active = 0
 		}

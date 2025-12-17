@@ -2,30 +2,40 @@ package entities
 
 import "core:fmt"
 
-import "../../core"
 import "../../core/clock"
 import "../../core/render"
 import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
+import "type"
 
 @(private)
-_zeroEntity: game.Entity
-_noopUpdate :: proc(e: ^game.Entity) {}
-_noopDraw :: proc(e: ^game.Entity) {}
+_zeroEntity: type.Entity
+@(private)
+_noopUpdate :: proc(e: ^type.Entity) {}
+@(private)
+_noopDraw :: proc(e: ^type.Entity) {}
+@(private)
+_entityStorage: ^type.EntityStorage
+@(private)
+_allEntities: []type.EntityHandle
 
-getAllEntities :: proc() -> []game.EntityHandle {
-	return core.getCoreContext().gameState.scratch.allEntities
+getPlayer :: proc() -> ^type.Entity {
+	return entityFromHandle(_entityStorage.playerHandle)
+}
+
+setPlayerHandle :: proc(playerHandle: type.EntityHandle) {
+	_entityStorage.playerHandle = playerHandle
 }
 
 isValid :: proc {
 	entityIsValid,
 	entityIsValidPtr,
 }
-entityIsValid :: proc(entity: game.Entity) -> bool {
+entityIsValid :: proc(entity: type.Entity) -> bool {
 	return entity.handle.id != 0
 }
-entityIsValidPtr :: proc(entity: ^game.Entity) -> bool {
+entityIsValidPtr :: proc(entity: ^type.Entity) -> bool {
 	return entity != nil && entityIsValid(entity^)
 }
 
@@ -33,64 +43,85 @@ entityInitCore :: proc() {
 	_zeroEntity.kind = .nil
 	_zeroEntity.updateProc = _noopUpdate
 	_zeroEntity.drawProc = _noopDraw
+	_entityStorage = new(type.EntityStorage)
+}
+
+updateAll :: proc() {
+	rebuildScratchHelpers()
+
+	for handle in _allEntities {
+		e := entityFromHandle(handle)
+
+		updateAnimation(e)
+
+		if e.updateProc == nil do continue
+		e.updateProc(e)
+	}
+}
+
+drawAll :: proc() {
+	for handle in _allEntities {
+		e, ok := entityFromHandle(handle)
+		if !ok do continue
+
+		if e.drawProc == nil do continue
+		e.drawProc(e)
+	}
+}
+
+cleanup :: proc() {
+	free(_entityStorage)
 }
 
 entityFromHandle :: proc(
-	handle: game.EntityHandle,
+	handle: type.EntityHandle,
 ) -> (
-	entity: ^game.Entity,
+	entity: ^type.Entity,
 	ok: bool,
 ) #optional_ok {
-	coreContext := core.getCoreContext()
-
-	if handle.index <= 0 || handle.index > coreContext.gameState.entities.topCount {
+	if handle.index <= 0 || handle.index > _entityStorage.topCount {
 		return &_zeroEntity, false
 	}
 
-	ent := &coreContext.gameState.entities.data[handle.index]
-	if ent.handle.id != handle.id {
+	returnEntity := &_entityStorage.data[handle.index]
+	if returnEntity.handle.id != handle.id {
 		return &_zeroEntity, false
 	}
 
-	return ent, true
+	return returnEntity, true
 }
 
 rebuildScratchHelpers :: proc() {
-	coreContext := core.getCoreContext()
-
-	allEnts := make(
-		[dynamic]game.EntityHandle,
+	allEntities := make(
+		[dynamic]type.EntityHandle,
 		0,
-		len(coreContext.gameState.entities.data),
+		len(_entityStorage.data),
 		allocator = context.temp_allocator,
 	)
-	for &e in coreContext.gameState.entities.data {
-		if !isValid(e) do continue
-		append(&allEnts, e.handle)
+	for &entity in _entityStorage.data {
+		if !isValid(entity) do continue
+		append(&allEntities, entity.handle)
 	}
-	coreContext.gameState.scratch.allEntities = allEnts[:]
+	_allEntities = allEntities[:]
 }
 
-create :: proc(kind: game.EntityName) -> ^game.Entity {
-	coreContext := core.getCoreContext()
+
+create :: proc(kind: type.EntityName) -> ^type.Entity {
 	index := -1
-	if len(coreContext.gameState.entities.freeList) > 0 {
-		index = pop(&coreContext.gameState.entities.freeList)
+	if len(_entityStorage.freeList) > 0 {
+		index = pop(&_entityStorage.freeList)
 	}
 
 	if index == -1 {
-		assert(
-			coreContext.gameState.entities.topCount + 1 < game.MAX_ENTITIES,
-			"Ran out of entities.",
-		)
-		coreContext.gameState.entities.topCount += 1
-		index = coreContext.gameState.entities.topCount
+		assert(_entityStorage.topCount + 1 < type.MAX_ENTITIES, "Ran out of entities.")
+		_entityStorage.topCount += 1
+		index = _entityStorage.topCount
 	}
 
-	ent := &coreContext.gameState.entities.data[index]
+	ent := &_entityStorage.data[index]
 	ent.handle.index = index
-	ent.handle.id = coreContext.gameState.entities.latestId + 1
-	coreContext.gameState.entities.latestId = ent.handle.id
+	ent.handle.id = _entityStorage.latestId + 1
+	_entityStorage.latestId = ent.handle.id
 
 	ent.kind = kind
 	ent.drawPivot = gmath.Pivot.bottomCenter
@@ -101,7 +132,12 @@ create :: proc(kind: game.EntityName) -> ^game.Entity {
 	return ent
 }
 
-drawEntityDefault :: proc(e: ^game.Entity) {
+destroy :: proc(e: ^type.Entity) {
+	append(&_entityStorage.freeList, e.handle.index)
+	e^ = {}
+}
+
+drawEntityDefault :: proc(e: ^type.Entity) {
 	if e.sprite == nil {
 		return
 	}
@@ -122,7 +158,7 @@ drawEntityDefault :: proc(e: ^game.Entity) {
 }
 
 drawSpriteEntity :: proc(
-	entity: ^game.Entity,
+	entity: ^type.Entity,
 	pos: gmath.Vec2,
 	sprite: game.SpriteName,
 	pivot := gmath.Pivot.centerCenter,
@@ -170,7 +206,7 @@ drawSpriteEntity :: proc(
 }
 
 setAnimation :: proc(
-	e: ^game.Entity,
+	e: ^type.Entity,
 	sprite: game.SpriteName,
 	frameDuration: f32,
 	looping := true,
@@ -184,7 +220,7 @@ setAnimation :: proc(
 	}
 }
 
-updateAnimation :: proc(e: ^game.Entity) {
+updateAnimation :: proc(e: ^type.Entity) {
 	if e.frameDuration == 0 do return
 
 	frameCount := render.getFrameCount(e.sprite)
@@ -207,33 +243,5 @@ updateAnimation :: proc(e: ^game.Entity) {
 				e.animIndex = 0
 			}
 		}
-	}
-}
-
-destroy :: proc(e: ^game.Entity) {
-	coreContext := core.getCoreContext()
-
-	append(&coreContext.gameState.entities.freeList, e.handle.index)
-	e^ = {}
-}
-
-updateAll :: proc() {
-	rebuildScratchHelpers()
-
-	for handle in getAllEntities() {
-		e := entityFromHandle(handle)
-
-		updateAnimation(e)
-
-		if e.updateProc == nil do continue
-		e.updateProc(e)
-	}
-}
-
-drawAll :: proc() {
-	for handle in getAllEntities() {
-		e := entityFromHandle(handle)
-		if e.drawProc == nil do continue
-		e.drawProc(e)
 	}
 }

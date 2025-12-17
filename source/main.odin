@@ -6,16 +6,21 @@
 // first letter uppercase for type/struct declarations
 // _camelCase for private variable names
 //
-// core concept:
-// blueprint is an abstraction layer, that has an expected use of
-// being expanded on using packages to split each game system.
-//
-// additional info:
-// game is meant to be built in strict and using vet to make clean
-// and optimal code.
-//
 // support:
-// this blueprint is meant to run on web and desktop (linux, mac and windows).
+// this blueprint is meant to run on web and desktop (linux, mac, windows and wasm).
+//
+// the core / systems / types / game split and their relation:
+//  - core is where the main meat of the engine/blueprint lives. It contains things
+// crucial to make a game, and depends just on external libraries and types.
+//  - systems is a place for parts of the engine that aren't required to make a game run,
+// but are worth abstracting out for repeated use in multiple projects. A good example
+// would be a complex camera controller or a entities system. Systems depend on core and types.
+//  - types are type definitions, structure definitions, small helpers that are used
+// throughout the whole project. they dont depend on anything but external libraries.
+//  - game is where, well, the game is. it is the glue to all previously mentioned parts,
+// and with that it can depend on anything. the game directory consists of the main game.odin
+// file as well as directories for defining custom objects from systems (and notably scenes
+// from core).
 //
 // limitations:
 // due to it being targeted for web, there are a few limitations/requirements for it to work.
@@ -71,6 +76,7 @@ IS_WEB :: ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32
 
 odinContext: runtime.Context
 
+@(private)
 _actualGameState: ^game.GameState
 
 main :: proc() {
@@ -98,7 +104,7 @@ main :: proc() {
 	desc.cleanup_cb = cleanup
 	desc.width = coreContext.windowWidth
 	desc.height = coreContext.windowHeight
-	desc.sample_count = 4
+	desc.sample_count = 4 //MSAA
 	desc.window_title = gameapp.WINDOW_TITLE
 	desc.icon.sokol_default = true
 	desc.logger.func = slog.func
@@ -114,7 +120,6 @@ init :: proc "c" () {
 
 	coreContext := core.getCoreContext()
 	_actualGameState = new(game.GameState)
-	_actualGameState.entities = new(game.EntityStorage)
 	_actualGameState.world = new(game.WorldState)
 	coreContext.gameState = _actualGameState
 
@@ -148,7 +153,6 @@ frame :: proc "c" () {
 	coreContext := core.getCoreContext()
 
 	coreContext.deltaTime = f32(frameTime)
-	coreContext.gameState.scratch = {}
 
 	if input.keyPressed(.ENTER) && input.keyDown(.LEFT_ALT) {
 		sapp.toggle_fullscreen()
@@ -186,7 +190,6 @@ cleanup :: proc "c" () {
 
 	sg.shutdown()
 
-	free(_actualGameState.entities)
 	free(_actualGameState.world)
 	free(_actualGameState)
 

@@ -4,16 +4,17 @@ import "../../core"
 import "../../core/input"
 import "../../core/render"
 import "../../systems/entities"
+import "../../systems/entities/type"
 import "../../types/game"
 import "../../types/gmath"
 
-spawnPlayer :: proc() -> ^game.Entity {
-	e := entities.create(game.EntityName.player)
+spawnPlayer :: proc() -> ^type.Entity {
+	e := entities.create(type.EntityName.player)
 
 	e.drawOffset = gmath.Vec2{0.5, 5}
 	e.drawPivot = gmath.Pivot.bottomCenter
 
-	e.updateProc = proc(e: ^game.Entity) {
+	e.updateProc = proc(e: ^type.Entity) {
 		coreContext := core.getCoreContext()
 
 		inputDir := input.getInputVector()
@@ -34,7 +35,7 @@ spawnPlayer :: proc() -> ^game.Entity {
 		e.scratch.colOverride = gmath.Vec4{0, 0, 1, 0.2}
 	}
 
-	e.drawProc = proc(e: ^game.Entity) {
+	e.drawProc = proc(e: ^type.Entity) {
 		render.drawSprite(
 			e.pos,
 			game.SpriteName.shadow_medium,

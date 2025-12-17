@@ -1,6 +1,7 @@
-package game_types
+package entity_type
 
-import "../gmath"
+import "../../../types/game"
+import "../../../types/gmath"
 
 MAX_ENTITIES :: 2048
 
@@ -21,7 +22,7 @@ Entity :: struct {
 	drawPivot:        gmath.Pivot,
 	rotation:         f32,
 	hitFlash:         gmath.Vec4,
-	sprite:           SpriteName,
+	sprite:           game.SpriteName,
 	animIndex:        int,
 	nextFrameEndTime: f64,
 	loop:             bool,
@@ -29,4 +30,12 @@ Entity :: struct {
 	scratch:          struct {
 		colOverride: gmath.Vec4,
 	},
+}
+
+EntityStorage :: struct {
+	topCount:     int,
+	latestId:     int,
+	data:         [MAX_ENTITIES]Entity,
+	freeList:     [dynamic]int,
+	playerHandle: EntityHandle,
 }

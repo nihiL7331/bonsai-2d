@@ -1,9 +1,14 @@
 // General purpose of this file is to generate paths to assets used in the game.
 // It takes names of files from assets/ and creates:
 // for sprites: SpriteName in generated_sprite.odin
-// for audio: TODO:
-// for fonts: TODO:
-//TODO: rewrite this code its nasty right now
+// for audio: TODO
+// for fonts: FontName in generated_font.odin
+// You can also add your own custom generation. An example of that are the
+// data files for entities.
+//
+// NOTE: if you're running into issues of files generating empty,
+// remove the file and create it yourself. It's an ownership/permission
+// issue that I don't know how to fix.
 
 package utils
 
@@ -19,14 +24,10 @@ SearchContext :: struct {
 
 
 main :: proc() {
+	// CORE
 	generateDataFile("assets/images", "source/types/game/generated_sprite.odin", "SpriteName")
-	// generateDataFile("assets/audio", "source/types/game/generated_audio.odin", "AudioName")
+	generateDataFile("assets/audio", "source/types/game/generated_audio.odin", "AudioName")
 	generateDataFile("assets/fonts", "source/types/game/generated_font.odin", "FontName")
-	generateDataFile(
-		"source/game/entities",
-		"source/types/game/generated_entity.odin",
-		"EntityName",
-	)
 	files := generateSceneFile(
 		"source/game/scenes",
 		"source/game/scenes/generated_registry.odin",
@@ -34,6 +35,14 @@ main :: proc() {
 		{"scenes"},
 	)
 	generateSceneHelpers(files, "source/types/game/generated_scene.odin", "SceneName")
+
+	//SYSTEMS
+	generateDataFile(
+		"source/game/entities",
+		"source/systems/entities/type/generated_entity.odin",
+		"EntityName",
+		"entity_type",
+	)
 }
 
 getData :: proc(info: os.File_Info, inErr: os.Error, userData: rawptr) -> (os.Error, bool) {
@@ -116,7 +125,11 @@ generateSceneFile :: proc(src, dst, type: string, flaggedFiles: []string) -> [dy
 	return foundFiles
 }
 
-generateSceneHelpers :: proc(files: [dynamic]string, dst, type: string) {
+generateSceneHelpers :: proc(
+	files: [dynamic]string,
+	dst, type: string,
+	pack: string = "game_types",
+) {
 	f, err := os.open(dst, os.O_WRONLY | os.O_CREATE | os.O_TRUNC)
 	if err != nil {
 		fmt.eprintln("Error on generating scene helpers output file. ", err)
@@ -125,7 +138,7 @@ generateSceneHelpers :: proc(files: [dynamic]string, dst, type: string) {
 
 	fmt.fprintln(f, "//NOTE: Machine generated in generateAssets.odin")
 	fmt.fprintln(f, "")
-	fmt.fprintln(f, "package game_types")
+	fmt.fprintln(f, "package", pack)
 	fmt.fprintln(f, "")
 	fmt.fprintln(f, type, ":: enum {")
 	fmt.fprintln(f, "\tNone,")
@@ -135,7 +148,7 @@ generateSceneHelpers :: proc(files: [dynamic]string, dst, type: string) {
 	fmt.fprintln(f, "}")
 }
 
-generateDataFile :: proc(src, dst, type: string) -> [dynamic]string {
+generateDataFile :: proc(src, dst, type: string, pack: string = "game_types") -> [dynamic]string {
 	foundFiles := make([dynamic]string)
 
 	ctx := SearchContext {
@@ -158,7 +171,7 @@ generateDataFile :: proc(src, dst, type: string) -> [dynamic]string {
 
 	fmt.fprintln(f, "//NOTE: Machine generated in generateAssets.odin")
 	fmt.fprintln(f, "")
-	fmt.fprintln(f, "package game_types")
+	fmt.fprintln(f, "package", pack)
 	fmt.fprintln(f, "")
 	fmt.fprintln(f, type, ":: enum {")
 	fmt.fprintln(f, "\tnil,")
