@@ -43,7 +43,7 @@ draw :: proc(data: rawptr) {
 
 	drawBackgroundLayer()
 
-	render.setCoordSpace(camera.getWorldSpace())
+	render.setCoordSpace(render.getWorldSpace())
 	entities.drawAll()
 }
 
@@ -58,7 +58,7 @@ drawBackgroundLayer :: proc() {
 	drawFrame := render.getDrawFrame()
 
 	drawFrame.reset.shaderData.ndcToWorldXForm =
-		camera.getWorldSpaceCamera() * linalg.inverse(camera.getWorldSpaceProj())
+		render.getWorldSpaceCamera() * linalg.inverse(render.getWorldSpaceProj())
 	drawFrame.reset.shaderData.bgRepeatTexAtlasUv = render.atlasUvFromSprite(
 		game.SpriteName.bg_repeat_tex0,
 	)

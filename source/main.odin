@@ -2,8 +2,8 @@
 //
 // naming convention:
 // camelCase for variable names and functions,
-// CAPS for static with underscore splits,
-// first letter uppercase for type/struct declarations
+// CAPS snake_case for static/global constants,
+// PascalCase for type/struct declarations
 // _camelCase for private variable names
 //
 // support:

@@ -25,6 +25,7 @@
 - [ ] entity inspector
 - [ ] async asset loading\*
 - [ ] make systems/camera just a camera controller\*
+- [ ] rust package manager
 
 ## IN PROGRESS
 

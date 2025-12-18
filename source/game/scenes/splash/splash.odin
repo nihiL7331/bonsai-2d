@@ -3,10 +3,7 @@ package splash
 import "../../../core/input"
 import "../../../core/render"
 import "../../../core/scene"
-
-import "../../../systems/camera"
 import "../../../systems/tween"
-
 import "../../../types/game"
 import "../../../types/gmath"
 
@@ -33,9 +30,9 @@ update :: proc(data: rawptr) {
 
 draw :: proc(data: rawptr) {
 	state := (^Data)(data)
-	render.setCoordSpace(camera.getScreenSpace())
+	render.setCoordSpace(render.getScreenSpace())
 
-	centerCenter := camera.screenPivot(gmath.Pivot.centerCenter)
+	centerCenter := render.screenPivot(gmath.Pivot.centerCenter)
 	render.drawSprite(
 		centerCenter,
 		game.SpriteName.bald_logo,

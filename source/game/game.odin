@@ -7,7 +7,6 @@ import "../core/input"
 import "../core/render"
 import "../core/scene"
 import "../core/ui"
-import "../systems/camera"
 import "../systems/entities"
 import "../systems/tween"
 import "../types/color"
@@ -41,9 +40,9 @@ drawUiLayer :: proc() {
 	coreContext := core.getCoreContext()
 	player := entities.getPlayer()
 
-	render.setCoordSpace(camera.getScreenSpace())
+	render.setCoordSpace(render.getScreenSpace())
 
-	bottomLeft := camera.screenPivot(gmath.Pivot.bottomLeft)
+	bottomLeft := render.screenPivot(gmath.Pivot.bottomLeft)
 
 	ui.begin(input.getScreenMousePos())
 	if ui.Window(
@@ -58,9 +57,9 @@ drawUiLayer :: proc() {
 	}
 	ui.end()
 
-	render.setCoordSpace(camera.getScreenSpace())
+	render.setCoordSpace(render.getScreenSpace())
 
-	topRight := camera.screenPivot(gmath.Pivot.topRight)
+	topRight := render.screenPivot(gmath.Pivot.topRight)
 	fpsText := fmt.tprintf("FPS: %.2f", 1.0 / coreContext.deltaTime)
 	render.drawText(
 		topRight - 2,
