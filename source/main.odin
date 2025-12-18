@@ -49,7 +49,8 @@
 // - palette swapping
 // - make cleaner scene manager examples
 // - clean code (naming, structure, dependencies, helpers)
-// - debug UI color picker
+// - sandbox filesystem (file.load/file.write that works the same on all platforms)
+// - controller support
 
 package main
 

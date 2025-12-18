@@ -38,18 +38,25 @@ drawUiLayer :: proc() {
 
 	render.setCoordSpace(camera.getScreenSpace())
 
-	@(static) speed: f32 = 5.0
+	@(static) textColor: gmath.Vec4 = gmath.Vec4{1.0, 1.0, 1.0, 1.0}
 	@(static) stop: bool = false
 
+	topLeftX, topLeftY := camera.screenPivot(gmath.Pivot.topLeft) //NOTE: this is hacky, might want to add pivoting
 	ui.begin(input.getScreenMousePos())
-	if ui.Window("Debug", gmath.rectMake(gmath.Vec2{100, 100}, gmath.Vec2{50, 100})) {
+	if ui.Window(
+		"Debug",
+		gmath.rectMake(gmath.Vec2{topLeftX, topLeftY - 100}, gmath.Vec2{50, 100}),
+	) {
 		ui.Button("Test1")
 		ui.Button("Test2")
+		ui.Header("Checkboxes")
 		ui.Checkbox(&stop, "Stop time")
 	}
-	if ui.Window("Debug2", gmath.rectMake(gmath.Vec2{150, 100}, gmath.Vec2{50, 50})) {
-		ui.Button("Test3")
-		ui.Slider(&speed, 1.0, 10.0, "Value")
+	if ui.Window("Debug2", gmath.rectMake(gmath.Vec2{150, 100}, gmath.Vec2{50, 55})) {
+		if ui.Button("Clear") {
+			textColor = gmath.Vec4{1.0, 1.0, 1.0, 1.0}
+		}
+		ui.ColorPicker(&textColor, "Color", true)
 	}
 	ui.end()
 
@@ -63,5 +70,6 @@ drawUiLayer :: proc() {
 		zLayer = game.ZLayer.ui,
 		pivot = gmath.Pivot.topRight,
 		scale = 0.5,
+		col = textColor,
 	)
 }

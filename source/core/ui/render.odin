@@ -136,6 +136,15 @@ Button :: proc(label: string) -> bool {
 	return result
 }
 
+ColorPicker :: proc(val: ^gmath.Vec4, label: string, showAlpha: bool = false) {
+	Slider(&val.x, 0.0, 1.0, "Red", color.RED)
+	Slider(&val.y, 0.0, 1.0, "Blue", color.BLUE)
+	Slider(&val.z, 0.0, 1.0, "Green", color.GREEN)
+	if showAlpha {
+		Slider(&val.w, 0.0, 1.0, "Alpha", color.hexToRGBA(0xaaaaaaff))
+	}
+}
+
 Slider :: proc(
 	val: ^f32,
 	min, max: f32,
