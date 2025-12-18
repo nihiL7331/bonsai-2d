@@ -9,9 +9,18 @@ import "../render"
 import "core:log"
 import "core:math"
 
-Window :: proc(title: string, rect: gmath.Rect) -> bool {
+Window :: proc(
+	title: string,
+	rect: gmath.Rect,
+	pivot: gmath.Pivot = gmath.Pivot.centerCenter,
+) -> bool {
 	id := getId(title)
 	if !(id in state.containers) {
+		size := gmath.Vec2{rect.z - rect.x, rect.w - rect.y}
+		pivotOffset := -size * gmath.scaleFromPivot(pivot)
+		rect := rect
+		rect.xy += pivotOffset
+		rect.zw += pivotOffset
 		state.containers[id] = Container {
 			id     = id,
 			rect   = rect,
