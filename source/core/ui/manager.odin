@@ -6,6 +6,8 @@ import "../input"
 
 import "core:hash"
 
+// Customization options for debug UI
+
 @(private)
 _STYLE_TYPE :: enum {
 	TEXT,
@@ -101,7 +103,6 @@ end :: proc() {
 	state.prevMouseX = state.mouseX
 	state.prevMouseY = state.mouseY
 }
-
 
 @(private)
 _getMouseDelta :: proc() -> gmath.Vec2 {

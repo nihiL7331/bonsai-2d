@@ -12,7 +12,7 @@ EntityHandle :: struct {
 
 Entity :: struct {
 	handle:           EntityHandle,
-	kind:             EntityName,
+	name:             EntityName,
 	updateProc:       proc(_: ^Entity),
 	drawProc:         proc(_: ^Entity),
 	pos:              gmath.Vec2,

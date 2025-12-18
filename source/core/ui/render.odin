@@ -16,8 +16,7 @@ Window :: proc(
 ) -> bool {
 	id := getId(title)
 	if !(id in state.containers) {
-		size := gmath.Vec2{rect.z - rect.x, rect.w - rect.y}
-		pivotOffset := -size * gmath.scaleFromPivot(pivot)
+		pivotOffset := -gmath.rectSize(rect) * gmath.scaleFromPivot(pivot)
 		rect := rect
 		rect.xy += pivotOffset
 		rect.zw += pivotOffset
@@ -38,7 +37,7 @@ Window :: proc(
 	container.cursor.y = _HEADER_HEIGHT
 
 	state.currentContainer = container
-	container.isOpen = CloseButton((id * 16777619) ~ 1) // hope this doesnt cause issues
+	container.isOpen = CloseButton((id * 16777619) ~ 1) //seed random number generation
 
 	return container.isOpen
 }
@@ -52,6 +51,7 @@ handleWindowMovement :: proc(id: u32, rect: ^gmath.Rect) {
 			state.hot = id
 
 			if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
+				input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
 				state.active = id
 			}
 		}
@@ -117,6 +117,7 @@ Button :: proc(label: string) -> bool {
 		state.hot = id
 
 		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
+			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
 			state.active = id
 		}
 	}
@@ -155,7 +156,7 @@ ColorPicker :: proc(val: ^gmath.Vec4, label: string, showAlpha: bool = false) {
 }
 
 Slider :: proc(
-	val: ^f32,
+	value: ^f32,
 	min, max: f32,
 	label: string,
 	fillColor: gmath.Vec4 = _STYLE[.SLIDER_FILL],
@@ -183,6 +184,7 @@ Slider :: proc(
 		state.hot = id
 
 		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
+			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
 			state.active = id
 		}
 	}
@@ -192,7 +194,7 @@ Slider :: proc(
 		ratio := (mouseX - rect.x) / (rect.z - rect.x)
 		ratio = math.clamp(ratio, 0.0, 1.0)
 
-		val^ = min + (ratio * (max - min))
+		value^ = min + (ratio * (max - min))
 
 		if input.keyReleased(.LEFT_MOUSE) {
 			state.active = 0
@@ -201,7 +203,7 @@ Slider :: proc(
 
 	render.drawRect(rect, col = backgroundColor, zLayer = game.ZLayer.ui)
 
-	currentRatio := (val^ - min) / (max - min)
+	currentRatio := (value^ - min) / (max - min)
 	fillWidth := (rect.z - rect.x) * currentRatio
 	fillRect := gmath.Rect{rect.x, rect.y, rect.x + fillWidth, rect.w}
 	render.drawRect(fillRect, col = fillColor, zLayer = game.ZLayer.ui)
@@ -244,6 +246,7 @@ Checkbox :: proc(val: ^bool, label: string) {
 		state.hot = id
 
 		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
+			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
 			state.active = id
 		}
 	}
@@ -324,6 +327,7 @@ CloseButton :: proc(id: u32) -> bool { 	//we separate this from button for easie
 		state.hot = id
 
 		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
+			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
 			log.info("clicked")
 			state.active = 0
 			return false

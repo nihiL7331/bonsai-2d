@@ -25,17 +25,17 @@ drawSprite :: proc(
 ) {
 	rectSize := getSpriteSize(sprite)
 	frameCount := getFrameCount(sprite)
-	rectSize.x /= f32(frameCount)
+	rectSize.x /= f32(frameCount) // NOTE: assuming that animations are exported as a horizontal slice
 
-	_xForm := gmath.Mat4(1)
-	_xForm *= gmath.xFormTranslate(pos)
-	_xForm *= gmath.xFormScale(gmath.Vec2{flipX ? -1.0 : 1.0, 1.0})
-	_xForm *= xForm
-	_xForm *= gmath.xFormTranslate(rectSize * -gmath.scaleFromPivot(pivot))
-	_xForm *= gmath.xFormTranslate(-drawOffset)
+	xForm0 := gmath.Mat4(1)
+	xForm0 *= gmath.xFormTranslate(pos)
+	xForm0 *= gmath.xFormScale(gmath.Vec2{flipX ? -1.0 : 1.0, 1.0})
+	xForm0 *= xForm
+	xForm0 *= gmath.xFormTranslate(rectSize * -gmath.scaleFromPivot(pivot))
+	xForm0 *= gmath.xFormTranslate(-drawOffset)
 
 	drawRectXForm(
-		_xForm,
+		xForm0,
 		rectSize,
 		sprite,
 		animIndex = animIndex,
@@ -72,8 +72,6 @@ drawRect :: proc(
 	size := gmath.rectSize(rect)
 
 	if outlineCol != {} {
-		size := size
-		xForm := xForm
 		size += gmath.Vec2(2)
 		xForm *= gmath.xFormTranslate(gmath.Vec2(-1))
 		drawRectXForm(
@@ -120,7 +118,6 @@ drawSpriteInRect :: proc(
 	paddingPercent: f32 = 0.1,
 ) {
 	imgSize := getSpriteSize(sprite)
-
 	rect := gmath.rectMake(pos, size)
 
 	{ 	// padding
@@ -193,9 +190,8 @@ drawRectXForm :: proc(
 	zLayerQueue := -1,
 ) {
 	size := size
-	col := col
 	uv := uv
-	texIndex := texIndex // to mut later
+	texIndex := texIndex // shadowing
 
 	drawFrame := getDrawFrame()
 

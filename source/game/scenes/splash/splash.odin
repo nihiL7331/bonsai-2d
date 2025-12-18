@@ -5,14 +5,22 @@ import "../../../core/render"
 import "../../../core/scene"
 
 import "../../../systems/camera"
+import "../../../systems/tween"
 
 import "../../../types/game"
 import "../../../types/gmath"
 
-Data :: struct {}
+Data :: struct {
+	logoAlpha: f32,
+}
 
 init :: proc(data: rawptr) {
-	// state := (^Data)(data)
+	state := (^Data)(data)
+	state.logoAlpha = 0.0
+	onEnd := proc(data: rawptr) {scene.change(game.SceneName.Gameplay)}
+	t1 := tween.to(&state.logoAlpha, 1.0, 3.0, ease = gmath.EaseName.InSine)
+	t2 := tween.to(&state.logoAlpha, 0.0, 2.0, ease = gmath.EaseName.OutSine, onEnd = onEnd)
+	tween.then(t1, t2)
 }
 
 update :: proc(data: rawptr) {
@@ -24,15 +32,14 @@ update :: proc(data: rawptr) {
 }
 
 draw :: proc(data: rawptr) {
-	// state := (^Data)(data)
+	state := (^Data)(data)
 	render.setCoordSpace(camera.getScreenSpace())
 
-	x, y := camera.screenPivot(gmath.Pivot.centerCenter)
-	render.drawText(
-		{x, y},
-		"press any button",
-		zLayer = game.ZLayer.ui,
-		pivot = gmath.Pivot.centerCenter,
+	centerCenter := camera.screenPivot(gmath.Pivot.centerCenter)
+	render.drawSprite(
+		centerCenter,
+		game.SpriteName.bald_logo,
+		col = gmath.Vec4{1.0, 1.0, 1.0, state.logoAlpha},
 	)
 }
 

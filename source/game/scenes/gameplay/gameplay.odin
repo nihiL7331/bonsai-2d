@@ -1,12 +1,9 @@
 package gameplay
 
 import "../../../core/render"
-
 import prefabs "../../../game/entities"
-
 import "../../../systems/camera"
 import "../../../systems/entities"
-
 import "../../../types/game"
 import "../../../types/gmath"
 
@@ -16,6 +13,10 @@ Data :: struct {}
 
 init :: proc(data: rawptr) {
 	// state := (^Data)(data)
+
+	//NOTE: uncomment the line above, if you want to send data between functions in that scene.
+	//it's as easy as declaring it in the struct above, doing state.var = "xyz" in one function
+	//and accessing it via the same name in another function.
 
 	entities.entityInitCore()
 	player := prefabs.spawnPlayer()
@@ -37,6 +38,7 @@ update :: proc(data: rawptr) {
 
 draw :: proc(data: rawptr) {
 	// state := (^Data)(data)
+
 	render.getDrawFrame().reset.sortedLayers = {.playspace, .shadow}
 
 	drawBackgroundLayer()
@@ -51,6 +53,7 @@ exit :: proc(data: rawptr) {
 	entities.cleanup()
 }
 
+//NOTE: when map editor will be a thing, this will not be in game/, will be somewhere in core/ instead.
 drawBackgroundLayer :: proc() {
 	drawFrame := render.getDrawFrame()
 

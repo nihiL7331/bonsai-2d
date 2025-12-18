@@ -9,41 +9,39 @@ import "../../types/game"
 import "../../types/gmath"
 
 spawnPlayer :: proc() -> ^type.Entity {
-	e := entities.create(type.EntityName.player)
+	entity := entities.create(type.EntityName.player)
 
-	e.drawOffset = gmath.Vec2{0.5, 5}
-	e.drawPivot = gmath.Pivot.bottomCenter
+	entity.drawOffset = gmath.Vec2{0.5, 5} // this kinda just has to be hardcoded
+	entity.drawPivot = gmath.Pivot.bottomCenter // recommended for y sort
 
-	e.updateProc = proc(e: ^type.Entity) {
+	entity.updateProc = proc(entity: ^type.Entity) {
 		coreContext := core.getCoreContext()
 
 		inputDir := input.getInputVector()
-		e.pos += inputDir * 100.0 * coreContext.deltaTime
+		entity.pos += inputDir * 100.0 * coreContext.deltaTime
 
 		if inputDir.x != 0 {
-			e.lastKnownXDir = inputDir.x
+			entity.lastKnownXDir = inputDir.x
 		}
 
-		e.flipX = e.lastKnownXDir < 0
+		entity.flipX = entity.lastKnownXDir < 0
 
 		if inputDir == {} {
-			entities.setAnimation(e, game.SpriteName.player_idle, 0.3)
+			entities.setAnimation(entity, game.SpriteName.player_idle, 0.3)
 		} else {
-			entities.setAnimation(e, game.SpriteName.player_run, 0.1)
+			entities.setAnimation(entity, game.SpriteName.player_run, 0.1)
 		}
-
-		e.scratch.colOverride = gmath.Vec4{0, 0, 1, 0.2}
 	}
 
-	e.drawProc = proc(e: ^type.Entity) {
+	entity.drawProc = proc(entity: ^type.Entity) {
 		render.drawSprite(
-			e.pos,
+			entity.pos,
 			game.SpriteName.shadow_medium,
 			col = {1, 1, 1, 0.2},
 			zLayer = game.ZLayer.shadow,
 		)
-		entities.drawEntityDefault(e)
+		entities.drawEntityDefault(entity)
 	}
 
-	return e
+	return entity
 }

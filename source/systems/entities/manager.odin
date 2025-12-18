@@ -41,7 +41,7 @@ entityIsValidPtr :: proc(entity: ^type.Entity) -> bool {
 }
 
 entityInitCore :: proc() {
-	_zeroEntity.kind = .nil
+	_zeroEntity.name = .nil
 	_zeroEntity.updateProc = _noopUpdate
 	_zeroEntity.drawProc = _noopDraw
 	_entityStorage = new(type.EntityStorage)
@@ -107,7 +107,7 @@ rebuildScratchHelpers :: proc() {
 }
 
 
-create :: proc(kind: type.EntityName) -> ^type.Entity {
+create :: proc(name: type.EntityName) -> ^type.Entity {
 	index := -1
 	if len(_entityStorage.freeList) > 0 {
 		index = pop(&_entityStorage.freeList)
@@ -119,18 +119,18 @@ create :: proc(kind: type.EntityName) -> ^type.Entity {
 		index = _entityStorage.topCount
 	}
 
-	ent := &_entityStorage.data[index]
-	ent.handle.index = index
-	ent.handle.id = _entityStorage.latestId + 1
-	_entityStorage.latestId = ent.handle.id
+	entity := &_entityStorage.data[index]
+	entity.handle.index = index
+	entity.handle.id = _entityStorage.latestId + 1
+	_entityStorage.latestId = entity.handle.id
 
-	ent.kind = kind
-	ent.drawPivot = gmath.Pivot.bottomCenter
-	ent.drawProc = drawEntityDefault
+	entity.name = name
+	entity.drawPivot = gmath.Pivot.bottomCenter
+	entity.drawProc = drawEntityDefault
 
-	fmt.assertf(ent.kind != nil, "Entity %v needs to define a kind during setup", kind)
+	fmt.assertf(entity.name != nil, "Entity %v needs to define a name during setup", name)
 
-	return ent
+	return entity
 }
 
 destroy :: proc(e: ^type.Entity) {

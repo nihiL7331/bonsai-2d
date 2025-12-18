@@ -10,6 +10,9 @@ import "core:math/linalg"
 
 MAX_KEYCODES :: 512
 
+@(private)
+_actualInputState: Input
+
 Input :: struct {
 	keys:             [MAX_KEYCODES]bit_set[InputFlag],
 	mouseX, mouseY:   f32,
@@ -21,6 +24,26 @@ InputFlag :: enum u8 {
 	pressed,
 	released,
 	repeat,
+}
+
+actionMap: [InputAction]KeyCode = {
+	.left     = .A,
+	.right    = .D,
+	.up       = .W,
+	.down     = .S,
+	.click    = .LEFT_MOUSE,
+	.use      = .RIGHT_MOUSE,
+	.interact = .E,
+}
+
+InputAction :: enum u8 {
+	left,
+	right,
+	up,
+	down,
+	click,
+	use,
+	interact,
 }
 
 KeyCode :: enum {
@@ -150,26 +173,6 @@ KeyCode :: enum {
 	MIDDLE_MOUSE  = 402,
 }
 
-actionMap: [InputAction]KeyCode = {
-	.left     = .A,
-	.right    = .D,
-	.up       = .W,
-	.down     = .S,
-	.click    = .LEFT_MOUSE,
-	.use      = .RIGHT_MOUSE,
-	.interact = .E,
-}
-
-InputAction :: enum u8 {
-	left,
-	right,
-	up,
-	down,
-	click,
-	use,
-	interact,
-}
-
 state: ^Input
 initState :: proc() {
 	state = &_actualInputState
@@ -269,9 +272,6 @@ getInputVector :: proc() -> gmath.Vec2 {
 		return linalg.normalize(input)
 	}
 }
-
-@(private)
-_actualInputState: Input
 
 inputEventCallback :: proc "c" (event: ^sapp.Event) {
 	inputState := &_actualInputState

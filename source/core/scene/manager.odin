@@ -1,11 +1,9 @@
 package scene_manager
 
 import "../../core"
-
 import "../../types/game"
 
 import "core:log"
-
 
 @(private)
 _scenes: [game.SceneName]game.Scene
@@ -35,7 +33,7 @@ register :: proc(kind: game.SceneName, s: game.Scene) {
 change :: proc(kind: game.SceneName) {
 	nextScene := &_scenes[kind]
 
-	if nextScene.init == nil && nextScene.update == nil {
+	if nextScene == nil || (nextScene.init == nil && nextScene.update == nil) {
 		log.warn("Attempted to load an unregistered scene.")
 		return
 	}

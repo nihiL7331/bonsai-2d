@@ -1,16 +1,16 @@
 package render
 
+import sg "../../libs/sokol/gfx"
+import sglue "../../libs/sokol/glue"
+import slog "../../libs/sokol/log"
 import stbi "../../libs/stb/image"
 import stbrp "../../libs/stb/rect_pack"
 import tt "../../libs/stb/truetype"
+
 import "core:fmt"
 import "core:log"
 import "core:mem"
 import "core:slice"
-
-import sg "../../libs/sokol/gfx"
-import sglue "../../libs/sokol/glue"
-import slog "../../libs/sokol/log"
 
 import io "../../platform"
 import "../../types/color"
@@ -25,13 +25,39 @@ RenderState :: struct {
 }
 renderState: RenderState
 
+Atlas :: struct {
+	w, h:   int,
+	sgView: sg.View,
+}
+atlas: Atlas
+
+fontBitmapW :: 256
+fontBitmapH :: 256
+charCount :: 96
+Font :: struct {
+	charData: [charCount]tt.bakedchar,
+	sgView:   sg.View,
+}
+font: Font
+
 @(private)
 _drawFrame: gfx.DrawFrame
+
+MAX_QUADS :: 8192
+MAX_VERTS :: MAX_QUADS * 4
+DEFAULT_UV :: gmath.Vec4{0, 0, 1, 1}
+CLEAR_COL: gmath.Vec4 = color.BLACK
+
+actualQuadData: [MAX_QUADS]gfx.Quad
+
+
+sprites: [game.SpriteName]game.Sprite
 
 getDrawFrame :: proc() -> ^gfx.DrawFrame {
 	return &_drawFrame
 }
 
+@(private)
 _setCoordSpaceDefault :: proc() {
 	_drawFrame.reset.coordSpace = {
 		proj     = gmath.Mat4(1),
@@ -40,6 +66,7 @@ _setCoordSpaceDefault :: proc() {
 	}
 }
 
+@(private)
 _setCoordSpaceValue :: proc(coordSpace: gfx.CoordSpace) {
 	_drawFrame.reset.coordSpace = coordSpace
 }
@@ -70,7 +97,6 @@ ySortCompare :: proc(a, b: gfx.Quad) -> bool {
 	return ay > by
 }
 
-
 getSpriteCenterMass :: proc(sprite: game.SpriteName) -> gmath.Vec2 {
 	size := getSpriteSize(sprite)
 	offset, pivot := getSpriteOffset(sprite)
@@ -80,18 +106,6 @@ getSpriteCenterMass :: proc(sprite: game.SpriteName) -> gmath.Vec2 {
 
 	return center
 }
-
-MAX_QUADS :: 8192
-MAX_VERTS :: MAX_QUADS * 4
-DEFAULT_UV :: gmath.Vec4{0, 0, 1, 1}
-
-// might want to align that
-actualQuadData: [MAX_QUADS]gfx.Quad
-
-clearCol: gmath.Vec4
-
-sprites: [game.SpriteName]game.Sprite
-
 
 init :: proc() {
 	sg.setup(
@@ -115,12 +129,12 @@ init :: proc() {
 	indices, _ := mem.make([]u16, indexBufferCount, allocator = context.allocator)
 	for i := 0; i < indexBufferCount; i += 6 {
 		// { 0, 1, 2,  0, 2, 3 }
-		indices[i + 0] = auto_cast ((i / 6) * 4 + 0)
-		indices[i + 1] = auto_cast ((i / 6) * 4 + 1)
-		indices[i + 2] = auto_cast ((i / 6) * 4 + 2)
-		indices[i + 3] = auto_cast ((i / 6) * 4 + 0)
-		indices[i + 4] = auto_cast ((i / 6) * 4 + 2)
-		indices[i + 5] = auto_cast ((i / 6) * 4 + 3)
+		indices[i + 0] = u16((i / 6) * 4 + 0)
+		indices[i + 1] = u16((i / 6) * 4 + 1)
+		indices[i + 2] = u16((i / 6) * 4 + 2)
+		indices[i + 3] = u16((i / 6) * 4 + 0)
+		indices[i + 4] = u16((i / 6) * 4 + 2)
+		indices[i + 5] = u16((i / 6) * 4 + 3)
 	}
 	renderState.bind.index_buffer = sg.make_buffer(
 		{
@@ -129,11 +143,9 @@ init :: proc() {
 		},
 	)
 
-	// image stuff
 	renderState.bind.samplers[SMP_uDefaultSampler] = sg.make_sampler({})
 
 	// setup pipeline
-	// :vertex layout
 	pipelineDesc: sg.Pipeline_Desc = {
 		shader = sg.make_shader(quad_shader_desc(sg.query_backend())),
 		index_type = .UINT16,
@@ -164,11 +176,10 @@ init :: proc() {
 	}
 	renderState.pip = sg.make_pipeline(pipelineDesc)
 
-	clearCol = color.hexToRGBA(0x16161dff)
 
 	// default pass action
 	renderState.passAction = {
-		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sg.Color)(clearCol)}},
+		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sg.Color)(CLEAR_COL)}},
 	}
 }
 
@@ -309,14 +320,8 @@ loadSpritesIntoAtlas :: proc() {
 
 		cont: stbrp.Context
 		nodesSlice, _ := make([]stbrp.Node, SIZE, context.temp_allocator)
-		stbrp.init_target(
-			&cont,
-			auto_cast atlas.w,
-			auto_cast atlas.h,
-			raw_data(nodesSlice),
-			auto_cast atlas.w,
-		)
-		//
+		stbrp.init_target(&cont, i32(atlas.w), i32(atlas.h), raw_data(nodesSlice), i32(atlas.w))
+
 		rects: [dynamic]stbrp.Rect
 		rects.allocator = context.temp_allocator
 
@@ -326,17 +331,15 @@ loadSpritesIntoAtlas :: proc() {
 			append(
 				&rects,
 				stbrp.Rect {
-					id = auto_cast id,
-					w = stbrp.Coord(img.width + 2),
-					h = stbrp.Coord(img.height + 2),
+					id = i32(id),
+					w  = stbrp.Coord(img.width + 2), // padding to not get visual bugs
+					h  = stbrp.Coord(img.height + 2),
 				},
 			)
 		}
 
-		succ := stbrp.pack_rects(&cont, &rects[0], auto_cast len(rects))
-		if succ == 0 {
-			assert(false, "Failed to pack sprites into atlas.")
-		}
+		succ := stbrp.pack_rects(&cont, &rects[0], i32(len(rects)))
+		assert(succ != 0, "Failed to pack sprites into atlas.")
 
 		rawData, err := mem.alloc(atlas.w * atlas.h * 4, allocator = context.temp_allocator)
 		assert(err == .None, "Failed to allocate memory for sprite atlas.")
@@ -359,19 +362,19 @@ loadSpritesIntoAtlas :: proc() {
 			stbi.image_free(img.data)
 			img.data = nil
 
-			img.atlasUvs.x = (cast(f32)rect.x + 1) / (cast(f32)atlas.w)
-			img.atlasUvs.y = (cast(f32)rect.y + 1) / (cast(f32)atlas.h)
-			img.atlasUvs.z = img.atlasUvs.x + cast(f32)img.width / (cast(f32)atlas.w)
-			img.atlasUvs.w = img.atlasUvs.y + cast(f32)img.height / (cast(f32)atlas.h)
+			img.atlasUvs.x = (f32(rect.x + 1)) / (f32(atlas.w))
+			img.atlasUvs.y = (f32(rect.y + 1)) / (f32(atlas.h))
+			img.atlasUvs.z = img.atlasUvs.x + f32(img.width) / (f32(atlas.w))
+			img.atlasUvs.w = img.atlasUvs.y + f32(img.height) / (f32(atlas.h))
 		}
 
 		desc: sg.Image_Desc
-		desc.width = auto_cast atlas.w
-		desc.height = auto_cast atlas.h
+		desc.width = i32(atlas.w)
+		desc.height = i32(atlas.h)
 		desc.pixel_format = .RGBA8
 		desc.data.subimage[0][0] = {
 			ptr  = rawData,
-			size = auto_cast (atlas.w * atlas.h * 4),
+			size = uint(atlas.w * atlas.h * 4),
 		}
 		sgImg := sg.make_image(desc)
 		if sgImg.id == sg.INVALID_ID do log.error("Failed to make an image.")
@@ -380,32 +383,18 @@ loadSpritesIntoAtlas :: proc() {
 	}
 }
 
-Atlas :: struct {
-	w, h:   int,
-	sgView: sg.View,
-}
-atlas: Atlas
-
-fontBitmapW :: 256
-fontBitmapH :: 256
-charCount :: 96
-Font :: struct {
-	charData: [charCount]tt.bakedchar,
-	sgView:   sg.View,
-}
-font: Font
-
-loadFont :: proc() {
-	bitmap, _ := mem.alloc(fontBitmapW * fontBitmapH)
+loadFont :: proc() { 	//TODO: abstract this out, fix the wrong fontHeight issue
+	bitmap, err := mem.alloc(fontBitmapW * fontBitmapH)
+	assert(err == .None, "Failed to allocate bitmap memory (font).")
 	fontHeight := 15
 	path := "assets/fonts/alagard.ttf"
-	ttfData, _ := io.read_entire_file(path)
-	assert(ttfData != nil, "Failed to read font data.")
+	ttfData, succ := io.read_entire_file(path)
+	assert(succ, "Failed to read font data.")
 
 	ret := tt.BakeFontBitmap(
 		raw_data(ttfData),
 		0,
-		auto_cast fontHeight,
+		f32(fontHeight),
 		auto_cast bitmap,
 		fontBitmapW,
 		fontBitmapH,
@@ -416,12 +405,12 @@ loadFont :: proc() {
 	assert(ret > 0, "Not enough space in the font bitmap.")
 
 	desc: sg.Image_Desc
-	desc.width = auto_cast fontBitmapW
-	desc.height = auto_cast fontBitmapH
+	desc.width = fontBitmapW
+	desc.height = fontBitmapH
 	desc.pixel_format = .R8
 	desc.data.subimage[0][0] = {
 		ptr  = bitmap,
-		size = auto_cast (fontBitmapW * fontBitmapH),
+		size = fontBitmapW * fontBitmapH,
 	}
 	sgImg := sg.make_image(desc)
 	if sgImg.id == sg.INVALID_ID do log.error("Failed to make a font image.")
@@ -445,14 +434,14 @@ drawQuadProjected :: proc(
 ) {
 	drawFrame := getDrawFrame()
 
-	_zLayer := zLayer
-	if _zLayer == .nil {
-		_zLayer = drawFrame.reset.activeZLayer
+	zLayer0 := zLayer
+	if zLayer0 == .nil {
+		zLayer0 = drawFrame.reset.activeZLayer
 	}
 
 	verts: [4]gfx.Vertex
 	defer {
-		quadArray := &drawFrame.reset.quads[_zLayer]
+		quadArray := &drawFrame.reset.quads[zLayer0]
 		quadArray.allocator = context.temp_allocator
 
 		if zLayerQueue == -1 {
@@ -504,10 +493,10 @@ drawQuadProjected :: proc(
 	verts[2].colorOverride = colOverride
 	verts[3].colorOverride = colOverride
 
-	verts[0].zLayer = u8(_zLayer)
-	verts[1].zLayer = u8(_zLayer)
-	verts[2].zLayer = u8(_zLayer)
-	verts[3].zLayer = u8(_zLayer)
+	verts[0].zLayer = u8(zLayer0)
+	verts[1].zLayer = u8(zLayer0)
+	verts[2].zLayer = u8(zLayer0)
+	verts[3].zLayer = u8(zLayer0)
 
 	_flags := flags | drawFrame.reset.activeFlags
 	verts[0].quadFlags = _flags

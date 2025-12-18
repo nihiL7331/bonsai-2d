@@ -20,6 +20,7 @@ Camera :: struct {
 defaultCamera :: proc() -> Camera {
 	return Camera{position = {0, 0}, target = {0, 0}, followRate = 10.0}
 }
+
 @(private)
 _camera: Camera
 
@@ -48,6 +49,7 @@ getWorldSpaceProj :: proc() -> gmath.Mat4 {
 		1,
 	)
 }
+
 getWorldSpaceCamera :: proc() -> gmath.Mat4 {
 	coreContext := core.getCoreContext()
 
@@ -56,6 +58,7 @@ getWorldSpaceCamera :: proc() -> gmath.Mat4 {
 	cam *= gmath.xFormScale(getCameraZoom())
 	return cam
 }
+
 getCameraZoom :: proc() -> f32 {
 	coreContext := core.getCoreContext()
 	return f32(game.GAME_HEIGHT) / f32(coreContext.windowHeight)
@@ -74,7 +77,7 @@ getScreenSpaceProj :: proc() -> gmath.Mat4 {
 	return linalg.matrix_ortho3d_f32(viewLeft, viewRight, 0, viewHeight, -1, 1)
 }
 
-screenPivot :: proc(pivot: gmath.Pivot) -> (x, y: f32) {
+screenPivot :: proc(pivot: gmath.Pivot) -> gmath.Vec2 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
@@ -91,30 +94,25 @@ screenPivot :: proc(pivot: gmath.Pivot) -> (x, y: f32) {
 
 	switch pivot {
 	case gmath.Pivot.topLeft:
-		return left, top
+		return gmath.Vec2{left, top}
 	case gmath.Pivot.topCenter:
-		return centerX, top
+		return gmath.Vec2{centerX, top}
 	case gmath.Pivot.topRight:
-		return right, top
+		return gmath.Vec2{right, top}
 	case gmath.Pivot.centerLeft:
-		return left, centerY
+		return gmath.Vec2{left, centerY}
 	case gmath.Pivot.centerCenter:
-		return centerX, centerY
+		return gmath.Vec2{centerX, centerY}
 	case gmath.Pivot.centerRight:
-		return right, centerY
+		return gmath.Vec2{right, centerY}
 	case gmath.Pivot.bottomLeft:
-		return left, bottom
+		return gmath.Vec2{left, bottom}
 	case gmath.Pivot.bottomCenter:
-		return centerX, bottom
+		return gmath.Vec2{centerX, bottom}
 	case gmath.Pivot.bottomRight:
-		return right, bottom
+		return gmath.Vec2{right, bottom}
 	}
-	return 0, 0
-}
-
-screenPivotVec2 :: proc(pivot: gmath.Pivot) -> gmath.Vec2 {
-	pivotX, pivotY := screenPivot(pivot)
-	return gmath.Vec2{pivotX, pivotY}
+	return gmath.Vec2{0.0, 0.0}
 }
 
 follow :: proc(target: gmath.Vec2, rate: f32 = 10.0) {
@@ -149,6 +147,7 @@ update :: proc() {
 		}
 	}
 
+	//NOTE: if anyone does his own camera controller, remember to include this line
 	coreContext.gameState.world.camPos = _camera.position
 
 	//TODO:

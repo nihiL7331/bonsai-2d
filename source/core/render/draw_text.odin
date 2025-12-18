@@ -141,7 +141,7 @@ drawTextNoDropShadow :: proc(
 
 		xForm := gmath.Mat4(1)
 		xForm *= gmath.xFormTranslate(pos)
-		xForm *= gmath.xFormScale(gmath.Vec2{auto_cast scale, auto_cast scale})
+		xForm *= gmath.xFormScale(gmath.Vec2{f32(scale), f32(scale)})
 		xForm *= gmath.xFormTranslate(offsetToRenderAt)
 
 		drawRectXForm(xForm, size, uv = uv, texIndex = 1, colOverride = colOverride, col = col)

@@ -49,7 +49,10 @@
 // - make cleaner scene manager examples
 // - clean code (naming, structure, dependencies, helpers)
 // - sandbox filesystem (file.load/file.write that works the same on all platforms)
-// - controller support
+// - controller, touchscreen support
+// - make own/implement box2d for physics
+// - map editor
+// - onEnd tween function
 
 package main
 

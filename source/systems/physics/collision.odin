@@ -5,6 +5,8 @@ import "core:math/linalg"
 
 import "../../types/gmath"
 
+//TODO: rework
+
 collide :: proc(a, b: gmath.Shape) -> (colliding: bool, depth: gmath.Vec2) {
 	if a == nil || b == nil {
 		return false, {}

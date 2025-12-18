@@ -6,20 +6,27 @@ import "../../systems/entities/type"
 import "../../types/game"
 import "../../types/gmath"
 
+// generic boilerplate used to create entities using my entity system
+
 spawnThing :: proc() -> ^type.Entity {
-	e := entities.create(type.EntityName.thing)
+	entity := entities.create(type.EntityName.thing)
 
-	e.drawOffset = gmath.Vec2{0.5, 5}
-	e.drawPivot = gmath.Pivot.bottomCenter
+	entity.drawOffset = gmath.Vec2{0.5, 5}
+	entity.drawPivot = gmath.Pivot.bottomCenter
 
-	e.updateProc = proc(e: ^type.Entity) {
-		entities.setAnimation(e, game.SpriteName.player_idle, 0.3)
+	entity.updateProc = proc(entity: ^type.Entity) {
+		entities.setAnimation(entity, game.SpriteName.player_idle, 0.3)
 	}
 
-	e.drawProc = proc(e: ^type.Entity) {
-		render.drawSprite(e.pos, .shadow_medium, col = {1, 1, 1, 0.2}, zLayer = game.ZLayer.shadow)
-		entities.drawEntityDefault(e)
+	entity.drawProc = proc(entity: ^type.Entity) {
+		render.drawSprite(
+			entity.pos,
+			.shadow_medium,
+			col = {1, 1, 1, 0.2},
+			zLayer = game.ZLayer.shadow,
+		)
+		entities.drawEntityDefault(entity)
 	}
 
-	return e
+	return entity
 }

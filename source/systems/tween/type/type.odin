@@ -36,4 +36,6 @@ Tween :: struct {
 	duration:         f32,
 	easeName:         gmath.EaseName,
 	startFromCurrent: bool,
+	onEnd:            proc(data: rawptr),
+	data:             rawptr,
 }

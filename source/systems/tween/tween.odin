@@ -70,8 +70,10 @@ toF32 :: proc(
 	duration: f32,
 	group: string = "",
 	ease := gmath.EaseName.Linear,
+	onEnd: proc(data: rawptr) = {},
+	data: rawptr = nil,
 ) -> type.TweenHandle {
-	return _createTween(pointer, target, duration, group, ease, f32)
+	return _createTween(pointer, target, duration, group, ease, onEnd, data, f32)
 }
 
 toVec2 :: proc(
@@ -80,8 +82,10 @@ toVec2 :: proc(
 	duration: f32,
 	group: string = "",
 	ease := gmath.EaseName.Linear,
+	onEnd: proc(data: rawptr) = {},
+	data: rawptr = nil,
 ) -> type.TweenHandle {
-	return _createTween(pointer, target, duration, group, ease, gmath.Vec2)
+	return _createTween(pointer, target, duration, group, ease, onEnd, data, gmath.Vec2)
 }
 
 toVec3 :: proc(
@@ -90,8 +94,10 @@ toVec3 :: proc(
 	duration: f32,
 	group: string = "",
 	ease := gmath.EaseName.Linear,
+	onEnd: proc(data: rawptr) = {},
+	data: rawptr = nil,
 ) -> type.TweenHandle {
-	return _createTween(pointer, target, duration, group, ease, gmath.Vec3)
+	return _createTween(pointer, target, duration, group, ease, onEnd, data, gmath.Vec3)
 }
 
 toVec4 :: proc(
@@ -100,8 +106,10 @@ toVec4 :: proc(
 	duration: f32,
 	group: string = "",
 	ease := gmath.EaseName.Linear,
+	onEnd: proc(data: rawptr) = {},
+	data: rawptr = nil,
 ) -> type.TweenHandle {
-	return _createTween(pointer, target, duration, group, ease, gmath.Vec4)
+	return _createTween(pointer, target, duration, group, ease, onEnd, data, gmath.Vec4)
 }
 
 @(private)
@@ -111,6 +119,8 @@ _createTween :: proc(
 	duration: f32,
 	group: string = "",
 	ease := gmath.EaseName.Linear,
+	onEnd: proc(data: rawptr) = {},
+	data: rawptr = nil,
 	kind: typeid,
 ) -> type.TweenHandle {
 	slotIndex := -1
@@ -163,6 +173,8 @@ _createTween :: proc(
 	tween.easeName = ease
 	tween.valueKind = kind
 	tween.startFromCurrent = true
+	tween.onEnd = onEnd
+	tween.data = data
 
 	return tween.handle
 }
@@ -275,6 +287,10 @@ update :: proc() {
 
 		if tween.elapsed >= tween.duration {
 			stop(tween.handle, type.StopMode.END)
+
+			if tween.onEnd != {} {
+				tween.onEnd(tween.data)
+			}
 
 			if tween.nextTween.id != 0 {
 				next := _getTween(tween.nextTween)

@@ -8,6 +8,7 @@ import "web"
 _ :: desktop
 _ :: web
 
+// this one doesn't folow the naming convention since it's meant to "override" a built-in function
 @(require_results)
 read_entire_file :: proc(
 	name: string,
