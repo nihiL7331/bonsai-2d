@@ -5,10 +5,6 @@
 // for fonts: FontName in generated_font.odin
 // You can also add your own custom generation. An example of that are the
 // data files for entities.
-//
-// NOTE: if you're running into issues of files generating empty,
-// remove the file and create it yourself. It's an ownership/permission
-// issue that I don't know how to fix.
 
 package utils
 
@@ -163,7 +159,7 @@ generateDataFile :: proc(src, dst, type: string, pack: string = "game_types") ->
 		return {}
 	}
 
-	f, err := os.open(dst, os.O_WRONLY | os.O_CREATE | os.O_TRUNC)
+	f, err := os.open(dst, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0o644)
 	if err != nil {
 		fmt.eprintln("Error on asset generation output: ", err)
 	}
