@@ -82,7 +82,7 @@ generateSceneFile :: proc(src, dst, type: string, flaggedFiles: []string) -> [dy
 		return {}
 	}
 
-	f, err := os.open(dst, os.O_WRONLY | os.O_CREATE | os.O_TRUNC)
+	f, err := os.open(dst, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0o644)
 	if err != nil {
 		fmt.eprintln("Error on generating scene registry output file. ", err)
 	}
@@ -126,7 +126,7 @@ generateSceneHelpers :: proc(
 	dst, type: string,
 	pack: string = "game_types",
 ) {
-	f, err := os.open(dst, os.O_WRONLY | os.O_CREATE | os.O_TRUNC)
+	f, err := os.open(dst, os.O_WRONLY | os.O_CREATE | os.O_TRUNC, 0o644)
 	if err != nil {
 		fmt.eprintln("Error on generating scene helpers output file. ", err)
 	}
