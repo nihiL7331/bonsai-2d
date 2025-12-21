@@ -12,9 +12,14 @@ Sprite :: struct {
 	atlasUvs:      gmath.Vec4,
 }
 
-spriteData: [SpriteName]SpriteData = #partial {
-	SpriteName.player_idle = {frameCount = 2},
-	SpriteName.player_run = {frameCount = 3},
+getFrameCount :: proc(sprite: SpriteName) -> int {
+	#partial switch (sprite) {
+	case .player_idle:
+		return 2
+	case .player_run:
+		return 3
+	}
+	return 1
 }
 
 QuadFlags :: enum u8 {
@@ -34,10 +39,4 @@ ZLayer :: enum u8 {
 	tooltip,
 	pause_menu,
 	top,
-}
-
-SpriteData :: struct {
-	frameCount: int,
-	offset:     gmath.Vec2,
-	pivot:      gmath.Pivot,
 }

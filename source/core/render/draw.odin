@@ -24,7 +24,7 @@ drawSprite :: proc(
 	zLayerQueue := -1,
 ) {
 	rectSize := getSpriteSize(sprite)
-	frameCount := getFrameCount(sprite)
+	frameCount := game.getFrameCount(sprite)
 	rectSize.x /= f32(frameCount) // NOTE: assuming that animations are exported as a horizontal slice
 
 	xForm0 := gmath.Mat4(1)
@@ -198,7 +198,7 @@ drawRectXForm :: proc(
 	if uv == DEFAULT_UV {
 		uv = atlasUvFromSprite(sprite)
 
-		frameCount := getFrameCount(sprite)
+		frameCount := game.getFrameCount(sprite)
 		frameSize := size
 		frameSize.x /= f32(frameCount)
 		uvSize := gmath.rectSize(uv)

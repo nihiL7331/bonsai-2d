@@ -4,7 +4,6 @@ import sg "../../libs/sokol/gfx"
 import sglue "../../libs/sokol/glue"
 import slog "../../libs/sokol/log"
 import stbi "../../libs/stb/image"
-import stbrp "../../libs/stb/rect_pack"
 import tt "../../libs/stb/truetype"
 
 import "core:fmt"
@@ -77,35 +76,10 @@ setCoordSpace :: proc {
 	_setCoordSpaceDefault,
 }
 
-getFrameCount :: proc(sprite: game.SpriteName) -> int {
-	frameCount := game.spriteData[sprite].frameCount
-	if frameCount == 0 {
-		frameCount = 1
-	}
-	return frameCount
-}
-
-getSpriteOffset :: proc(sprite: game.SpriteName) -> (offset: gmath.Vec2, pivot: gmath.Pivot) {
-	data := game.spriteData[sprite]
-	offset = data.offset
-	pivot = data.pivot
-	return
-}
-
 ySortCompare :: proc(a, b: gfx.Quad) -> bool {
 	ay := min(a[0].pos.y, a[1].pos.y, a[2].pos.y, a[3].pos.y)
 	by := min(b[0].pos.y, b[1].pos.y, b[2].pos.y, b[3].pos.y)
 	return ay > by
-}
-
-getSpriteCenterMass :: proc(sprite: game.SpriteName) -> gmath.Vec2 {
-	size := getSpriteSize(sprite)
-	offset, pivot := getSpriteOffset(sprite)
-
-	center := size * gmath.scaleFromPivot(pivot)
-	center -= offset
-
-	return center
 }
 
 init :: proc() {
@@ -280,108 +254,38 @@ resetDrawFrame :: proc() {
 }
 
 loadSpritesIntoAtlas :: proc() {
-	imgDir := "assets/images/"
-
-	for imgName in game.SpriteName {
-		if imgName == .nil do continue
-
-		path := fmt.tprint(imgDir, imgName, ".png", sep = "")
-		pngData, succ := io.read_entire_file(path)
-		assert(succ, fmt.tprint(path, "not found."))
-
-		defer delete(pngData)
-
-		assert(raw_data(pngData) != nil, "load image failed")
+	pngData, succ := io.read_entire_file("assets/images/atlas.png")
+	assert(succ, fmt.tprint(pngData, "failed to read."))
 
 
-		stbi.set_flip_vertically_on_load(1)
-		width, height, channels: i32
-		imgData := stbi.load_from_memory(
-			raw_data(pngData),
-			i32(len(pngData)),
-			&width,
-			&height,
-			&channels,
-			4,
-		)
-		assert(imgData != nil, "stbi load failed. (invalid image?)")
+	assert(raw_data(pngData) != nil, "load atlas image failed")
 
-		img: game.Sprite
-		img.width = width
-		img.height = height
-		img.data = imgData
+	width, height, channels: i32
+	imgData := stbi.load_from_memory(
+		raw_data(pngData),
+		i32(len(pngData)),
+		&width,
+		&height,
+		&channels,
+		4,
+	)
+	assert(imgData != nil, "stbi load failed. (atlas didn't generate?)")
 
-		sprites[imgName] = img
+	atlas.w = int(width)
+	atlas.h = int(height)
+
+	desc: sg.Image_Desc
+	desc.width = i32(atlas.w)
+	desc.height = i32(atlas.h)
+	desc.pixel_format = .RGBA8
+	desc.data.subimage[0][0] = {
+		ptr  = imgData,
+		size = uint(atlas.w * atlas.h * 4),
 	}
+	sgImg := sg.make_image(desc)
+	if sgImg.id == sg.INVALID_ID do log.error("Failed to make an image.")
 
-	{ 	// pack sprites into atlas
-		SIZE :: 1024
-		atlas.w = SIZE
-		atlas.h = SIZE
-
-		cont: stbrp.Context
-		nodesSlice, _ := make([]stbrp.Node, SIZE, context.temp_allocator)
-		stbrp.init_target(&cont, i32(atlas.w), i32(atlas.h), raw_data(nodesSlice), i32(atlas.w))
-
-		rects: [dynamic]stbrp.Rect
-		rects.allocator = context.temp_allocator
-
-		for img, id in sprites {
-			if img.width == 0 do continue
-
-			append(
-				&rects,
-				stbrp.Rect {
-					id = i32(id),
-					w  = stbrp.Coord(img.width + 2), // padding to not get visual bugs
-					h  = stbrp.Coord(img.height + 2),
-				},
-			)
-		}
-
-		succ := stbrp.pack_rects(&cont, &rects[0], i32(len(rects)))
-		assert(succ != 0, "Failed to pack sprites into atlas.")
-
-		rawData, err := mem.alloc(atlas.w * atlas.h * 4, allocator = context.temp_allocator)
-		assert(err == .None, "Failed to allocate memory for sprite atlas.")
-
-		for rect in rects {
-			img := &sprites[game.SpriteName(rect.id)]
-
-			rectW := int(rect.w) - 2
-			rectH := int(rect.h) - 2
-
-			for row in 0 ..< rectH {
-				srcRow := mem.ptr_offset(&img.data[0], int(row) * rectW * 4)
-				destRow := mem.ptr_offset(
-					cast(^u8)rawData,
-					((int(rect.y + 1) + row) * int(atlas.w) + int(rect.x + 1)) * 4,
-				)
-				mem.copy(destRow, srcRow, rectW * 4)
-			}
-
-			stbi.image_free(img.data)
-			img.data = nil
-
-			img.atlasUvs.x = (f32(rect.x + 1)) / (f32(atlas.w))
-			img.atlasUvs.y = (f32(rect.y + 1)) / (f32(atlas.h))
-			img.atlasUvs.z = img.atlasUvs.x + f32(img.width) / (f32(atlas.w))
-			img.atlasUvs.w = img.atlasUvs.y + f32(img.height) / (f32(atlas.h))
-		}
-
-		desc: sg.Image_Desc
-		desc.width = i32(atlas.w)
-		desc.height = i32(atlas.h)
-		desc.pixel_format = .RGBA8
-		desc.data.subimage[0][0] = {
-			ptr  = rawData,
-			size = uint(atlas.w * atlas.h * 4),
-		}
-		sgImg := sg.make_image(desc)
-		if sgImg.id == sg.INVALID_ID do log.error("Failed to make an image.")
-
-		atlas.sgView = sg.make_view({texture = sg.Texture_View_Desc({image = sgImg})})
-	}
+	atlas.sgView = sg.make_view({texture = sg.Texture_View_Desc({image = sgImg})})
 }
 
 loadFont :: proc() { 	//TODO: abstract this out, fix the wrong fontHeight issue
@@ -512,9 +416,9 @@ drawQuadProjected :: proc(
 }
 
 atlasUvFromSprite :: proc(sprite: game.SpriteName) -> gmath.Vec4 {
-	return sprites[sprite].atlasUvs
+	return game.getSpriteData(sprite).uv
 }
 
 getSpriteSize :: proc(sprite: game.SpriteName) -> gmath.Vec2 {
-	return {f32(sprites[sprite].width), f32(sprites[sprite].height)}
+	return game.getSpriteData(sprite).size
 }

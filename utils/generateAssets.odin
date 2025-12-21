@@ -21,7 +21,7 @@ SearchContext :: struct {
 
 main :: proc() {
 	// CORE
-	generateDataFile("assets/images", "source/types/game/generated_sprite.odin", "SpriteName")
+	// generateDataFile("assets/images", "source/types/game/generated_sprite.odin", "SpriteName")
 	generateDataFile("assets/audio", "source/types/game/generated_audio.odin", "AudioName")
 	generateDataFile("assets/fonts", "source/types/game/generated_font.odin", "FontName")
 	files := generateSceneFile(

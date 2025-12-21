@@ -224,7 +224,7 @@ setAnimation :: proc(
 updateAnimation :: proc(e: ^type.Entity) {
 	if e.frameDuration == 0 do return
 
-	frameCount := render.getFrameCount(e.sprite)
+	frameCount := game.getFrameCount(e.sprite)
 
 	isPlaying := true
 	if !e.loop {
