@@ -1,4 +1,4 @@
-// nihiL's Blueprint
+// bonsai2D
 //
 // naming convention:
 // camelCase for variable names and functions,
