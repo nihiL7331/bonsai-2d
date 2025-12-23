@@ -4,33 +4,44 @@
 
 ## TODO
 
+### PRIORITY 0
+
 - [ ] miniaudio/fmod implementation\*
-- [ ] separate shadow handling (to avoid shadow stacking)\*
-- [ ] particle system
-- [ ] asset hot reloading\*
-- [ ] spatial hash grid for collisions
+- [ ] controller, touchscreen support\*
 - [ ] web localstorage implementation\*
+- [ ] save/load system
+- [ ] ldtk support
+- [ ] basic aabb rework (swept?)
+
+### PRIORITY 1
+
+- [ ] separate shadow handling (to avoid shadow stacking)\*
+- [ ] palette swapping\*
+- [ ] particle system
+- [ ] entity inspector
+
+### PRIORITY 2
+
+- [ ] configuration/settings system (basic api in core)\*
 - [ ] debug console\*
   - [ ] fix input consumption for debug ui\*
   - [ ] automatically sized debug ui\*
   - [ ] debug ui text box/number box\*
-- [ ] save/load system
-- [ ] configuration/settings system (basic api in core)\*
-- [ ] steamworks support
-- [ ] multiple font support\*
-- [ ] palette swapping\*
-- [ ] controller, touchscreen support\*
 - [ ] make own/implement box2d for physics
-- [ ] map editor
-- [ ] entity inspector
-- [ ] async asset loading\*
-- [ ] move all generated files to generated directory\*
+  - [ ] spatial hash grid for collisions
+- [ ] asset hot reloading\*
+  - this one is difficult. we have to listen to assets/images changes, and on change reload
+    atlas, then swap it at runtime. but def worth it
+
+### PRIORITY 3
+
+- [ ] steamworks support
 
 ## IN PROGRESS
 
-- [ ] rust package manager
-- [ ] build-time atlas packing\*
-
 ## DONE
 
-- [ ] make systems/camera just a camera controller\*
+- [x] make systems/camera just a camera controller\*
+- [x] rust package manager (v0.1)
+- [x] build-time atlas packing\*
+- [x] multiple font support\*
