@@ -4,9 +4,13 @@
 
 ## TODO
 
+### BUGS
+
+- [ ] player teleports to (0,0) after a couple of seconds, probably a tweening issue
+
 ### PRIORITY 0
 
-- [ ] miniaudio/fmod implementation\*
+- [ ] move scenes generation from utils to rust CLI\*
 - [ ] controller, touchscreen support\*
 - [ ] web localstorage implementation\*
 - [ ] save/load system\*
@@ -39,6 +43,8 @@
 - [ ] steamworks support
 
 ## IN PROGRESS
+
+- [ ] sokol audio implementation\*
 
 ## DONE
 

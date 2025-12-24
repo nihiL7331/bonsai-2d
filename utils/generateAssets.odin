@@ -1,4 +1,4 @@
-// General purpose of this file is to generate paths to assets used in the game.
+
 // It takes names of files from assets/ and creates:
 // for sprites: SpriteName in generated_sprite.odin
 // for audio: TODO
@@ -22,8 +22,8 @@ SearchContext :: struct {
 main :: proc() {
 	// CORE
 	// generateDataFile("assets/images", "source/types/game/generated_sprite.odin", "SpriteName")
-	generateDataFile("assets/audio", "source/types/game/generated_audio.odin", "AudioName")
-	generateDataFile("assets/fonts", "source/types/game/generated_font.odin", "FontName")
+	// generateDataFile("assets/audio", "source/types/game/generated_audio.odin", "AudioName")
+	// generateDataFile("assets/fonts", "source/types/game/generated_font.odin", "FontName")
 	files := generateSceneFile(
 		"source/game/scenes",
 		"source/game/scenes/generated_registry.odin",

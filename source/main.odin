@@ -43,6 +43,7 @@ import sg "libs/sokol/gfx"
 import slog "libs/sokol/log"
 
 import "core"
+import "core/audio"
 import "core/clock"
 import "core/input"
 import "core/logger"
@@ -111,8 +112,12 @@ init :: proc "c" () {
 
 
 	input.init()
+	audio.init()
 	render.init()
 	gameapp.init()
+
+	sfx := audio.load(.wind)
+	audio.play(sfx, loop = true)
 }
 
 frameTime: f64
@@ -171,6 +176,7 @@ cleanup :: proc "c" () {
 	context = odinContext
 
 	sg.shutdown()
+	audio.shutdown()
 
 	free(_actualGameState.world)
 	free(_actualGameState)
