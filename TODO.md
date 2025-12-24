@@ -9,9 +9,10 @@
 - [ ] miniaudio/fmod implementation\*
 - [ ] controller, touchscreen support\*
 - [ ] web localstorage implementation\*
-- [ ] save/load system
-- [ ] ldtk support
-- [ ] basic aabb rework (swept?)
+- [ ] save/load system\*
+- [ ] ldtk support\*
+- [ ] basic aabb rework (swept?)\*
+- [ ] auto-scaling on immediate ui\*
 
 ### PRIORITY 1
 
@@ -45,3 +46,4 @@
 - [x] rust package manager (v0.1)
 - [x] build-time atlas packing\*
 - [x] multiple font support\*
+- [x] logger\*

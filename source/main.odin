@@ -46,6 +46,7 @@ import slog "libs/sokol/log"
 import "core"
 import "core/clock"
 import "core/input"
+import "core/logger"
 import "core/render"
 
 import "core/platform/web"
@@ -73,11 +74,10 @@ main :: proc() {
 		runtime.init_global_temporary_allocator(1 * runtime.Megabyte)
 	}
 
-	context.logger = log.create_console_logger(
-		lowest = .Info,
-		opt = {.Level, .Short_File_Path, .Line, .Procedure},
-	)
+	context.logger = logger.logger()
+	context.assertion_failure_proc = logger.assertionFailureProc
 	odinContext = context
+
 	coreContext := core.initCoreContext()
 
 	desc: sapp.Desc
