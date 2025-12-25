@@ -10,7 +10,7 @@
 
 ### PRIORITY 0
 
-- [ ] move scenes generation from utils to rust CLI\*
+- [ ] add better logging and comments\*
 - [ ] controller, touchscreen support\*
 - [ ] web localstorage implementation\*
 - [ ] save/load system\*
@@ -53,3 +53,4 @@
 - [x] build-time atlas packing\*
 - [x] multiple font support\*
 - [x] logger\*
+- [x] move scenes generation from utils to rust CLI\*

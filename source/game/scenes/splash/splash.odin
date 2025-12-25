@@ -14,7 +14,7 @@ Data :: struct {
 init :: proc(data: rawptr) {
 	state := (^Data)(data)
 	state.logoAlpha = 0.0
-	onEnd := proc(data: rawptr) {scene.change(game.SceneName.Gameplay)}
+	onEnd := proc(data: rawptr) {scene.change(game.SceneName.gameplay)}
 	t1 := tween.to(&state.logoAlpha, 1.0, 3.0, ease = gmath.EaseName.InSine)
 	t2 := tween.to(&state.logoAlpha, 0.0, 2.0, ease = gmath.EaseName.OutSine, onEnd = onEnd)
 	tween.then(t1, t2)
@@ -24,7 +24,7 @@ update :: proc(data: rawptr) {
 	// state := (^Data)(data)
 
 	if input.anyKeyPressAndConsume() {
-		scene.change(game.SceneName.Gameplay)
+		scene.change(game.SceneName.gameplay)
 	}
 }
 

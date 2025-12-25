@@ -22,7 +22,7 @@ WINDOW_TITLE :: "Blueprint"
 init :: proc() {
 	ui.init()
 	scenes.initRegistry()
-	scene.init(game.SceneName.Gameplay)
+	scene.init(game.SceneName.gameplay)
 }
 
 update :: proc() {

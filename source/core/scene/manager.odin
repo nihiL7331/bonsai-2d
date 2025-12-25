@@ -14,7 +14,7 @@ _getWorld :: proc() -> ^game.WorldState {
 }
 
 init :: proc(kind: game.SceneName) {
-	if kind == game.SceneName.None {
+	if kind == game.SceneName.nil {
 		log.warn("Initializing with an empty/nil scene is not supported.")
 		return
 	}
@@ -30,6 +30,7 @@ register :: proc(kind: game.SceneName, s: game.Scene) {
 	_scenes[kind] = s
 }
 
+//TODO: built-in scene change effect?
 change :: proc(kind: game.SceneName) {
 	nextScene := &_scenes[kind]
 
