@@ -55,7 +55,7 @@ update :: proc() {
 	}
 
 	//NOTE: if anyone does his own camera controller, remember to include this line
-	coreContext.gameState.world.camPos = _camera.position
+	coreContext.gameState.world.cameraPosition = _camera.position
 
 	//TODO:
 	// if _camera.shakeTimer > 0 {

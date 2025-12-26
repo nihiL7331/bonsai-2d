@@ -13,7 +13,7 @@ TimeState :: struct {
 }
 
 WorldState :: struct {
-	camPos:       gmath.Vec2,
-	currentScene: ^Scene,
-	nextScene:    ^Scene,
+	cameraPosition: gmath.Vec2,
+	currentScene:   ^Scene,
+	nextScene:      ^Scene,
 }

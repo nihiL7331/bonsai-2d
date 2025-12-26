@@ -37,7 +37,7 @@ getWorldSpaceCamera :: proc() -> gmath.Mat4 {
 	coreContext := core.getCoreContext()
 
 	cam := gmath.Mat4(1)
-	cam *= gmath.xFormTranslate(coreContext.gameState.world.camPos)
+	cam *= gmath.xFormTranslate(coreContext.gameState.world.cameraPosition)
 	cam *= gmath.xFormScale(getCameraZoom())
 	return cam
 }
