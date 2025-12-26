@@ -110,14 +110,10 @@ init :: proc "c" () {
 	coreContext.windowWidth = sapp.width()
 	coreContext.windowHeight = sapp.height()
 
-
 	input.init()
 	audio.init()
 	render.init()
 	gameapp.init()
-
-	sfx := audio.load(.wind)
-	audio.play(sfx, loop = true)
 }
 
 frameTime: f64
@@ -147,6 +143,8 @@ frame :: proc "c" () {
 
 	coreContext.gameState.time.gameTimeElapsed += f64(coreContext.deltaTime)
 	coreContext.gameState.time.ticks += 1
+
+	audio.setListenerPosition(coreContext.gameState.world.cameraPosition)
 
 	render.coreRenderFrameStart()
 	gameapp.update()
