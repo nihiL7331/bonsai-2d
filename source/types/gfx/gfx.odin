@@ -5,7 +5,7 @@ import "../gmath"
 
 ShaderGlobals :: struct {
 	ndcToWorldXForm:    gmath.Mat4,
-	bgRepeatTexAtlasUv: gmath.Vec4,
+	bgRepeatTexAtlasUv: gmath.Vec4, //TODO: get rid of this when lbtk works
 }
 
 DrawFrame :: struct {
@@ -28,15 +28,15 @@ CoordSpace :: struct {
 
 Quad :: [4]Vertex
 Vertex :: struct {
-	pos:           gmath.Vec2,
-	col:           gmath.Vec4,
+	position:      gmath.Vec2,
+	color:         gmath.Vec4,
 	uv:            gmath.Vec2,
 	localUv:       gmath.Vec2,
 	size:          gmath.Vec2,
-	texIndex:      u8,
+	textureIndex:  u8,
 	zLayer:        u8,
 	quadFlags:     game.QuadFlags,
 	_:             [1]u8,
 	colorOverride: gmath.Vec4,
-	params:        gmath.Vec4,
+	parameters:    gmath.Vec4,
 }
