@@ -7,7 +7,7 @@ import "core:sync"
 import "../../types/game"
 import io "../platform"
 
-@(private)
+@(private) // private helper for registering sounds from pcm data
 _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 	sync.lock(&_mixer.lock)
 	defer sync.unlock(&_mixer.lock)
@@ -24,6 +24,8 @@ _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 	return id
 }
 
+// function for reading the audio file. uses the automatically generated enums based off sound name.
+// hence need to glue the path together
 load :: proc(name: game.AudioName) -> SoundHandle {
 	filename := game.audioFilename[name]
 	path := fmt.tprintf("assets/audio/%s", filename)
