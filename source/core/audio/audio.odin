@@ -12,7 +12,7 @@ import "../../types/game"
 import "../../types/gmath"
 
 MIXER_VOICES_SIZE :: 64
-DEFAULT_MIN_DISTANCE :: 32
+DEFAULT_MIN_DISTANCE :: game.GAME_WIDTH / 4
 DEFAULT_MAX_DISTANCE :: game.GAME_WIDTH / 2
 
 VoiceHandle :: distinct int
