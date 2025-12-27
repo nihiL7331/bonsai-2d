@@ -9,15 +9,15 @@ import io "../platform"
 import "core:fmt"
 import "core:strings"
 
+// size constraints for each fonts bitmap
 BITMAP_WIDTH :: 512
 BITMAP_HEIGHT :: 512
 
 Font :: struct {
 	texture:  sg.Image,
-	view:     sg.View,
+	view:     sg.View, // we need to store a view for drawing
 	charData: [96]tt.bakedchar,
-	height:   f32,
-	name:     string,
+	name:     string, // id for a font
 }
 
 @(private)
@@ -45,8 +45,7 @@ getFont :: proc(id: game.FontName, size: int) -> (Font, bool) {
 	defer delete(bitmap)
 
 	font := Font {
-		height = f32(size),
-		name   = strings.clone(name),
+		name = strings.clone(name),
 	}
 
 	ret := tt.BakeFontBitmap(
@@ -89,6 +88,7 @@ getFont :: proc(id: game.FontName, size: int) -> (Font, bool) {
 destroyFonts :: proc() {
 	for key, font in _fontCache {
 		sg.destroy_image(font.texture)
+		sg.destroy_view(font.view)
 		delete(font.name)
 		delete(key)
 	}
