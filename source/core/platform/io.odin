@@ -1,10 +1,14 @@
 package platform
 
+// This files sole purpose is to be a glue for functions that are different based off platform compiled.
+// Mainly (if not solely) it's I/O
+
 IS_WEB :: ODIN_ARCH == .wasm64p32 || ODIN_ARCH == .wasm32
 
 import "desktop"
 import "web"
 
+// ghost use of packages, to avoid compiler errors
 _ :: desktop
 _ :: web
 

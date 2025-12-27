@@ -1,6 +1,9 @@
 #+build wasm32, wasm64p32
 package web
 
+// karl zylinski's odin-sokol-web repository was a starting point for this project.
+// he's the author of this code.
+
 import "base:intrinsics"
 import "core:c"
 import "core:mem"

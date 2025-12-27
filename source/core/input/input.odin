@@ -8,13 +8,14 @@ import "../render"
 
 import "core:math/linalg"
 
+// additional space for future controller support
 MAX_KEYCODES :: 512
 
 @(private)
 _actualInputState: Input
 
 Input :: struct {
-	keys:             [MAX_KEYCODES]bit_set[InputFlag],
+	keys:             [MAX_KEYCODES]bit_set[InputFlag], // key consists of 4 bits, representing its state
 	mouseX, mouseY:   f32,
 	scrollX, scrollY: f32,
 }
@@ -26,7 +27,8 @@ InputFlag :: enum u8 {
 	repeat,
 }
 
-actionMap: [InputAction]KeyCode = {
+//NOTE: might want to move that to somewhere more approachable, like a config file or types
+actionMap: [InputAction]KeyCode = { 	// useful mapping, especially with controller support to map multiple keys to one action.
 	.left     = .A,
 	.right    = .D,
 	.up       = .W,
@@ -46,6 +48,7 @@ InputAction :: enum u8 {
 	interact,
 }
 
+// stripped of sokols input, with added mouse support of cleaner usage
 KeyCode :: enum {
 	INVALID       = 0,
 	SPACE         = 32,
@@ -197,6 +200,10 @@ addInput :: proc(dest: ^Input, source: Input) {
 	}
 }
 
+//
+// helper functions for reading input
+//
+
 keyPressed :: proc(code: KeyCode) -> bool {
 	return .pressed in state.keys[code]
 }
@@ -222,6 +229,7 @@ consumeKeyReleased :: proc(code: KeyCode) {
 	state.keys[code] -= {.released}
 }
 
+// helper for "press any" actions
 anyKeyPressAndConsume :: proc() -> bool {
 	for &flag, key in state.keys {
 		if key >= int(KeyCode.LEFT_MOUSE) do continue
@@ -260,6 +268,7 @@ keyFromAction :: proc(action: InputAction) -> KeyCode {
 	return actionMap[action]
 }
 
+// helper for reading player movement
 getInputVector :: proc() -> gmath.Vec2 {
 	input: gmath.Vec2
 	if isActionDown(InputAction.left) do input.x -= 1.0
@@ -312,6 +321,8 @@ inputEventCallback :: proc "c" (event: ^sapp.Event) {
 	}
 }
 
+// helper for reading where mouse is on the screen,
+// must-have for UI input
 getScreenMousePos :: proc() -> gmath.Vec2 {
 	drawFrame := render.getDrawFrame()
 	coreContext := core.getCoreContext()

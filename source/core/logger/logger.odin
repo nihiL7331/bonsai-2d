@@ -5,8 +5,31 @@ import "core:fmt"
 import "core:log"
 import "core:strings"
 
+// can be changed to any to filter logging, "Debug" means all messages
 globalLogLevel := log.Level.Debug
 
+// use ANSI color coding since it's widely supported (both on web and desktop)
+// and makes it easier to see important debug messages.
+// customize to your likings!
+// basic ANSI color table:
+// \x1b[X;CCm
+// X - attribute (can also leave empty and delete semicolon to not use any)
+// 0 - none
+// 1 - bold
+// 4 - underline
+// 5 - blink on
+// 21 - bold off
+// 24 - underline off
+// 25 - blink off
+// CC - color (add 60 to make color light, add 10 to set background color)
+// 30 - black
+// 31 - red
+// 32 - green
+// 33 - yellow
+// 34 - blue
+// 35 - purple
+// 36 - cyan
+// 37 - white
 PREFIX :: "\x1b[34m[ODIN]\x1b[0m "
 
 @(private)
@@ -22,6 +45,7 @@ logger :: proc() -> log.Logger {
 	return log.Logger{loggerProc, nil, globalLogLevel, nil}
 }
 
+// called for assert
 assertionFailureProc :: proc(
 	prefix, message: string,
 	location: runtime.Source_Code_Location,
@@ -32,7 +56,7 @@ assertionFailureProc :: proc(
 		fmt.sbprint(&builder, prefix)
 	}
 
-	strings.write_string(&builder, "[ASSERT]")
+	strings.write_string(&builder, "\x1b[4;35m[ASSERT]\x1b[0m")
 	_doLocationHeader(&builder, location)
 	fmt.sbprint(&builder, message)
 	fmt.sbprint(&builder, '\n')
@@ -50,7 +74,7 @@ loggerProc :: proc(
 	options: log.Options,
 	location := #caller_location,
 ) {
-	if level < globalLogLevel {
+	if level < globalLogLevel { 	// filter unimportant messages
 		return
 	}
 

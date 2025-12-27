@@ -1,6 +1,10 @@
 package clock
 
+// This file contains helper functions related to game and app time.
+
 import core "../"
+
+import "core:log"
 import "core:time"
 
 appNow :: secondsSinceInit
@@ -14,7 +18,10 @@ endTimeUp :: proc(endTime: f64) -> bool {
 }
 
 timeSince :: proc(time: f64) -> f32 {
-	if time == 0 {
+	if time < 0 {
+		log.error("Unexpected behavior. Time can't be negative.")
+		return 99999999.0
+	} else if time == 0 {
 		return 99999999.0
 	}
 	return f32(now() - time)
