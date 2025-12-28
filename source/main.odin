@@ -173,6 +173,7 @@ event :: proc "c" (e: ^sapp.Event) {
 cleanup :: proc "c" () {
 	context = odinContext
 
+	gameapp.shutdown()
 	sg.shutdown()
 	audio.shutdown()
 
