@@ -220,6 +220,15 @@ resetDrawFrame :: proc() {
 	}
 }
 
+setTexture :: proc(view: sg.View) {
+	currentId := _renderState.bindings.views[shaders.VIEW_uTex].id
+
+	if currentId != view.id {
+		flushBatch()
+		_renderState.bindings.views[shaders.VIEW_uTex] = view
+	}
+}
+
 setFontTexture :: proc(view: sg.View) {
 	currentId := _renderState.bindings.views[shaders.VIEW_uFontTex].id
 

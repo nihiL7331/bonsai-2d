@@ -4,10 +4,7 @@ import "../../../core/render"
 import prefabs "../../../game/entities"
 import "../../../systems/camera"
 import "../../../systems/entities"
-import "../../../types/game"
-import "../../../types/gmath"
-
-import "core:math/linalg"
+import "../../../systems/ldtk"
 
 Data :: struct {}
 
@@ -22,6 +19,7 @@ init :: proc(data: rawptr) {
 	player := prefabs.spawnPlayer()
 	entities.setPlayerHandle(player.handle)
 	prefabs.spawnThing()
+	ldtk.loadData(.test)
 
 	camera.init()
 }
@@ -41,9 +39,8 @@ draw :: proc(data: rawptr) {
 
 	render.getDrawFrame().reset.sortedLayers = {.playspace, .shadow}
 
-	drawBackgroundLayer()
-
 	render.setCoordSpace(render.getWorldSpace())
+	ldtk.renderLevels()
 	entities.drawAll()
 }
 
@@ -51,22 +48,4 @@ exit :: proc(data: rawptr) {
 	// state := (^Data)(data)
 
 	entities.cleanup()
-}
-
-//NOTE: when map editor will be a thing, this will not be in game/, will be somewhere in core/ instead.
-drawBackgroundLayer :: proc() {
-	drawFrame := render.getDrawFrame()
-
-	drawFrame.reset.shaderData.ndcToWorldXForm =
-		render.getWorldSpaceCamera() * linalg.inverse(render.getWorldSpaceProj())
-	drawFrame.reset.shaderData.bgRepeatTexAtlasUv = render.atlasUvFromSprite(
-		game.SpriteName.bg_repeat_tex0,
-	)
-	render.setCoordSpace()
-
-	render.drawRect(
-		gmath.Rect{-1, -1, 1, 1},
-		flags = game.QuadFlags.backgroundPixels,
-		zLayer = game.ZLayer.background,
-	)
 }
