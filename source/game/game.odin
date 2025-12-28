@@ -35,6 +35,8 @@ draw :: proc() {
 	drawUiLayer()
 }
 
+shutdown :: proc() {
+}
 
 drawUiLayer :: proc() {
 	coreContext := core.getCoreContext()
