@@ -93,3 +93,4 @@ source/systems/entities/type/generated_entity.odin
 assets/images/atlas.png
 source/types/game/generated_audio.odin
 saves
+source/systems/ldtk/type/generated_level.odin

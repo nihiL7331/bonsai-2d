@@ -8,9 +8,7 @@
 
 ### PRIORITY 0
 
-- [ ] add better logging and comments\*
 - [ ] controller, touchscreen support\*
-- [ ] ldtk support\*
 - [ ] basic aabb rework (swept?)\*
 - [ ] auto-scaling on immediate ui\*
 
@@ -38,7 +36,13 @@
 
 - [ ] steamworks support
 
+### PRIORITY UNKNOWN
+
+- [ ] install utility along side systems
+
 ## IN PROGRESS
+
+- [ ] ldtk support\*
 
 ## DONE
 
@@ -51,3 +55,4 @@
 - [x] sokol audio implementation\*
 - [x] save/load system\*
   - [x] web localstorage implementation\*
+- [x] add better logging and comments\*

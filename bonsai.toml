@@ -8,3 +8,4 @@ camera = { path = "source/systems/camera" }
 particles = { path = "source/systems/particles" }
 physics = { path = "source/systems/physics" }
 entities = { path = "source/systems/entities" }
+ldtk = { path = "source/systems/ldtk" }

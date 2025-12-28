@@ -8,6 +8,7 @@ import "../core/render"
 import "../core/scene"
 import "../core/ui"
 import "../systems/entities"
+import "../systems/ldtk"
 import "../systems/tween"
 import "../types/color"
 import "../types/game"
@@ -23,6 +24,8 @@ init :: proc() {
 	ui.init()
 	scenes.initRegistry()
 	scene.init(game.SceneName.gameplay)
+
+	ldtk.loadData(.test)
 }
 
 update :: proc() {
@@ -32,6 +35,7 @@ update :: proc() {
 
 draw :: proc() {
 	scene.draw()
+	ldtk.renderLevel()
 	drawUiLayer()
 }
 
