@@ -4,7 +4,13 @@ import "../../../core/render"
 import prefabs "../../../game/entities"
 import "../../../systems/camera"
 import "../../../systems/entities"
+import entityType "../../../systems/entities/type"
 import "../../../systems/ldtk"
+import ldtkType "../../../systems/ldtk/type"
+import "../../../types/gmath"
+
+import "core:log"
+import "core:reflect"
 
 Data :: struct {}
 
@@ -16,10 +22,7 @@ init :: proc(data: rawptr) {
 	//and accessing it via the same name in another function.
 
 	entities.entityInitCore()
-	player := prefabs.spawnPlayer()
-	entities.setPlayerHandle(player.handle)
-	prefabs.spawnThing()
-	ldtk.loadData(.test)
+	ldtk.init(.test, onEntitySpawn)
 
 	camera.init()
 }
@@ -40,7 +43,7 @@ draw :: proc(data: rawptr) {
 	render.getDrawFrame().reset.sortedLayers = {.playspace, .shadow}
 
 	render.setCoordSpace(render.getWorldSpace())
-	ldtk.renderLevels()
+	ldtk.renderLevels(true)
 	entities.drawAll()
 }
 
@@ -48,4 +51,27 @@ exit :: proc(data: rawptr) {
 	// state := (^Data)(data)
 
 	entities.cleanup()
+}
+
+onEntitySpawn :: proc(
+	entityInstance: ldtkType.EntityInstance,
+	layer: ldtkType.LayerInstance,
+	level: ldtkType.Level,
+) {
+	type, ok := reflect.enum_from_name(entityType.EntityName, entityInstance.identifier)
+	if !ok {
+		log.infof("Couldn't spawn entity ID %v. (Enum not found)", entityInstance.identifier)
+	}
+
+	pos := gmath.Vec2{f32(entityInstance.worldPosition.x), f32(entityInstance.worldPosition.y)}
+
+	#partial switch type {
+	case entityType.EntityName.Player:
+		player := prefabs.spawnPlayer()
+		player.pos = pos
+		entities.setPlayerHandle(player.handle)
+	case entityType.EntityName.Thing:
+		thing := prefabs.spawnThing()
+		thing.pos = pos
+	}
 }
