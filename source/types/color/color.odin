@@ -1,5 +1,7 @@
 package color
 
+import "core:strconv"
+
 import "../gmath"
 
 hexToRGBA :: proc(v: u32) -> gmath.Vec4 {
@@ -9,6 +11,24 @@ hexToRGBA :: proc(v: u32) -> gmath.Vec4 {
 		cast(f32)((v & 0x0000ff00) >> 8) / 255.0,
 		cast(f32)((v & 0x000000ff)) / 255.0,
 	}
+}
+
+stringHexToRGBA :: proc(hexStr: string) -> gmath.Vec4 {
+	if len(hexStr) == 0 do return gmath.Vec4{1, 1, 1, 1}
+
+	cleanStr := hexStr
+	if cleanStr[0] == '#' do cleanStr = cleanStr[1:]
+
+	val, ok := strconv.parse_u64_of_base(cleanStr, 16)
+	if !ok do return gmath.Vec4{1, 1, 1, 1}
+
+	colorInt := u32(val)
+
+	if len(cleanStr) == 6 {
+		colorInt = (colorInt << 8) | 0xFF // add alpha
+	}
+
+	return hexToRGBA(colorInt)
 }
 
 WHITE :: gmath.Vec4{1, 1, 1, 1}

@@ -1,6 +1,7 @@
 package ldtk
 
 import "../../core/render"
+import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
 import "type"
@@ -24,6 +25,7 @@ init :: proc(worldName: type.WorldName, callback: EntitySpawnProc) {
 	loadData(worldName)
 	setEntitySpawner(callback)
 	for level in _world.levels do spawnLevelEntities(level)
+	render.setClearColor(color.stringHexToRGBA(_world.backgroundColor))
 }
 
 setEntitySpawner :: proc(callback: EntitySpawnProc) {

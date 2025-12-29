@@ -44,6 +44,12 @@ MAX_QUADS :: 8192 // edit this as needed. greater amount - worse performance
 DEFAULT_UV :: gmath.Vec4{0, 0, 1, 1}
 CLEAR_COLOR :: color.BLACK // default background value
 
+setClearColor :: proc(col: gmath.Vec4) {
+	_renderState.passAction = {
+		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sg.Color)(col)}},
+	}
+}
+
 getDrawFrame :: proc() -> ^gfx.DrawFrame {
 	return &_drawFrame
 }
