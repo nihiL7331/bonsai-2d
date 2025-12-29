@@ -8,8 +8,9 @@
 
 ### PRIORITY 0
 
-- [ ] controller, touchscreen support\*
+- [ ] fix entity initialization handling\*
 - [ ] basic aabb rework (swept?)\*
+- [ ] controller, touchscreen support\*
 - [ ] auto-scaling on immediate ui\*
 
 ### PRIORITY 1
@@ -43,6 +44,11 @@
 ## IN PROGRESS
 
 - [ ] ldtk support\*
+  - [x] parsing JSON
+  - [x] rendering tiles
+  - [ ] collision handling
+  - [ ] runtime level loading
+  - [ ] debug inspector
 
 ## DONE
 

@@ -22,6 +22,10 @@ defaultCamera :: proc() -> Camera {
 @(private)
 _camera: Camera
 
+setPosition :: proc(position: gmath.Vec2) {
+	_camera.position = position
+}
+
 follow :: proc(target: gmath.Vec2, rate: f32 = 10.0) {
 	_camera.target = target
 	_camera.followRate = rate

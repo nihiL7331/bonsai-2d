@@ -14,6 +14,8 @@ def generate_entity_file(src, dst, type_name, pack_name="game_types"):
         for filename in files:
             # get filename without extension
             stem = os.path.splitext(filename)[0]
+            # capitalize to match LDtk
+            stem = stem.capitalize()
             found_files.append(stem)
 
     if not found_files:

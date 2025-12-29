@@ -42,7 +42,7 @@ def generate_entity_file(src, dst, type_name, pack_name="game_types"):
             f.write(f"{type_name.lower()}Filename := [{type_name}Name]string {{\n")
             f.write('\t.nil = "",\n')
             for name in found_files:
-                path = "assets/levels/" + name + ".ldtk"
+                path = src + "/" + name + ".ldtk"
                 f.write(f'\t.{name} = "{path}",\n')
             f.write("}\n")
 
@@ -54,8 +54,8 @@ def generate_entity_file(src, dst, type_name, pack_name="game_types"):
 
 if __name__ == "__main__":
     generate_entity_file(
-        src="assets/levels",
-        dst="source/systems/ldtk/type/generated_level.odin",
-        type_name="Level",
-        pack_name="level_type",
+        src="assets/worlds",
+        dst="source/systems/ldtk/type/generated_world.odin",
+        type_name="World",
+        pack_name="ldtk_type",
     )

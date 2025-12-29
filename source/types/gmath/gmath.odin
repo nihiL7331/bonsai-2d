@@ -3,6 +3,7 @@ package gmath
 import "core:math"
 import "core:math/linalg"
 
+Vec2Int :: [2]int
 Vec2 :: linalg.Vector2f32
 Vec3 :: linalg.Vector3f32
 Vec4 :: linalg.Vector4f32

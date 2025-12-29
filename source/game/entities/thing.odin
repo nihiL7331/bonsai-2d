@@ -9,7 +9,7 @@ import "../../types/gmath"
 // generic boilerplate used to create entities using my entity system
 
 spawnThing :: proc() -> ^type.Entity {
-	entity := entities.create(type.EntityName.thing)
+	entity := entities.create(type.EntityName.Thing)
 
 	entity.drawOffset = gmath.Vec2{0.5, 5}
 	entity.drawPivot = gmath.Pivot.bottomCenter

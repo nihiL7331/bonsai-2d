@@ -9,7 +9,7 @@ import "../../types/game"
 import "../../types/gmath"
 
 spawnPlayer :: proc() -> ^type.Entity {
-	entity := entities.create(type.EntityName.player)
+	entity := entities.create(type.EntityName.Player)
 
 	entity.drawOffset = gmath.Vec2{0.5, 5} // this kinda just has to be hardcoded
 	entity.drawPivot = gmath.Pivot.bottomCenter // recommended for y sort

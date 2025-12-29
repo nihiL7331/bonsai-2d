@@ -8,6 +8,7 @@ import "../core/render"
 import "../core/scene"
 import "../core/ui"
 import "../systems/entities"
+import "../systems/ldtk"
 import "../systems/tween"
 import "../types/color"
 import "../types/game"
@@ -36,6 +37,7 @@ draw :: proc() {
 }
 
 shutdown :: proc() {
+	ldtk.unloadData()
 }
 
 drawUiLayer :: proc() {
