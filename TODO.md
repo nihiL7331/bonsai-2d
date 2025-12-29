@@ -6,8 +6,11 @@
 
 ### BUGS
 
+- [ ] atlas packing in cli doesnt happen when files are deleted
+
 ### PRIORITY 0
 
+- [ ] restructure to hide engine core\*
 - [ ] fix entity initialization handling\*
 - [ ] basic aabb rework (swept?)\*
 - [ ] controller, touchscreen support\*
@@ -25,7 +28,6 @@
 - [ ] configuration/settings system (basic api in core)\*
 - [ ] debug console\*
   - [ ] fix input consumption for debug ui\*
-  - [ ] automatically sized debug ui\*
   - [ ] debug ui text box/number box\*
 - [ ] make own/implement box2d for physics
   - [ ] spatial hash grid for collisions
@@ -46,9 +48,12 @@
 - [ ] ldtk support\*
   - [x] parsing JSON
   - [x] rendering tiles
-  - [ ] collision handling
+  - [x] collision handling
+  - [ ] simple culling
+  - [ ] non continuous (warping) level handling (?)
   - [ ] runtime level loading
   - [ ] debug inspector
+  - [ ] remove capitalization (project settings)
 
 ## DONE
 

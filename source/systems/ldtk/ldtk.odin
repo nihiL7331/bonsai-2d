@@ -24,6 +24,7 @@ _onEntitySpawn: EntitySpawnProc // this has to be set to be called for every ent
 init :: proc(worldName: type.WorldName, callback: EntitySpawnProc) {
 	loadData(worldName)
 	setEntitySpawner(callback)
+	generateWorldColliders()
 	for level in _world.levels do spawnLevelEntities(level)
 	render.setClearColor(color.stringHexToRGBA(_world.backgroundColor))
 }
@@ -67,31 +68,22 @@ renderLevels :: proc(debug: bool) {
 			}
 			drawTileList(layer.gridTiles, layer, level)
 			drawTileList(layer.autoLayerTiles, layer, level)
-			if debug do drawDebug(level)
+		}
+	}
+
+	if debug do drawDebug()
+}
+
+drawDebug :: proc() {
+	if len(_world.levels) == 0 do return
+
+	for level in _world.levels {
+		for collider in level.colliders {
+			render.drawRect(collider, col = {1, 1, 1, 0.2})
 		}
 	}
 }
 
-drawDebug :: proc(level: type.Level) {
-	if len(_world.levels) == 0 do return
-
-	tileSize: int = 8
-	for y := 0; y < level.pxHeight; y += int(tileSize) {
-		for x := 0; x < level.pxWidth; x += int(tileSize) {
-			testPos := gmath.Vec2Int{x + tileSize / 2, y + tileSize / 2}
-
-			val := getCollisionAt(testPos, level)
-
-			if val == 1 {
-				render.drawRectXForm(
-					xForm = gmath.xFormTranslate(
-						{f32(x + level.worldPosition.x), f32(y + level.worldPosition.y)},
-					),
-					size = {f32(tileSize), f32(tileSize)},
-					col = {1, 0, 0, 0.5},
-					texIndex = 255,
-				)
-			}
-		}
-	}
+getColliderRects :: proc(level: type.Level) -> []gmath.Rect {
+	return level.colliders[:]
 }
