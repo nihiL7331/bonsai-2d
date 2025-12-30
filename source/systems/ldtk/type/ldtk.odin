@@ -7,6 +7,15 @@ import "../../../types/gmath"
 COLLISIONS_LAYER_IDENTIFIER :: "Collisions"
 INTGRID_WALL_VALUE :: 1
 
+FieldInstanceType :: union {
+	int,
+	f32,
+	bool,
+	string,
+	gmath.Vec2,
+	gmath.Vec4,
+}
+
 WorldLayout :: enum {
 	null,
 	Free, // use worldX and worldY
@@ -124,6 +133,7 @@ EntityInstance :: struct {
 	width:          int `json:"width"`, // entity width in pixels
 	//ADDITIONAL (not from LDtk)
 	worldPosition:  gmath.Vec2Int, // world position using its levels position and its y position in level with y flip
+	customFields:   map[string]FieldInstanceType,
 }
 
 FieldInstance :: struct {

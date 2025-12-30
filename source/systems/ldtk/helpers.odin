@@ -78,7 +78,7 @@ drawTileList :: proc(
 		}
 
 		render.drawSprite(
-			pos = gmath.Vec2{f32(pos.x), f32(pos.y)},
+			position = gmath.Vec2{f32(pos.x), f32(pos.y)},
 			sprite = sprite,
 			flipX = flipX,
 			xForm = flipMatrix,

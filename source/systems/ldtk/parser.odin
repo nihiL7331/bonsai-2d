@@ -3,6 +3,7 @@ package ldtk
 import "core:encoding/json"
 import "core:log"
 import "core:mem"
+import "core:strings"
 
 import io "../../core/platform"
 import "../../types/gmath"
@@ -52,6 +53,7 @@ generateData :: proc() {
 	calculateWorldPosition() // generates a worldPosition variable for all objects that have rawWorldX and rawWorldY, which holds the px position regardless of world layout, relative to world center
 	generateEntityHashmap() // generates a O(1) lookup for entities through auto-generated LDtk unique identifiers assigned to every EntityInstance
 	generateWorldColliders() // generates colliders variable for every level, it holds gmath.Rects that can be used to make simple colliders
+	generateEntityCustomFields() // generates hashmaps from entity custom fields, that can be later read by an entity system
 }
 
 unloadData :: proc() {
@@ -168,6 +170,25 @@ generateEntityHashmap :: proc() {
 			if layer.type != "Entities" do continue
 			for &entity in layer.entityInstances {
 				_world.entities[entity.iid] = &entity
+			}
+		}
+	}
+}
+
+generateEntityCustomFields :: proc() {
+	for level in _world.levels {
+		if layers, ok := level.layerInstances.?; ok {
+			for layer in layers {
+				for &entity in layer.entityInstances {
+					entity.customFields = make(map[string]type.FieldInstanceType)
+					for field in entity.fieldInstances {
+						if value, valueOk := getField(field, level); valueOk {
+							log.infof("Loaded value: %v", value)
+							key := strings.clone(field.identifier)
+							entity.customFields[key] = value
+						}
+					}
+				}
 			}
 		}
 	}

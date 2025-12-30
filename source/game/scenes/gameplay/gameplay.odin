@@ -63,20 +63,17 @@ onEntitySpawn :: proc(
 		log.infof("Couldn't spawn entity ID %v. (Enum not found)", entityInstance.identifier)
 	}
 
-	#partial switch type {
-	case entityType.EntityName.Player:
-		player := prefabs.spawnPlayer()
-		player.pos = pos
-		entities.setPlayerHandle(player.handle)
-	case entityType.EntityName.Thing:
-		thing := prefabs.spawnThing()
-		thing.pos = pos
 	position := gmath.Vec2 {
 		f32(entityInstance.worldPosition.x),
 		f32(entityInstance.worldPosition.y),
 	}
 	data: entityType.EntityData
 	data.position = position
+
+	customFields := entityInstance.customFields
+	for key, customField in customFields {
+		data.fields[key] = entityType.FieldValue(customField)
+	}
 
 	prefabs.spawn[type](data)
 }

@@ -203,6 +203,7 @@ drawSpriteEntity :: proc(
 		cropLeft,
 		cropBottom,
 		cropRight,
+		culling = true,
 	)
 }
 
