@@ -13,6 +13,8 @@ EntitySpawnProc :: #type proc(
 	level: type.Level,
 )
 
+CULLING_TILES :: false // enabled per-tile culling along the per-level one. should benefit performance if levels are big
+
 @(private = "package")
 _spriteCache: map[int]game.SpriteName
 @(private = "package")
@@ -52,12 +54,7 @@ renderLevels :: proc(debug: bool) {
 	if len(_world.levels) == 0 do return
 
 	coreContext := core.getCoreContext()
-	cameraPosition := coreContext.gameState.world.cameraPosition
-	cameraRect := gmath.rectMake(
-		cameraPosition,
-		gmath.Vec2{game.GAME_WIDTH, game.GAME_HEIGHT},
-		gmath.Pivot.centerCenter,
-	)
+	cameraRect := coreContext.gameState.world.cameraRect
 
 	for level in _world.levels {
 		layers, hasLayers := level.layerInstances.?
@@ -85,7 +82,7 @@ drawDebug :: proc() {
 
 	for level in _world.levels {
 		for collider in level.colliders {
-			render.drawRect(collider, col = {1, 1, 1, 0.2})
+			render.drawRect(collider, col = {1, 1, 1, 0.2}, culling = true)
 		}
 	}
 }

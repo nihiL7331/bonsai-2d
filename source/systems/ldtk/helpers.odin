@@ -83,6 +83,7 @@ drawTileList :: proc(
 			flipX = flipX,
 			xForm = flipMatrix,
 			col = gmath.Vec4{1, 1, 1, tile.opacity * layer.opacity},
+			culling = CULLING_TILES,
 		)
 	}
 }
