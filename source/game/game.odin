@@ -55,7 +55,7 @@ drawUiLayer :: proc() {
 		pivot = gmath.Pivot.bottomLeft,
 	) {
 		if ui.Button("Reset Player Pos") {
-			tween.to(&player.pos, gmath.Vec2{0.0, 0.0}, 1.0, ease = gmath.EaseName.InOutQuad)
+			tween.to(&player.position, gmath.Vec2{0.0, 0.0}, 1.0, ease = gmath.EaseName.InOutQuad)
 		}
 		ui.Button("Test2")
 	}

@@ -8,8 +8,9 @@ import "../../types/gmath"
 
 // generic boilerplate used to create entities using my entity system
 
-spawnThing :: proc() -> ^type.Entity {
+spawnThing :: proc(data: type.EntityData) -> ^type.Entity {
 	entity := entities.create(type.EntityName.Thing)
+	entity.position = data.position
 
 	entity.drawOffset = gmath.Vec2{0.5, 5}
 	entity.drawPivot = gmath.Pivot.bottomCenter
@@ -20,7 +21,7 @@ spawnThing :: proc() -> ^type.Entity {
 
 	entity.drawProc = proc(entity: ^type.Entity) {
 		render.drawSprite(
-			entity.pos,
+			entity.position,
 			.shadow_medium,
 			col = {1, 1, 1, 0.2},
 			zLayer = game.ZLayer.shadow,

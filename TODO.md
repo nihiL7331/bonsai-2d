@@ -11,7 +11,6 @@
 ### PRIORITY 0
 
 - [ ] restructure to hide engine core\*
-- [ ] fix entity initialization handling\*
 - [ ] basic aabb rework (swept?)\*
 - [ ] controller, touchscreen support\*
 - [ ] auto-scaling on immediate ui\*
@@ -67,3 +66,4 @@
 - [x] save/load system\*
   - [x] web localstorage implementation\*
 - [x] add better logging and comments\*
+- [x] fix entity initialization handling\*

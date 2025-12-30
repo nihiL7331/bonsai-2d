@@ -33,7 +33,7 @@ update :: proc(data: rawptr) {
 	entities.updateAll()
 
 	player := entities.getPlayer()
-	camera.follow(player.pos)
+	camera.follow(player.position)
 	camera.update()
 }
 
@@ -63,8 +63,6 @@ onEntitySpawn :: proc(
 		log.infof("Couldn't spawn entity ID %v. (Enum not found)", entityInstance.identifier)
 	}
 
-	pos := gmath.Vec2{f32(entityInstance.worldPosition.x), f32(entityInstance.worldPosition.y)}
-
 	#partial switch type {
 	case entityType.EntityName.Player:
 		player := prefabs.spawnPlayer()
@@ -73,5 +71,12 @@ onEntitySpawn :: proc(
 	case entityType.EntityName.Thing:
 		thing := prefabs.spawnThing()
 		thing.pos = pos
+	position := gmath.Vec2 {
+		f32(entityInstance.worldPosition.x),
+		f32(entityInstance.worldPosition.y),
 	}
+	data: entityType.EntityData
+	data.position = position
+
+	prefabs.spawn[type](data)
 }

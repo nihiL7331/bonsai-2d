@@ -8,8 +8,10 @@ import "../../systems/entities/type"
 import "../../types/game"
 import "../../types/gmath"
 
-spawnPlayer :: proc() -> ^type.Entity {
+spawnPlayer :: proc(data: type.EntityData) -> ^type.Entity {
 	entity := entities.create(type.EntityName.Player)
+	entities.setPlayerHandle(entity.handle)
+	entity.position = data.position
 
 	entity.drawOffset = gmath.Vec2{0.5, 5} // this kinda just has to be hardcoded
 	entity.drawPivot = gmath.Pivot.bottomCenter // recommended for y sort
@@ -18,7 +20,7 @@ spawnPlayer :: proc() -> ^type.Entity {
 		coreContext := core.getCoreContext()
 
 		inputDir := input.getInputVector()
-		entity.pos += inputDir * 100.0 * coreContext.deltaTime
+		entity.position += inputDir * 100.0 * coreContext.deltaTime
 
 		if inputDir.x != 0 {
 			entity.lastKnownXDir = inputDir.x
@@ -35,7 +37,7 @@ spawnPlayer :: proc() -> ^type.Entity {
 
 	entity.drawProc = proc(entity: ^type.Entity) {
 		render.drawSprite(
-			entity.pos,
+			entity.position,
 			game.SpriteName.shadow_medium,
 			col = {1, 1, 1, 0.2},
 			zLayer = game.ZLayer.shadow,

@@ -95,3 +95,4 @@ source/types/game/generated_audio.odin
 saves
 source/systems/ldtk/type/generated_level.odin
 source/systems/ldtk/type/generated_world.odin
+source/game/entities/generated_registry.odin

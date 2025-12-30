@@ -147,10 +147,10 @@ drawEntityDefault :: proc(e: ^type.Entity) {
 
 	drawSpriteEntity(
 		e,
-		e.pos,
+		e.position,
 		e.sprite,
 		xForm = xForm,
-		animIndex = e.animIndex,
+		animIndex = e.animationIndex,
 		drawOffset = e.drawOffset,
 		flipX = e.flipX,
 		pivot = e.drawPivot,
@@ -160,7 +160,7 @@ drawEntityDefault :: proc(e: ^type.Entity) {
 
 drawSpriteEntity :: proc(
 	entity: ^type.Entity,
-	pos: gmath.Vec2,
+	position: gmath.Vec2,
 	sprite: game.SpriteName,
 	pivot := gmath.Pivot.centerCenter,
 	flipX := false,
@@ -168,26 +168,26 @@ drawSpriteEntity :: proc(
 	xForm := gmath.Mat4(1),
 	animIndex := 0,
 	col := color.WHITE,
-	colOverride := gmath.Vec4{},
+	colorOverride := gmath.Vec4{},
 	zLayer := game.ZLayer{},
 	flags := game.QuadFlags{},
-	params := gmath.Vec4{},
+	parameters := gmath.Vec4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
 	zLayerQueue := -1,
 ) {
-	colOverride := colOverride
+	colorOverride := colorOverride
 
-	colOverride = entity.scratch.colOverride
+	colorOverride = entity.scratch.colorOverride
 	if entity.hitFlash.a != 0 {
-		colOverride.xyz = entity.hitFlash.xyz
-		colOverride.a = max(colOverride.a, entity.hitFlash.a)
+		colorOverride.xyz = entity.hitFlash.xyz
+		colorOverride.a = max(colorOverride.a, entity.hitFlash.a)
 	}
 
 	render.drawSprite(
-		pos,
+		position,
 		sprite,
 		pivot,
 		flipX,
@@ -195,10 +195,10 @@ drawSpriteEntity :: proc(
 		xForm,
 		animIndex,
 		col,
-		colOverride,
+		colorOverride,
 		zLayer,
 		flags,
-		params,
+		parameters,
 		cropTop,
 		cropLeft,
 		cropBottom,
@@ -214,9 +214,9 @@ setAnimation :: proc(
 ) {
 	if e.sprite != sprite {
 		e.sprite = sprite
-		e.loop = looping
+		e.looping = looping
 		e.frameDuration = frameDuration
-		e.animIndex = 0
+		e.animationIndex = 0
 		e.nextFrameEndTime = 0
 	}
 }
@@ -227,8 +227,8 @@ updateAnimation :: proc(e: ^type.Entity) {
 	frameCount := game.getFrameCount(e.sprite)
 
 	isPlaying := true
-	if !e.loop {
-		isPlaying = e.animIndex + 1 <= frameCount
+	if !e.looping {
+		isPlaying = e.animationIndex + 1 <= frameCount
 	}
 
 	if isPlaying {
@@ -237,11 +237,11 @@ updateAnimation :: proc(e: ^type.Entity) {
 		}
 
 		if clock.endTimeUp(e.nextFrameEndTime) {
-			e.animIndex += 1
+			e.animationIndex += 1
 			e.nextFrameEndTime = 0
 
-			if e.animIndex >= frameCount && e.loop {
-				e.animIndex = 0
+			if e.animationIndex >= frameCount && e.looping {
+				e.animationIndex = 0
 			}
 		}
 	}
