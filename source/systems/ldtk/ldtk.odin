@@ -1,12 +1,11 @@
 package ldtk
 
+import "../../core"
 import "../../core/render"
 import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
 import "type"
-
-import "core:log"
 
 EntitySpawnProc :: #type proc(
 	entityInstance: type.EntityInstance,
@@ -52,9 +51,22 @@ spawnLevelEntities :: proc(level: type.Level) {
 renderLevels :: proc(debug: bool) {
 	if len(_world.levels) == 0 do return
 
+	coreContext := core.getCoreContext()
+	cameraPosition := coreContext.gameState.world.cameraPosition
+	cameraRect := gmath.rectMake(
+		cameraPosition,
+		gmath.Vec2{game.GAME_WIDTH, game.GAME_HEIGHT},
+		gmath.Pivot.centerCenter,
+	)
+
 	for level in _world.levels {
 		layers, hasLayers := level.layerInstances.?
 		if !hasLayers do return
+
+		levelPosition := gmath.Vec2{f32(level.worldPosition.x), f32(level.worldPosition.y)} // we need to convert Vec2Int to Vec2
+		levelSize := gmath.Vec2{f32(level.pxWidth), f32(level.pxHeight)}
+		levelRect := gmath.rectMake(levelPosition, levelSize)
+		if !gmath.rectIntersects(cameraRect, levelRect) do continue
 
 		#reverse for layer in layers {
 			if layer.type != "Tiles" && layer.type != "AutoLayer" && layer.type != "IntGrid" {

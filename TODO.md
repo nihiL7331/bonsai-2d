@@ -31,7 +31,7 @@
 - [ ] make own/implement box2d for physics
   - [ ] spatial hash grid for collisions
 - [ ] asset hot reloading\*
-  - this one is difficult. we have to listen to assets/images changes, and on change reload
+  - this one is difficult. have to listen to assets/images changes, and on change reload
     atlas, then swap it at runtime. but def worth it
 
 ### PRIORITY 3
@@ -48,11 +48,11 @@
   - [x] parsing JSON
   - [x] rendering tiles
   - [x] collision handling
-  - [ ] simple culling
+  - [x] simple culling
+  - [x] loading entity custom fields
   - [ ] non continuous (warping) level handling (?)
   - [ ] runtime level loading
   - [ ] debug inspector
-  - [ ] remove capitalization (project settings)
 
 ## DONE
 
