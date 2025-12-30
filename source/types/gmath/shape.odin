@@ -12,6 +12,10 @@ Circle :: struct {
 
 Rect :: Vec4
 
+rectIntersects :: proc(a: Rect, b: Rect) -> bool { 	// basically an AABB check
+	return a.x <= b.z && a.z >= b.x && a.y <= b.w && a.w >= b.y
+}
+
 rectContains :: proc(rect: Rect, point: Vec2) -> bool { 	//useful for mouse events
 	return (point.x >= rect.x) && (point.x <= rect.z) && (point.y >= rect.y) && (point.y <= rect.w)
 }
