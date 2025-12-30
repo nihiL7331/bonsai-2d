@@ -1,11 +1,12 @@
 package render
 
+import ".."
 import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
 
 drawSprite :: proc(
-	pos: gmath.Vec2,
+	position: gmath.Vec2,
 	sprite: game.SpriteName,
 	pivot := gmath.Pivot.centerCenter,
 	flipX := false,
@@ -22,13 +23,26 @@ drawSprite :: proc(
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
 	zLayerQueue := -1,
+	culling := false,
 ) {
 	rectSize := getSpriteSize(sprite)
 	frameCount := game.getFrameCount(sprite)
 	rectSize.x /= f32(frameCount) // NOTE: assuming that animations are exported as a horizontal slice
 
+	if culling {
+		coreContext := core.getCoreContext()
+		cameraRect := coreContext.gameState.world.cameraRect
+
+		maxDimension := max(rectSize.x, rectSize.y) // handles rotation safely
+
+		spriteRect := gmath.rectMake(position, gmath.Vec2{maxDimension, maxDimension}, pivot)
+		spriteRect = gmath.rectShift(spriteRect, -drawOffset)
+
+		if !gmath.rectIntersects(spriteRect, cameraRect) do return
+	}
+
 	xForm0 := gmath.Mat4(1)
-	xForm0 *= gmath.xFormTranslate(pos)
+	xForm0 *= gmath.xFormTranslate(position)
 	xForm0 *= gmath.xFormScale(gmath.Vec2{flipX ? -1.0 : 1.0, 1.0})
 	xForm0 *= xForm
 	xForm0 *= gmath.xFormTranslate(rectSize * -gmath.scaleFromPivot(pivot))
@@ -67,7 +81,15 @@ drawRect :: proc(
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
 	zLayerQueue := -1,
+	culling := false,
 ) {
+	if culling {
+		coreContext := core.getCoreContext()
+		cameraRect := coreContext.gameState.world.cameraRect
+
+		if !gmath.rectIntersects(cameraRect, rect) do return
+	}
+
 	xForm := gmath.xFormTranslate(rect.xy)
 	size := gmath.rectSize(rect)
 

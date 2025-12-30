@@ -9,6 +9,7 @@ import "core:log"
 import "core:mem"
 import "core:slice"
 
+import core ".."
 import "../../shaders"
 import "../../types/color"
 import "../../types/game"
@@ -224,6 +225,14 @@ resetDrawFrame :: proc() {
 	for &layer in drawFrame.reset.quads {
 		clear(&layer)
 	}
+
+	// calculate camera rect for vision culling
+	coreContext := core.getCoreContext()
+	coreContext.gameState.world.cameraRect = gmath.rectMake(
+		coreContext.gameState.world.cameraPosition,
+		gmath.Vec2{game.GAME_WIDTH, game.GAME_HEIGHT},
+		gmath.Pivot.centerCenter,
+	)
 }
 
 setTexture :: proc(view: sg.View) {

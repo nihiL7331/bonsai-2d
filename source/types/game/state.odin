@@ -14,6 +14,7 @@ TimeState :: struct {
 
 WorldState :: struct {
 	cameraPosition: gmath.Vec2,
+	cameraRect:     gmath.Rect,
 	currentScene:   ^Scene,
 	nextScene:      ^Scene,
 }
