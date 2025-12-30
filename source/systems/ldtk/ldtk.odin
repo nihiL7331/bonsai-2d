@@ -23,8 +23,8 @@ _onEntitySpawn: EntitySpawnProc // this has to be set to be called for every ent
 
 init :: proc(worldName: type.WorldName, callback: EntitySpawnProc) {
 	loadData(worldName)
+	generateData()
 	setEntitySpawner(callback)
-	generateWorldColliders()
 	for level in _world.levels do spawnLevelEntities(level)
 	render.setClearColor(color.stringHexToRGBA(_world.backgroundColor))
 }
@@ -45,12 +45,6 @@ spawnLevelEntities :: proc(level: type.Level) {
 
 		for entity in entities {
 			_onEntitySpawn(entity, layer, level)
-			log.infof(
-				"Spawned entity ID: %v at X: %v Y: %v",
-				entity.identifier,
-				entity.worldPosition.x,
-				entity.worldPosition.y,
-			)
 		}
 	}
 }

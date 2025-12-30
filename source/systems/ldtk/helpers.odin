@@ -119,3 +119,7 @@ getCollisionAt :: proc(position: gmath.Vec2Int, level: type.Level) -> int {
 
 	return 0
 }
+
+getEntity :: proc(uid: string) -> ^type.EntityInstance {
+	return _world.entities[uid]
+}
