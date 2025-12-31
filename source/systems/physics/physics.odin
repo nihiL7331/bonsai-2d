@@ -5,16 +5,10 @@ import "../../types/gmath"
 import "core:math"
 
 @(private = "package")
-_getColliderRect :: proc(
-	positionPointer: ^gmath.Vec2,
-	size: gmath.Vec2,
-	offset: gmath.Vec2,
-	pivot: gmath.Pivot,
-) -> gmath.Rect {
-	if positionPointer == nil do return gmath.Rect{0, 0, 0, 0}
-	colliderRect := gmath.rectMake(positionPointer^, size, pivot)
-	colliderRect = gmath.rectShift(colliderRect, offset)
-	return colliderRect
+_updateColliderRect :: proc(collider: ^Collider) {
+	colliderRect := gmath.rectMake(collider.position^, collider.size, collider.pivot)
+	colliderRect = gmath.rectShift(colliderRect, collider.offset)
+	collider._rect = colliderRect
 }
 
 @(private = "package")

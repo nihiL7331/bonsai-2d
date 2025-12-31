@@ -39,6 +39,9 @@ Collider :: struct {
 	// onCollisionExit: CollisionCallback, //TODO:
 	position:         ^gmath.Vec2, // NOTE: they are pointers
 	velocity:         ^gmath.Vec2,
+	size:             gmath.Vec2,
+	offset:           gmath.Vec2,
+	pivot:            gmath.Pivot,
 	debugColor:       gmath.Vec4,
 	userData:         rawptr,
 	_rect:            gmath.Rect, // helper values, not recommended to edit

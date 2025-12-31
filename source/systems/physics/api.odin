@@ -31,10 +31,14 @@ initWorld :: proc(
 }
 
 updateWorld :: proc(world: ^World, deltaTime: f32) {
-	//create spatial grid
+
+	//update collider rect and create spatial grid
 	for _, &list in world.grid.dynamicCells do clear(&list)
 	for collider in world.colliders {
-		if !collider.isStatic do _insertCollider(&world.grid, collider)
+		if !collider.isStatic {
+			_updateColliderRect(collider)
+			_insertCollider(&world.grid, collider)
+		}
 	}
 
 	//update physics and draw if debug
@@ -101,10 +105,14 @@ newColliderWithVelocityAndPositionPointers :: proc(
 	collider.isStatic = isStatic
 	collider.position = positionPointer
 	collider.velocity = velocityPointer
+	collider.size = size
+	collider.offset = offset
+	collider.pivot = pivot
 	collider.userData = userData
 	collider.debugColor = debugColor
-	collider._rect = _getColliderRect(collider.position, size, offset, pivot)
 	collider.onCollisionEnter = onCollisionEnter
+
+	_updateColliderRect(collider)
 
 	append(&world.colliders, collider)
 	world.cursor += 1
@@ -141,10 +149,14 @@ newColliderWithVelocityPointer :: proc(
 	collider.position = new(gmath.Vec2)
 	collider.position^ = position
 	collider.velocity = velocityPointer
+	collider.size = size
+	collider.offset = offset
+	collider.pivot = pivot
 	collider.userData = userData
 	collider.debugColor = debugColor
-	collider._rect = _getColliderRect(collider.position, size, offset, pivot)
 	collider.onCollisionEnter = onCollisionEnter
+
+	_updateColliderRect(collider)
 
 	append(&world.colliders, collider)
 	world.cursor += 1
@@ -181,10 +193,14 @@ newColliderWithPositionPointer :: proc(
 	collider.position = positionPointer
 	collider.velocity = new(gmath.Vec2)
 	collider.velocity^ = velocity
+	collider.size = size
+	collider.offset = offset
+	collider.pivot = pivot
 	collider.userData = userData
 	collider.debugColor = debugColor
-	collider._rect = _getColliderRect(collider.position, size, offset, pivot)
 	collider.onCollisionEnter = onCollisionEnter
+
+	_updateColliderRect(collider)
 
 	append(&world.colliders, collider)
 	world.cursor += 1
@@ -222,10 +238,14 @@ newColliderWithNoPointers :: proc(
 	collider.position^ = position
 	collider.velocity = new(gmath.Vec2)
 	collider.velocity^ = velocity
+	collider.size = size
+	collider.offset = offset
+	collider.pivot = pivot
 	collider.userData = userData
 	collider.debugColor = debugColor
-	collider._rect = _getColliderRect(collider.position, size, offset, pivot)
 	collider.onCollisionEnter = onCollisionEnter
+
+	_updateColliderRect(collider)
 
 	append(&world.colliders, collider)
 	world.cursor += 1
