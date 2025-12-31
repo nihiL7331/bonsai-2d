@@ -1,13 +1,16 @@
 package gameplay
 
+import "../../../core"
 import "../../../core/render"
-import prefabs "../../../game/entities"
 import "../../../systems/camera"
 import "../../../systems/entities"
 import entityType "../../../systems/entities/type"
 import "../../../systems/ldtk"
 import ldtkType "../../../systems/ldtk/type"
+import "../../../systems/physics"
 import "../../../types/gmath"
+import prefabs "../../entities"
+import "../../globals"
 
 import "core:log"
 import "core:reflect"
@@ -21,6 +24,7 @@ init :: proc(data: rawptr) {
 	//it's as easy as declaring it in the struct above, doing state.var = "xyz" in one function
 	//and accessing it via the same name in another function.
 
+	globals.physicsWorld = physics.initWorld()
 	entities.entityInitCore()
 	ldtk.init(.test, onEntitySpawn)
 
@@ -29,7 +33,9 @@ init :: proc(data: rawptr) {
 
 update :: proc(data: rawptr) {
 	// state := (^Data)(data)
+	deltaTime := core.getDeltaTime()
 
+	physics.updateWorld(globals.physicsWorld, deltaTime)
 	entities.updateAll()
 
 	player := entities.getPlayer()
@@ -44,6 +50,7 @@ draw :: proc(data: rawptr) {
 
 	render.setCoordSpace(render.getWorldSpace())
 	ldtk.renderLevels(true)
+	physics.drawWorld(globals.physicsWorld)
 	entities.drawAll()
 }
 

@@ -1,26 +1,41 @@
 package entityData
 
-import "../../core"
 import "../../core/input"
 import "../../core/render"
 import "../../systems/entities"
 import "../../systems/entities/type"
+import "../../systems/physics"
 import "../../types/game"
 import "../../types/gmath"
+import "../globals"
+
+import "core:log"
+
+onColEnter :: proc(col: ^physics.Collider, other: ^physics.Collider) {
+	log.infof("Collision between: %v, and %v", col.tag, other.tag)
+}
 
 spawnPlayer :: proc(data: type.EntityData) -> ^type.Entity {
 	entity := entities.create(type.EntityName.Player)
 	entities.setPlayerHandle(entity.handle)
 	entity.position = data.position
 
+	physics.newCollider(
+		globals.physicsWorld,
+		&entity.position,
+		&entity.velocity,
+		gmath.Vec2{8, 16},
+		tag = "Player",
+		pivot = gmath.Pivot.bottomCenter,
+		debugColor = gmath.Vec4{1, 1, 1, 0.2},
+		onCollisionEnter = onColEnter,
+	)
 	entity.drawOffset = gmath.Vec2{0.5, 5} // this kinda just has to be hardcoded
 	entity.drawPivot = gmath.Pivot.bottomCenter // recommended for y sort
 
 	entity.updateProc = proc(entity: ^type.Entity) {
-		coreContext := core.getCoreContext()
-
 		inputDir := input.getInputVector()
-		entity.position += inputDir * 100.0 * coreContext.deltaTime
+		entity.velocity = inputDir * 100.0 // with physics, just have to update the velocity
 
 		if inputDir.x != 0 {
 			entity.lastKnownXDir = inputDir.x
