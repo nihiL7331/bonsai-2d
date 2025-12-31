@@ -1,0 +1,19 @@
+{
+  "enable_semantic_tokens": true,
+  "enable_document_symbols": true,
+  "enable_hover": true,
+  "enable_snippets": true,
+  "enable_references": true,
+  "profile": "default",
+  "profiles": [
+    {
+      "name": "default",
+      "checker_path": ["source"],
+      "checker_args": "-vet -strict-style"
+    }
+  ],
+  "collections": [
+    { "name": "bonsai", "path": "./bonsai" },
+    { "name": "game", "path": "./source/game" }
+  ]
+}
