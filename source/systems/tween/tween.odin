@@ -6,14 +6,13 @@ import "core:math"
 
 import "../../core"
 import "../../types/gmath"
-import "type"
 
 @(private)
-_pool: [type.MAX_TWEENS]type.Tween
+_pool: [MAX_TWEENS]Tween
 
 //helpers
-_getTween :: proc(handle: type.TweenHandle) -> ^type.Tween {
-	if handle.index >= type.MAX_TWEENS do return nil
+_getTween :: proc(handle: TweenHandle) -> ^Tween {
+	if handle.index >= MAX_TWEENS do return nil
 
 	tween := &_pool[handle.index]
 
@@ -24,7 +23,7 @@ _getTween :: proc(handle: type.TweenHandle) -> ^type.Tween {
 	return tween
 }
 
-_applyValue :: proc(tween: ^type.Tween, value: type.TweenValue) {
+_applyValue :: proc(tween: ^Tween, value: TweenValue) {
 	if tween.targetPointer == nil do return
 
 	switch v in value {
@@ -52,7 +51,7 @@ _applyValue :: proc(tween: ^type.Tween, value: type.TweenValue) {
 }
 
 _freeSlot :: proc(index: u32) {
-	if index >= type.MAX_TWEENS do return
+	if index >= MAX_TWEENS do return
 
 	_pool[index].active = false
 }
@@ -72,7 +71,7 @@ toF32 :: proc(
 	ease := gmath.EaseName.Linear,
 	onEnd: proc(data: rawptr) = {},
 	data: rawptr = nil,
-) -> type.TweenHandle {
+) -> TweenHandle {
 	return _createTween(pointer, target, duration, group, ease, onEnd, data, f32)
 }
 
@@ -84,7 +83,7 @@ toVec2 :: proc(
 	ease := gmath.EaseName.Linear,
 	onEnd: proc(data: rawptr) = {},
 	data: rawptr = nil,
-) -> type.TweenHandle {
+) -> TweenHandle {
 	return _createTween(pointer, target, duration, group, ease, onEnd, data, gmath.Vec2)
 }
 
@@ -96,7 +95,7 @@ toVec3 :: proc(
 	ease := gmath.EaseName.Linear,
 	onEnd: proc(data: rawptr) = {},
 	data: rawptr = nil,
-) -> type.TweenHandle {
+) -> TweenHandle {
 	return _createTween(pointer, target, duration, group, ease, onEnd, data, gmath.Vec3)
 }
 
@@ -108,23 +107,23 @@ toVec4 :: proc(
 	ease := gmath.EaseName.Linear,
 	onEnd: proc(data: rawptr) = {},
 	data: rawptr = nil,
-) -> type.TweenHandle {
+) -> TweenHandle {
 	return _createTween(pointer, target, duration, group, ease, onEnd, data, gmath.Vec4)
 }
 
 @(private)
 _createTween :: proc(
 	pointer: rawptr,
-	target: type.TweenValue,
+	target: TweenValue,
 	duration: f32,
 	group: string = "",
 	ease := gmath.EaseName.Linear,
 	onEnd: proc(data: rawptr) = {},
 	data: rawptr = nil,
 	kind: typeid,
-) -> type.TweenHandle {
+) -> TweenHandle {
 	slotIndex := -1
-	for i in 0 ..< type.MAX_TWEENS {
+	for i in 0 ..< MAX_TWEENS {
 		if !_pool[i].active {
 			slotIndex = i
 			break
@@ -133,7 +132,7 @@ _createTween :: proc(
 
 	if slotIndex == -1 {
 		fmt.println("Tween pool full. Increase the size in systems/tween.odin.")
-		return type.TweenHandle{}
+		return TweenHandle{}
 	}
 
 	tween := &_pool[slotIndex]
@@ -179,7 +178,7 @@ _createTween :: proc(
 	return tween.handle
 }
 
-then :: proc(current: type.TweenHandle, next: type.TweenHandle) -> type.TweenHandle {
+then :: proc(current: TweenHandle, next: TweenHandle) -> TweenHandle {
 	currentTween := _getTween(current)
 	if currentTween == nil do return next
 
@@ -195,14 +194,14 @@ then :: proc(current: type.TweenHandle, next: type.TweenHandle) -> type.TweenHan
 	return next
 }
 
-togglePause :: proc(handle: type.TweenHandle) -> Maybe(bool) {
+togglePause :: proc(handle: TweenHandle) -> Maybe(bool) {
 	tween := _getTween(handle)
 	if tween == nil do return nil
 	tween.paused = !tween.paused
 	return tween.paused
 }
 
-stop :: proc(handle: type.TweenHandle, mode: type.StopMode = type.StopMode.STAY) {
+stop :: proc(handle: TweenHandle, mode: StopMode = StopMode.STAY) {
 	tween := _getTween(handle)
 	if tween == nil do return
 
@@ -219,7 +218,7 @@ stop :: proc(handle: type.TweenHandle, mode: type.StopMode = type.StopMode.STAY)
 	_freeSlot(tween.handle.index)
 }
 
-stopGroup :: proc(group: string, mode: type.StopMode = type.StopMode.STAY) {
+stopGroup :: proc(group: string, mode: StopMode = StopMode.STAY) {
 	if group == "" do return
 
 	groupHash := getId(group)
@@ -286,7 +285,7 @@ update :: proc() {
 		}
 
 		if tween.elapsed >= tween.duration {
-			stop(tween.handle, type.StopMode.END)
+			stop(tween.handle, StopMode.END)
 
 			if tween.onEnd != {} {
 				tween.onEnd(tween.data)

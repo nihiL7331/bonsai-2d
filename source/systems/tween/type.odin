@@ -1,6 +1,6 @@
-package tween_type
+package tween
 
-import "../../../types/gmath"
+import "../../types/gmath"
 
 MAX_TWEENS :: 1024
 
