@@ -16,6 +16,7 @@ Entity :: struct {
 	updateProc:       proc(_: ^Entity),
 	drawProc:         proc(_: ^Entity),
 	position:         gmath.Vec2,
+	velocity:         gmath.Vec2,
 	lastKnownXDir:    f32,
 	flipX:            bool,
 	drawOffset:       gmath.Vec2,
