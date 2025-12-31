@@ -98,3 +98,10 @@ source/systems/ldtk/type/generated_world.odin
 source/game/entities/generated_registry.odin
 source/systems/ldtk/generated_world.odin
 source/systems/entities/generated_entity.odin
+bonsai/shaders/shader.odin
+bonsai/systems/entities/generated_entity.odin
+bonsai/systems/ldtk/generated_world.odin
+bonsai/types/game/generated_audio.odin
+bonsai/types/game/generated_font.odin
+bonsai/types/game/generated_scene.odin
+bonsai/types/game/generated_sprite.odin

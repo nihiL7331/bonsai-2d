@@ -11,8 +11,6 @@
 
 ### PRIORITY 0
 
-- [ ] collapse types in systems
-- [ ] restructure to hide engine core\*
 - [ ] controller, touchscreen support\*
 - [ ] auto-scaling on immediate ui\*
 
@@ -51,6 +49,7 @@
 
 ## IN PROGRESS
 
+- [ ] restructure to hide engine core\*
 - [ ] basic physics system
   - [x] swept AABB using Minkowski's difference
   - [x] trigger colliders
@@ -81,3 +80,4 @@
   - [x] loading entity custom fields
   - [x] non continuous (warping) level handling
     - technically done, it can be easily implemented by entity uid and level loading
+- [x] collapse types in systems

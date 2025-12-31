@@ -9,19 +9,6 @@
 // support:
 // this blueprint is meant to run on web and desktop (linux, mac, windows and wasm).
 //
-// the core / systems / types / game split and their relation:
-//  - core is where the main meat of the engine/blueprint lives. It contains things
-// crucial to make a game, and depends just on external libraries and types.
-//  - systems is a place for parts of the engine that aren't required to make a game run,
-// but are worth abstracting out for repeated use in multiple projects. A good example
-// would be a complex camera controller or a entities system. Systems depend on core and types.
-//  - types are type definitions, structure definitions, small helpers that are used
-// throughout the whole project. they dont depend on anything but external libraries.
-//  - game is where, well, the game is. it is the glue to all previously mentioned parts,
-// and with that it can depend on anything. the game directory consists of the main game.odin
-// file as well as directories for defining custom objects from systems (and notably scenes
-// from core).
-//
 // limitations:
 // due to it being targeted for web, there are a few limitations/requirements for it to work.
 // they are:
@@ -38,25 +25,23 @@ package main
 
 import "base:runtime"
 
-import sapp "libs/sokol/app"
-import sg "libs/sokol/gfx"
-import slog "libs/sokol/log"
+import "bonsai:core"
+import "bonsai:core/audio"
+import "bonsai:core/clock"
+import "bonsai:core/input"
+import "bonsai:core/logger"
+import "bonsai:core/platform/web"
+import "bonsai:core/render"
+import sapp "bonsai:libs/sokol/app"
+import sg "bonsai:libs/sokol/gfx"
+import slog "bonsai:libs/sokol/log"
+import "bonsai:types/game"
 
-import "core"
-import "core/audio"
-import "core/clock"
-import "core/input"
-import "core/logger"
-import "core/render"
-
-import "core/platform/web"
 import gameapp "game"
-import "types/game"
 
 _ :: web
 
 IS_WEB :: ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32
-
 
 odinContext: runtime.Context
 

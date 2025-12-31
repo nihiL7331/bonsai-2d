@@ -1,5 +1,5 @@
 package globals
 
-import physics "../../systems/physics"
+import physics "bonsai:systems/physics"
 
 physicsWorld: ^physics.World

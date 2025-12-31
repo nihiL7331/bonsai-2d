@@ -1,12 +1,13 @@
 package entityData
 
-import "../../core/input"
-import "../../core/render"
-import "../../systems/entities"
-import "../../systems/physics"
-import "../../types/game"
-import "../../types/gmath"
-import "../globals"
+import "bonsai:core/input"
+import "bonsai:core/render"
+import "bonsai:systems/entities"
+import "bonsai:systems/physics"
+import "bonsai:types/game"
+import "bonsai:types/gmath"
+
+import "game:globals"
 
 import "core:log"
 

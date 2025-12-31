@@ -1,9 +1,9 @@
 package entityData
 
-import "../../core/render"
-import "../../systems/entities"
-import "../../types/game"
-import "../../types/gmath"
+import "bonsai:core/render"
+import "bonsai:systems/entities"
+import "bonsai:types/game"
+import "bonsai:types/gmath"
 
 // generic boilerplate used to create entities using my entity system
 

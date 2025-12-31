@@ -1,14 +1,15 @@
 package gameplay
 
-import "../../../core"
-import "../../../core/render"
-import "../../../systems/camera"
-import "../../../systems/entities"
-import "../../../systems/ldtk"
-import "../../../systems/physics"
-import "../../../types/gmath"
-import prefabs "../../entities"
-import "../../globals"
+import "bonsai:core"
+import "bonsai:core/render"
+import "bonsai:systems/camera"
+import "bonsai:systems/entities"
+import "bonsai:systems/ldtk"
+import "bonsai:systems/physics"
+import "bonsai:types/gmath"
+
+import prefabs "game:entities"
+import "game:globals"
 
 import "core:log"
 import "core:reflect"

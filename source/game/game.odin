@@ -2,18 +2,19 @@
 
 package game
 
-import "../core"
-import "../core/input"
-import "../core/render"
-import "../core/scene"
-import "../core/ui"
-import "../systems/entities"
-import "../systems/ldtk"
-import "../systems/tween"
-import "../types/color"
-import "../types/game"
-import "../types/gmath"
-import "scenes"
+import "bonsai:core"
+import "bonsai:core/input"
+import "bonsai:core/render"
+import "bonsai:core/scene"
+import "bonsai:core/ui"
+import "bonsai:systems/entities"
+import "bonsai:systems/ldtk"
+import "bonsai:systems/tween"
+import "bonsai:types/color"
+import "bonsai:types/game"
+import "bonsai:types/gmath"
+
+import "game:scenes"
 
 import "core:fmt"
 

@@ -1,11 +1,11 @@
 package splash
 
-import "../../../core/input"
-import "../../../core/render"
-import "../../../core/scene"
-import "../../../systems/tween"
-import "../../../types/game"
-import "../../../types/gmath"
+import "bonsai:core/input"
+import "bonsai:core/render"
+import "bonsai:core/scene"
+import "bonsai:systems/tween"
+import "bonsai:types/game"
+import "bonsai:types/gmath"
 
 Data :: struct {
 	logoAlpha: f32,
