@@ -3,7 +3,6 @@ package ldtk
 import "../../core/render"
 import "../../types/game"
 import "../../types/gmath"
-import "type"
 
 import "core:fmt"
 import "core:log"
@@ -40,11 +39,7 @@ getTileSprite :: proc(tilesetUid: int, tileId: int) -> game.SpriteName {
 }
 
 // draw a "type" of tiles (grid, autolayer)
-drawTileList :: proc(
-	tiles: Maybe([dynamic]type.TileInstance),
-	layer: type.LayerInstance,
-	level: type.Level,
-) {
+drawTileList :: proc(tiles: Maybe([dynamic]TileInstance), layer: LayerInstance, level: Level) {
 	tileList, ok := tiles.?
 	if !ok || len(tileList) == 0 do return
 
@@ -69,8 +64,8 @@ drawTileList :: proc(
 			level.pxHeight - localY + level.worldPosition.y - gridSize / 2,
 		}
 
-		flipX := type.Flip.flipX in tile.flip
-		flipY := type.Flip.flipY in tile.flip
+		flipX := Flip.flipX in tile.flip
+		flipY := Flip.flipY in tile.flip
 
 		flipMatrix := gmath.Mat4(1)
 		if flipY {
@@ -88,11 +83,11 @@ drawTileList :: proc(
 	}
 }
 
-getCollisionAt :: proc(position: gmath.Vec2Int, level: type.Level) -> int {
+getCollisionAt :: proc(position: gmath.Vec2Int, level: Level) -> int {
 	layers, ok := level.layerInstances.?
 	if !ok do return 0
 
-	collisionLayer: ^type.LayerInstance = nil
+	collisionLayer: ^LayerInstance = nil
 	for &layer in layers {
 		if layer.identifier == "Collisions" || layer.type == "IntGrid" {
 			collisionLayer = &layer
@@ -121,6 +116,6 @@ getCollisionAt :: proc(position: gmath.Vec2Int, level: type.Level) -> int {
 	return 0
 }
 
-getEntity :: proc(uid: string) -> ^type.EntityInstance {
+getEntity :: proc(uid: string) -> ^EntityInstance {
 	return _world.entities[uid]
 }

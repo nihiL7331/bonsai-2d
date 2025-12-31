@@ -5,11 +5,10 @@ import "core:strings"
 
 import "../../types/color"
 import "../../types/gmath"
-import "type"
 
 getPoint :: proc(
-	field: type.FieldInstance,
-	level: type.Level,
+	field: FieldInstance,
+	level: Level,
 	default: gmath.Vec2 = {0, 0},
 ) -> (
 	gmath.Vec2,
@@ -37,7 +36,7 @@ getPoint :: proc(
 	return finalPosition, true
 }
 
-getField :: proc(field: type.FieldInstance, level: type.Level) -> (type.FieldInstanceType, bool) {
+getField :: proc(field: FieldInstance, level: Level) -> (FieldInstanceType, bool) {
 	#partial switch value in field.value {
 	case i64:
 		return int(value), true

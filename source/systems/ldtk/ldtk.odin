@@ -5,24 +5,19 @@ import "../../core/render"
 import "../../types/color"
 import "../../types/game"
 import "../../types/gmath"
-import "type"
 
-EntitySpawnProc :: #type proc(
-	entityInstance: type.EntityInstance,
-	layer: type.LayerInstance,
-	level: type.Level,
-)
+EntitySpawnProc :: #type proc(entityInstance: EntityInstance, layer: LayerInstance, level: Level)
 
 CULLING_TILES :: false // enabled per-tile culling along the per-level one. should benefit performance if levels are big
 
 @(private = "package")
 _spriteCache: map[int]game.SpriteName
 @(private = "package")
-_world: type.Root
+_world: Root
 @(private)
 _onEntitySpawn: EntitySpawnProc // this has to be set to be called for every entity, allows entity spawning from LDtk directly
 
-init :: proc(worldName: type.WorldName, callback: EntitySpawnProc) {
+init :: proc(worldName: WorldName, callback: EntitySpawnProc) {
 	loadData(worldName)
 	generateData()
 	setEntitySpawner(callback)
@@ -34,7 +29,7 @@ setEntitySpawner :: proc(callback: EntitySpawnProc) {
 	_onEntitySpawn = callback
 }
 
-spawnLevelEntities :: proc(level: type.Level) {
+spawnLevelEntities :: proc(level: Level) {
 	if _onEntitySpawn == nil do return
 
 	layers, ok := level.layerInstances.?
@@ -87,6 +82,6 @@ drawDebug :: proc() {
 	}
 }
 
-getColliderRects :: proc(level: type.Level) -> []gmath.Rect {
+getColliderRects :: proc(level: Level) -> []gmath.Rect {
 	return level.colliders[:]
 }

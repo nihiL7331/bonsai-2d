@@ -6,7 +6,6 @@ import "../../../systems/camera"
 import "../../../systems/entities"
 import entityType "../../../systems/entities/type"
 import "../../../systems/ldtk"
-import ldtkType "../../../systems/ldtk/type"
 import "../../../systems/physics"
 import "../../../types/gmath"
 import prefabs "../../entities"
@@ -61,9 +60,9 @@ exit :: proc(data: rawptr) {
 }
 
 onEntitySpawn :: proc(
-	entityInstance: ldtkType.EntityInstance,
-	layer: ldtkType.LayerInstance,
-	level: ldtkType.Level,
+	entityInstance: ldtk.EntityInstance,
+	layer: ldtk.LayerInstance,
+	level: ldtk.Level,
 ) {
 	type, ok := reflect.enum_from_name(entityType.EntityName, entityInstance.identifier)
 	if !ok {

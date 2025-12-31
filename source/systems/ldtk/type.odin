@@ -1,8 +1,8 @@
-package ldtk_type
+package ldtk
 
 import "core:encoding/json"
 
-import "../../../types/gmath"
+import "../../types/gmath"
 
 COLLISIONS_LAYER_IDENTIFIER :: "Collisions"
 INTGRID_WALL_VALUE :: 1

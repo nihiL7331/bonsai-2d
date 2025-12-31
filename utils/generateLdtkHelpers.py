@@ -55,7 +55,7 @@ def generate_entity_file(src, dst, type_name, pack_name="game_types"):
 if __name__ == "__main__":
     generate_entity_file(
         src="assets/worlds",
-        dst="source/systems/ldtk/type/generated_world.odin",
+        dst="source/systems/ldtk/generated_world.odin",
         type_name="World",
-        pack_name="ldtk_type",
+        pack_name="ldtk",
     )
