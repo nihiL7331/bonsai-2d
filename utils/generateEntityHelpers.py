@@ -55,9 +55,9 @@ def generate_entity_file(src, dst, type_name, pack_name="game_types"):
             f.write("\n")
             f.write("package entityData")
             f.write("\n\n")
-            f.write('import "../../systems/entities/type"')
+            f.write('import "../../systems/entities"')
             f.write("\n\n")
-            f.write(f"spawn := [type.{type_name}Name]type.SpawnProc {{\n")
+            f.write(f"spawn := [entities.{type_name}Name]entities.SpawnProc {{\n")
             f.write("\t.nil = nil,\n")
             for name in found_files:
                 f.write(f"\t.{name} = spawn{name},\n")
@@ -71,7 +71,7 @@ def generate_entity_file(src, dst, type_name, pack_name="game_types"):
 if __name__ == "__main__":
     generate_entity_file(
         src="source/game/entities",
-        dst="source/systems/entities/type/generated_entity.odin",
+        dst="source/systems/entities/generated_entity.odin",
         type_name="Entity",
-        pack_name="entity_type",
+        pack_name="entities",
     )

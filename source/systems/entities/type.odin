@@ -1,7 +1,7 @@
-package entity_type
+package entities
 
-import "../../../types/game"
-import "../../../types/gmath"
+import "../../types/game"
+import "../../types/gmath"
 
 MAX_ENTITIES :: 2048
 

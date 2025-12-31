@@ -4,7 +4,6 @@ import "../../../core"
 import "../../../core/render"
 import "../../../systems/camera"
 import "../../../systems/entities"
-import entityType "../../../systems/entities/type"
 import "../../../systems/ldtk"
 import "../../../systems/physics"
 import "../../../types/gmath"
@@ -64,7 +63,7 @@ onEntitySpawn :: proc(
 	layer: ldtk.LayerInstance,
 	level: ldtk.Level,
 ) {
-	type, ok := reflect.enum_from_name(entityType.EntityName, entityInstance.identifier)
+	type, ok := reflect.enum_from_name(entities.EntityName, entityInstance.identifier)
 	if !ok {
 		log.infof("Couldn't spawn entity ID %v. (Enum not found)", entityInstance.identifier)
 	}
@@ -73,12 +72,12 @@ onEntitySpawn :: proc(
 		f32(entityInstance.worldPosition.x),
 		f32(entityInstance.worldPosition.y),
 	}
-	data: entityType.EntityData
+	data: entities.EntityData
 	data.position = position
 
 	customFields := entityInstance.customFields
 	for key, customField in customFields {
-		data.fields[key] = entityType.FieldValue(customField)
+		data.fields[key] = entities.FieldValue(customField)
 	}
 
 	prefabs.spawn[type](data)

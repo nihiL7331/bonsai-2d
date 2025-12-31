@@ -3,7 +3,6 @@ package entityData
 import "../../core/input"
 import "../../core/render"
 import "../../systems/entities"
-import "../../systems/entities/type"
 import "../../systems/physics"
 import "../../types/game"
 import "../../types/gmath"
@@ -15,8 +14,8 @@ onColEnter :: proc(col: ^physics.Collider, other: ^physics.Collider) {
 	log.infof("Collision between: %v, and %v", col.tag, other.tag)
 }
 
-spawnPlayer :: proc(data: type.EntityData) -> ^type.Entity {
-	entity := entities.create(type.EntityName.Player)
+spawnPlayer :: proc(data: entities.EntityData) -> ^entities.Entity {
+	entity := entities.create(entities.EntityName.Player)
 	entities.setPlayerHandle(entity.handle)
 	entity.position = data.position
 
@@ -33,7 +32,7 @@ spawnPlayer :: proc(data: type.EntityData) -> ^type.Entity {
 	entity.drawOffset = gmath.Vec2{0.5, 5} // this kinda just has to be hardcoded
 	entity.drawPivot = gmath.Pivot.bottomCenter // recommended for y sort
 
-	entity.updateProc = proc(entity: ^type.Entity) {
+	entity.updateProc = proc(entity: ^entities.Entity) {
 		inputDir := input.getInputVector()
 		entity.velocity = inputDir * 100.0 // with physics, just have to update the velocity
 
@@ -50,7 +49,7 @@ spawnPlayer :: proc(data: type.EntityData) -> ^type.Entity {
 		}
 	}
 
-	entity.drawProc = proc(entity: ^type.Entity) {
+	entity.drawProc = proc(entity: ^entities.Entity) {
 		render.drawSprite(
 			entity.position,
 			game.SpriteName.shadow_medium,
