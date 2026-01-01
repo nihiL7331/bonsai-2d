@@ -73,6 +73,14 @@ setCoordSpace :: proc {
 	_setCoordSpaceDefault,
 }
 
+setWorldSpace :: proc() {
+	_setCoordSpaceValue(getWorldSpace())
+}
+
+setScreenSpace :: proc() {
+	_setCoordSpaceValue(getScreenSpace())
+}
+
 @(private)
 _ySortCompare :: proc(a, b: gfx.Quad) -> bool {
 	aY := min(a[0].position.y, a[1].position.y, a[2].position.y, a[3].position.y)

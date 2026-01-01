@@ -39,11 +39,10 @@ shutdown :: proc() {
 }
 
 drawUiLayer :: proc() {
+	render.setScreenSpace()
+
 	coreContext := core.getCoreContext()
 	player := entities.getPlayer()
-
-	render.setCoordSpace(render.getScreenSpace())
-
 	bottomLeft := render.screenPivot(gmath.Pivot.bottomLeft)
 
 	ui.begin(input.getScreenMousePos())
