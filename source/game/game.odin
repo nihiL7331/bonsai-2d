@@ -14,8 +14,6 @@ import "bonsai:types/color"
 import "bonsai:types/game"
 import "bonsai:types/gmath"
 
-import "game:scenes"
-
 import "core:fmt"
 
 VERSION :: "v0.0.0"
@@ -23,7 +21,6 @@ WINDOW_TITLE :: "Blueprint"
 
 init :: proc() {
 	ui.init()
-	scenes.initRegistry()
 	scene.init(game.SceneName.gameplay)
 }
 

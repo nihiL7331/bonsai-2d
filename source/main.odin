@@ -38,6 +38,7 @@ import slog "bonsai:libs/sokol/log"
 import "bonsai:types/game"
 
 import gameapp "game"
+import "game:scenes"
 
 _ :: web
 
@@ -95,6 +96,7 @@ init :: proc "c" () {
 	coreContext.windowWidth = sapp.width()
 	coreContext.windowHeight = sapp.height()
 
+	scenes.initRegistry()
 	input.init()
 	audio.init()
 	render.init()
