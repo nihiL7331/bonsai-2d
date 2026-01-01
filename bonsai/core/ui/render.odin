@@ -79,18 +79,16 @@ renderWindow :: proc(title: string, rect: gmath.Rect) {
 	)
 	render.drawRect(headerRect, col = _STYLE[.HEADER], zLayer = game.ZLayer.ui)
 
-	font, ok := render.getFont(.PixelCode, 12)
-	if ok {
-		render.drawText(
-			gmath.Vec2{(rect.x + rect.z) / 2, (headerRect.y + headerRect.w) / 2},
-			title,
-			&font,
-			col = _STYLE[.TEXT],
-			zLayer = game.ZLayer.ui,
-			scale = 0.5,
-			pivot = gmath.Pivot.centerCenter,
-		)
-	}
+	render.drawText(
+		gmath.Vec2{(rect.x + rect.z) / 2, (headerRect.y + headerRect.w) / 2},
+		title,
+		.PixelCode,
+		12,
+		col = _STYLE[.TEXT],
+		zLayer = game.ZLayer.ui,
+		scale = 0.5,
+		pivot = gmath.Pivot.centerCenter,
+	)
 }
 
 Button :: proc(label: string) -> bool {
@@ -139,18 +137,16 @@ Button :: proc(label: string) -> bool {
 
 	render.drawRect(rect, col = rectColor, zLayer = game.ZLayer.ui)
 
-	font, ok := render.getFont(.PixelCode, 12)
-	if ok {
-		render.drawText(
-			screenPos + size / 2,
-			label,
-			&font,
-			scale = 0.5,
-			zLayer = game.ZLayer.ui,
-			pivot = gmath.Pivot.centerCenter,
-			col = textColor,
-		)
-	}
+	render.drawText(
+		screenPos + size / 2,
+		label,
+		.PixelCode,
+		12,
+		scale = 0.5,
+		zLayer = game.ZLayer.ui,
+		pivot = gmath.Pivot.centerCenter,
+		col = textColor,
+	)
 
 	return result
 }
@@ -217,19 +213,17 @@ Slider :: proc(
 	fillRect := gmath.Rect{rect.x, rect.y, rect.x + fillWidth, rect.w}
 	render.drawRect(fillRect, col = fillColor, zLayer = game.ZLayer.ui)
 
-	font, ok := render.getFont(.PixelCode, 12)
-	if ok {
-		render.drawText(
-			screenPos + size / 2,
-			label,
-			&font,
-			dropShadowCol = color.TRANSPARENT,
-			col = gmath.Vec4{1, 1, 1, 0.5},
-			scale = 0.5,
-			pivot = gmath.Pivot.centerCenter,
-			zLayer = game.ZLayer.ui,
-		)
-	}
+	render.drawText(
+		screenPos + size / 2,
+		label,
+		.PixelCode,
+		12,
+		dropShadowCol = color.TRANSPARENT,
+		col = gmath.Vec4{1, 1, 1, 0.5},
+		scale = 0.5,
+		pivot = gmath.Pivot.centerCenter,
+		zLayer = game.ZLayer.ui,
+	)
 }
 
 Checkbox :: proc(val: ^bool, label: string) {
@@ -275,27 +269,26 @@ Checkbox :: proc(val: ^bool, label: string) {
 	}
 
 	render.drawRect(rect, col = rectColor, zLayer = game.ZLayer.ui)
-	font, ok := render.getFont(.PixelCode, 12)
-	if ok {
+	render.drawText(
+		gmath.Vec2{parent.rect.x + parent.cursor.x, screenPos.y + size.y / 2},
+		label,
+		.PixelCode,
+		12,
+		col = _STYLE[.TEXT],
+		scale = 0.5,
+		pivot = gmath.Pivot.centerLeft,
+	)
+	if val^ {
 		render.drawText(
-			gmath.Vec2{parent.rect.x + parent.cursor.x, screenPos.y + size.y / 2},
-			label,
-			&font,
-			col = _STYLE[.TEXT],
+			screenPos + size / 2,
+			"X",
+			.PixelCode,
+			12,
+			zLayer = game.ZLayer.ui,
 			scale = 0.5,
-			pivot = gmath.Pivot.centerLeft,
+			pivot = gmath.Pivot.centerCenter,
+			col = _STYLE[.TEXT],
 		)
-		if val^ {
-			render.drawText(
-				screenPos + size / 2,
-				"X",
-				&font,
-				zLayer = game.ZLayer.ui,
-				scale = 0.5,
-				pivot = gmath.Pivot.centerCenter,
-				col = _STYLE[.TEXT],
-			)
-		}
 	}
 }
 
@@ -317,17 +310,15 @@ Header :: proc(label: string) { 	// technically a subheader, this one isn't drag
 
 
 	textColor := _STYLE[.HEADER]
-	font, ok := render.getFont(.PixelCode, 12)
-	if ok {
-		render.drawText(
-			screenPos,
-			label,
-			&font,
-			col = textColor,
-			scale = 0.5,
-			pivot = gmath.Pivot.centerCenter,
-		)
-	}
+	render.drawText(
+		screenPos,
+		label,
+		.PixelCode,
+		12,
+		col = textColor,
+		scale = 0.5,
+		pivot = gmath.Pivot.centerCenter,
+	)
 }
 
 CloseButton :: proc(id: u32) -> bool { 	//we separate this from button for easier positioning
@@ -357,18 +348,16 @@ CloseButton :: proc(id: u32) -> bool { 	//we separate this from button for easie
 	}
 
 	render.drawRect(rect, col = rectColor, zLayer = game.ZLayer.ui)
-	font, ok := render.getFont(.PixelCode, 12)
-	if ok {
-		render.drawText(
-			screenPos + size / 2,
-			"X",
-			&font,
-			zLayer = game.ZLayer.ui,
-			scale = 0.25,
-			pivot = gmath.Pivot.centerCenter,
-			col = textColor,
-		)
-	}
+	render.drawText(
+		screenPos + size / 2,
+		"X",
+		.PixelCode,
+		12,
+		zLayer = game.ZLayer.ui,
+		scale = 0.25,
+		pivot = gmath.Pivot.centerCenter,
+		col = textColor,
+	)
 
 	return true
 }

@@ -5,6 +5,8 @@ import "bonsai:types/color"
 import "bonsai:types/game"
 import "bonsai:types/gmath"
 
+import "core:log"
+
 drawText :: drawTextWithDropShadow
 
 drawTextWrapped :: proc(
@@ -25,7 +27,8 @@ drawTextWrapped :: proc(
 drawTextWithDropShadow :: proc(
 	pos: gmath.Vec2,
 	text: string,
-	font: ^Font,
+	font: game.FontName,
+	fontSize: int = 12,
 	dropShadowCol := color.BLACK,
 	col := color.WHITE,
 	scale := 1.0,
@@ -35,10 +38,17 @@ drawTextWithDropShadow :: proc(
 ) -> gmath.Vec2 {
 	offset := gmath.Vec2{1, -1} * f32(scale)
 
+	fontName := font
+	font, ok := getFont(font, fontSize)
+	if !ok {
+		log.errorf("Failed to draw font: %v (text: %v)", fontName, text)
+		return gmath.Vec2{0, 0}
+	}
+
 	drawTextNoDropShadow(
 		pos + offset,
 		text,
-		font = font,
+		font = &font,
 		col = dropShadowCol * col,
 		scale = scale,
 		pivot = pivot,
@@ -49,7 +59,7 @@ drawTextWithDropShadow :: proc(
 	dim := drawTextNoDropShadow(
 		pos,
 		text,
-		font = font,
+		font = &font,
 		col = col,
 		scale = scale,
 		pivot = pivot,
