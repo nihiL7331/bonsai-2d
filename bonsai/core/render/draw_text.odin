@@ -14,6 +14,7 @@ drawTextWrapped :: proc(
 	text: string,
 	font: ^Font,
 	wrapWidth: f32,
+	rotation: f32 = 0.0,
 	col := color.WHITE,
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
@@ -21,7 +22,7 @@ drawTextWrapped :: proc(
 	colOverride := gmath.Vec4{0, 0, 0, 0},
 ) -> gmath.Vec2 {
 	//TODO: wrapping text
-	return drawTextNoDropShadow(pos, text, font, col, scale, pivot, zLayer, colOverride)
+	return drawTextNoDropShadow(pos, rotation, text, font, col, scale, pivot, zLayer, colOverride)
 }
 
 drawTextWithDropShadow :: proc(
@@ -29,6 +30,7 @@ drawTextWithDropShadow :: proc(
 	text: string,
 	font: game.FontName,
 	fontSize: int = 12,
+	rotation: f32 = 0.0,
 	dropShadowCol := color.BLACK,
 	col := color.WHITE,
 	scale := 1.0,
@@ -47,6 +49,7 @@ drawTextWithDropShadow :: proc(
 
 	drawTextNoDropShadow(
 		pos + offset,
+		rotation,
 		text,
 		font = &font,
 		col = dropShadowCol * col,
@@ -58,6 +61,7 @@ drawTextWithDropShadow :: proc(
 
 	dim := drawTextNoDropShadow(
 		pos,
+		rotation,
 		text,
 		font = &font,
 		col = col,
@@ -72,6 +76,7 @@ drawTextWithDropShadow :: proc(
 
 drawTextNoDropShadow :: proc(
 	pos: gmath.Vec2,
+	rotation: f32,
 	text: string,
 	font: ^Font,
 	col := color.WHITE,
@@ -123,6 +128,11 @@ drawTextNoDropShadow :: proc(
 
 	pivotOffset := totalSize * -gmath.scaleFromPivot(pivot)
 
+	rotationMatrix := gmath.Mat4(1)
+	if rotation != 0 {
+		rotationMatrix = gmath.xFormRotate(rotation)
+	}
+
 	x: f32
 	y: f32
 
@@ -157,6 +167,7 @@ drawTextNoDropShadow :: proc(
 
 		xForm := gmath.Mat4(1)
 		xForm *= gmath.xFormTranslate(pos)
+		xForm *= rotationMatrix
 		xForm *= gmath.xFormScale(gmath.Vec2{f32(scale), f32(scale)})
 		xForm *= gmath.xFormTranslate(offsetToRenderAt)
 

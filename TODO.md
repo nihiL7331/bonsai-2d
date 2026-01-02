@@ -11,8 +11,9 @@
 
 ### PRIORITY 0
 
-- [ ] controller, touchscreen support\*
 - [ ] auto-scaling on immediate ui\*
+- [ ] change icon to pot
+- [ ] debug toggle
 
 ### PRIORITY 1
 
@@ -21,6 +22,11 @@
 - [ ] particle system
 - [ ] entity inspector
 - [ ] sloped tiles in LDtk
+- [ ] gamepad support\*
+- [ ] complex, modular touchscreen support\*
+  - a great option would be to implement an api
+    allowing to easily create virtual buttons
+    and sticks on the screen to be used by a touch screen
 
 ### PRIORITY 2
 
@@ -43,12 +49,9 @@
 
 - [ ] steamworks support
 
-### PRIORITY UNKNOWN
-
-- [ ] install utility along side systems
-
 ## IN PROGRESS
 
+- [ ] ui screen anchors
 - [ ] basic physics system
   - [x] swept AABB using Minkowski's difference
   - [x] trigger colliders
@@ -83,3 +86,5 @@
 - [x] restructure to hide engine core\*
 - [x] add setWorldSpace and setScreenSpace helpers
 - [x] move setFont to internal drawText function
+- [x] install utility along side systems
+- [x] basic touchscreen support (mouse emulation)\*

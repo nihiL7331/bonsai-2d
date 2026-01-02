@@ -8,6 +8,7 @@ import "bonsai:types/gmath"
 drawSprite :: proc(
 	position: gmath.Vec2,
 	sprite: game.SpriteName,
+	rotation: f32 = 0.0, // in radians
 	pivot := gmath.Pivot.centerCenter,
 	flipX := false,
 	drawOffset := gmath.Vec2{},
@@ -43,6 +44,9 @@ drawSprite :: proc(
 
 	xForm0 := gmath.Mat4(1)
 	xForm0 *= gmath.xFormTranslate(position)
+	if rotation != 0 {
+		xForm0 *= gmath.xFormRotate(rotation)
+	}
 	xForm0 *= gmath.xFormScale(gmath.Vec2{flipX ? -1.0 : 1.0, 1.0})
 	xForm0 *= xForm
 	xForm0 *= gmath.xFormTranslate(rectSize * -gmath.scaleFromPivot(pivot))
@@ -68,6 +72,7 @@ drawSprite :: proc(
 
 drawRect :: proc(
 	rect: gmath.Rect,
+	rotation: f32 = 0.0,
 	sprite := game.SpriteName.nil,
 	uv := DEFAULT_UV,
 	outlineCol := gmath.Vec4{},
@@ -91,6 +96,9 @@ drawRect :: proc(
 	}
 
 	xForm := gmath.xFormTranslate(rect.xy)
+	if rotation != 0 {
+		xForm *= gmath.xFormRotate(rotation)
+	}
 	size := gmath.rectSize(rect)
 
 	if outlineCol != {} {
