@@ -10,6 +10,8 @@ import "core:math/linalg"
 // additional space for future controller support
 MAX_KEYCODES :: 512
 
+TOUCH_EMULATE_MOUSE :: true
+
 @(private)
 _actualInputState: Input
 
@@ -316,6 +318,43 @@ inputEventCallback :: proc "c" (event: ^sapp.Event) {
 		}
 		if event.key_repeat {
 			inputState.keys[event.key_code] += {.repeat}
+		}
+
+	case .TOUCHES_BEGAN:
+		when !TOUCH_EMULATE_MOUSE do break
+
+		if event.num_touches > 0 {
+			touch := event.touches[0]
+
+			inputState.mouseX = touch.pos_x
+			inputState.mouseY = touch.pos_y
+
+			if !(.down in inputState.keys[KeyCode.LEFT_MOUSE]) {
+				inputState.keys[KeyCode.LEFT_MOUSE] += {.down, .pressed}
+			}
+		}
+
+	case .TOUCHES_MOVED:
+		when !TOUCH_EMULATE_MOUSE do break
+
+		if event.num_touches > 0 {
+			touch := event.touches[0]
+			inputState.mouseX = touch.pos_x
+			inputState.mouseY = touch.pos_y
+		}
+
+	case .TOUCHES_ENDED, .TOUCHES_CANCELLED:
+		when !TOUCH_EMULATE_MOUSE do break
+
+		if event.num_touches > 0 {
+			touch := event.touches[0]
+			inputState.mouseX = touch.pos_x
+			inputState.mouseY = touch.pos_y
+		}
+
+		if .down in inputState.keys[KeyCode.LEFT_MOUSE] {
+			inputState.keys[KeyCode.LEFT_MOUSE] -= {.down}
+			inputState.keys[KeyCode.LEFT_MOUSE] += {.released}
 		}
 	}
 }
