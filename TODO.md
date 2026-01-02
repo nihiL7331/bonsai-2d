@@ -12,7 +12,6 @@
 ### PRIORITY 0
 
 - [ ] auto-scaling on immediate ui\*
-- [ ] change icon to pot
 - [ ] debug toggle
 
 ### PRIORITY 1
@@ -51,7 +50,6 @@
 
 ## IN PROGRESS
 
-- [ ] ui screen anchors
 - [ ] basic physics system
   - [x] swept AABB using Minkowski's difference
   - [x] trigger colliders
@@ -88,3 +86,5 @@
 - [x] move setFont to internal drawText function
 - [x] install utility along side systems
 - [x] basic touchscreen support (mouse emulation)\*
+- [x] rotation in draw functions
+- [x] change icon to pot

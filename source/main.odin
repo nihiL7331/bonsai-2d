@@ -1,22 +1,9 @@
-// bonsai2D
-//
-// naming convention:
-// camelCase for variable names and functions,
-// CAPS snake_case for static/global constants,
-// PascalCase for type/struct declarations
-// _camelCase for private variable names
-//
-// support:
-// this blueprint is meant to run on web and desktop (linux, mac, windows and wasm).
-//
 // limitations:
 // due to it being targeted for web, there are a few limitations/requirements for it to work.
 // they are:
 // |-> you have to link c libraries for external libs in build_web.*
 // |-> you can't use #+feature dynamic-literals
 // |-> you can't have global dynamic variables
-// |-> you should use heap instead of stack due to stack size constraints on web
-// (stack size can be modified, but its recommended to use more heap instead)
 // |-> avoid @(deferred_out) if possible, send pointers instead
 // NOTE: you can also just disobey these limitations and have it not work on web:p
 // but IMO this forces you to make cleaner code
@@ -24,6 +11,7 @@
 package main
 
 import "base:runtime"
+import "core:log"
 
 import "bonsai:core"
 import "bonsai:core/audio"
@@ -35,6 +23,7 @@ import "bonsai:core/render"
 import sapp "bonsai:libs/sokol/app"
 import sg "bonsai:libs/sokol/gfx"
 import slog "bonsai:libs/sokol/log"
+import stbi "bonsai:libs/stb/image"
 import "bonsai:types/game"
 
 import gameapp "game"
@@ -43,6 +32,7 @@ import "game:scenes"
 _ :: web
 
 IS_WEB :: ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32
+ICON_DATA :: #load("../assets/icon.png")
 
 odinContext: runtime.Context
 
@@ -66,21 +56,21 @@ main :: proc() {
 
 	coreContext := core.initCoreContext()
 
-	desc: sapp.Desc
-	desc.init_cb = init
-	desc.frame_cb = frame
-	desc.event_cb = event
-	desc.cleanup_cb = cleanup
-	desc.width = coreContext.windowWidth
-	desc.height = coreContext.windowHeight
-	desc.sample_count = 4 //MSAA
-	desc.window_title = gameapp.WINDOW_TITLE
-	desc.icon.sokol_default = true
-	desc.logger.func = slog.func
-	desc.html5_update_document_title = true
-	desc.high_dpi = true
+	description: sapp.Desc
+	description.init_cb = init
+	description.frame_cb = frame
+	description.event_cb = event
+	description.cleanup_cb = cleanup
+	description.width = coreContext.windowWidth
+	description.height = coreContext.windowHeight
+	description.sample_count = 4 //MSAA
+	description.window_title = gameapp.WINDOW_TITLE
+	_setupIcon(&description)
+	description.logger.func = slog.func
+	description.html5_update_document_title = true
+	description.high_dpi = true
 
-	sapp.run(desc)
+	sapp.run(description)
 }
 
 
@@ -169,5 +159,30 @@ cleanup :: proc "c" () {
 
 	when IS_WEB {
 		runtime._cleanup_runtime()
+	}
+}
+
+@(private = "file")
+_setupIcon :: proc(description: ^sapp.Desc) {
+	width, height, channels: i32
+	imageData := stbi.load_from_memory(
+		raw_data(ICON_DATA),
+		i32(len(ICON_DATA)),
+		&width,
+		&height,
+		&channels,
+		4,
+	)
+
+	if imageData == nil {
+		log.error("STB image failed to load the icon image.")
+		return
+	}
+
+	description.icon.sokol_default = false
+	description.icon.images[0] = sapp.Image_Desc {
+		width = width,
+		height = height,
+		pixels = {ptr = imageData, size = uint(width * height * 4)},
 	}
 }
