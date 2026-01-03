@@ -24,9 +24,7 @@ RenderState :: struct {
 
 // at build-time all sprites are packed to one atlas
 Atlas :: struct {
-	width:  int,
-	height: int,
-	view:   sg.View,
+	view: sg.View,
 }
 
 @(private)
@@ -313,6 +311,19 @@ flushBatch :: proc() {
 	}
 }
 
+getImageData :: proc(
+	buffer: [^]byte,
+	bufferLength: i32,
+	width, height, channels: ^i32,
+) -> [^]byte {
+	imageData := stbi.load_from_memory(buffer, bufferLength, width, height, channels, 4)
+	if imageData == nil {
+		log.error("STB image failed to load the image.")
+		return nil
+	}
+	return imageData
+}
+
 loadAtlas :: proc() {
 	pngData, success := io.read_entire_file("assets/images/atlas.png")
 	if !success {
@@ -322,30 +333,17 @@ loadAtlas :: proc() {
 	defer delete(pngData)
 
 	width, height, channels: i32
-	imageData := stbi.load_from_memory(
-		raw_data(pngData),
-		i32(len(pngData)),
-		&width,
-		&height,
-		&channels,
-		4,
-	)
-	if imageData == nil {
-		log.error("STB image failed to load the image. (atlas didn't generate?)")
-		return
-	}
+	imageData := getImageData(raw_data(pngData), i32(len(pngData)), &width, &height, &channels)
+	if imageData == nil do return
 	defer stbi.image_free(imageData)
 
-	_atlas.width = int(width)
-	_atlas.height = int(height)
-
 	description: sg.Image_Desc
-	description.width = i32(_atlas.width)
-	description.height = i32(_atlas.height)
+	description.width = width
+	description.height = height
 	description.pixel_format = .RGBA8
 	description.data.subimage[0][0] = {
 		ptr  = imageData,
-		size = uint(_atlas.width * _atlas.height * 4),
+		size = uint(width * height * 4),
 	}
 	sgImage := sg.make_image(description)
 	if sgImage.id == sg.INVALID_ID {

@@ -23,7 +23,6 @@ import "bonsai:core/render"
 import sapp "bonsai:libs/sokol/app"
 import sg "bonsai:libs/sokol/gfx"
 import slog "bonsai:libs/sokol/log"
-import stbi "bonsai:libs/stb/image"
 import "bonsai:types/game"
 
 import gameapp "game"
@@ -165,17 +164,17 @@ cleanup :: proc "c" () {
 @(private = "file")
 _setupIcon :: proc(description: ^sapp.Desc) {
 	width, height, channels: i32
-	imageData := stbi.load_from_memory(
+	imageData := render.getImageData(
 		raw_data(ICON_DATA),
 		i32(len(ICON_DATA)),
 		&width,
 		&height,
 		&channels,
-		4,
 	)
 
 	if imageData == nil {
-		log.error("STB image failed to load the icon image.")
+		log.error("Using default sokol icon.")
+		description.icon.sokol_default = true
 		return
 	}
 
