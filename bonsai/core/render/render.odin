@@ -231,11 +231,11 @@ resetDrawFrame :: proc() {
 		clear(&layer)
 	}
 
-	// calculate camera rect for vision culling
 	coreContext := core.getCoreContext()
+	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 	coreContext.gameState.world.cameraRect = gmath.rectMake(
 		coreContext.gameState.world.cameraPosition,
-		gmath.Vec2{game.GAME_WIDTH, game.GAME_HEIGHT},
+		gmath.Vec2{game.GAME_HEIGHT * aspect, game.GAME_HEIGHT},
 		gmath.Pivot.centerCenter,
 	)
 }
