@@ -29,7 +29,7 @@ drawTextWithDropShadow :: proc(
 	pos: gmath.Vec2,
 	text: string,
 	font: game.FontName,
-	fontSize: int = 12,
+	fontSize: uint = 12,
 	rotation: f32 = 0.0,
 	dropShadowCol := color.BLACK,
 	col := color.WHITE,

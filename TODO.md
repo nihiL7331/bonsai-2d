@@ -11,9 +11,6 @@
 
 ### PRIORITY 0
 
-- [ ] auto-scaling on immediate ui\*
-- [ ] debug toggle
-
 ### PRIORITY 1
 
 - [ ] separate shadow handling (to avoid shadow stacking)\*
@@ -50,6 +47,7 @@
 
 ## IN PROGRESS
 
+- [ ] immediate ui rework\*
 - [ ] basic physics system
   - [x] swept AABB using Minkowski's difference
   - [x] trigger colliders
@@ -88,3 +86,4 @@
 - [x] basic touchscreen support (mouse emulation)\*
 - [x] rotation in draw functions
 - [x] change icon to pot
+- [x] move PixelCode to bonsai/core/ui
