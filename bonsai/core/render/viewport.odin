@@ -42,6 +42,33 @@ getWorldSpaceCamera :: proc() -> gmath.Mat4 {
 	return camera
 }
 
+setScissorRect :: proc(rect: gmath.Rect) {
+	drawFrame := getDrawFrame()
+	coreContext := core.getCoreContext()
+
+	projection := drawFrame.reset.coordSpace.proj
+
+	bottomLeftWorld := gmath.Vec4{rect.x, rect.y, 0, 1}
+	topRightWorld := gmath.Vec4{rect.z, rect.w, 0, 1}
+
+	bottomLeftClip := projection * bottomLeftWorld
+	topRightClip := projection * topRightWorld
+
+	bottomLeftNdc := bottomLeftClip.xy / bottomLeftClip.w
+	topRightNdc := topRightClip.xy / topRightClip.w
+
+	frameBufferWidth := f32(coreContext.windowWidth)
+	frameBufferHeight := f32(coreContext.windowHeight)
+
+	scissorX := (bottomLeftNdc.x + 1.0) * 0.5 * frameBufferWidth
+	scissorY := (bottomLeftNdc.y + 1.0) * 0.5 * frameBufferHeight
+
+	scissorWidth := (topRightNdc.x + 1.0) * 0.5 * frameBufferWidth - scissorX
+	scissorHeight := (topRightNdc.y + 1.0) * 0.5 * frameBufferHeight - scissorY
+
+	setScissorCoordinates(gmath.Vec4{scissorX, scissorY, scissorWidth, scissorHeight})
+}
+
 getCameraZoom :: proc() -> f32 {
 	coreContext := core.getCoreContext()
 	return f32(game.GAME_HEIGHT) / f32(coreContext.windowHeight)

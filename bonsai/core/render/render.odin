@@ -37,6 +37,11 @@ _drawFrame: gfx.DrawFrame
 _clearedFrame: bool
 @(private)
 _actualQuadData: [MAX_QUADS]gfx.Quad
+@(private)
+_scissorState: struct {
+	enabled:     bool,
+	coordinates: gmath.Vec4,
+}
 
 MAX_QUADS :: 8192 // edit this as needed. greater amount - worse performance
 DEFAULT_UV :: gmath.Vec4{0, 0, 1, 1}
@@ -174,6 +179,8 @@ coreRenderFrameStart :: proc() {
 
 	_renderState.passAction.colors[0].load_action = .CLEAR
 
+	_scissorState.enabled = false
+
 	sg.begin_pass({action = _renderState.passAction, swapchain = sglue.swapchain()})
 
 	sg.apply_pipeline(_renderState.pipeline)
@@ -258,6 +265,23 @@ setFontTexture :: proc(view: sg.View) {
 	}
 }
 
+setScissorCoordinates :: proc(coordinates: gmath.Vec4) {
+	if _scissorState.enabled && _scissorState.coordinates == coordinates do return
+
+	flushBatch()
+
+	_scissorState.enabled = true
+	_scissorState.coordinates = coordinates
+}
+
+clearScissor :: proc() {
+	if !_scissorState.enabled do return
+
+	flushBatch()
+
+	_scissorState.enabled = false
+}
+
 flushBatch :: proc() {
 	drawFrame := getDrawFrame()
 
@@ -299,6 +323,20 @@ flushBatch :: proc() {
 	_renderState.bindings.vertex_buffer_offsets[0] = offset
 	sg.apply_bindings(_renderState.bindings)
 
+	if _scissorState.enabled {
+		sg.apply_scissor_rectf(
+			_scissorState.coordinates.x,
+			_scissorState.coordinates.y,
+			_scissorState.coordinates.z, // width
+			_scissorState.coordinates.w, // height 
+			false,
+		)
+	} else {
+		coreContext := core.getCoreContext()
+		sg.apply_scissor_rect(0, 0, coreContext.windowWidth, coreContext.windowHeight, false)
+	}
+
+	drawFrame.reset.shaderData.uViewProj = drawFrame.reset.coordSpace.viewProj
 	sg.apply_uniforms(
 		shaders.UB_ShaderData,
 		{ptr = &drawFrame.reset.shaderData, size = size_of(shaders.Shaderdata)},
