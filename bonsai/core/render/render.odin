@@ -77,11 +77,15 @@ setCoordSpace :: proc {
 }
 
 setWorldSpace :: proc() {
+	flushBatch()
 	_setCoordSpaceValue(getWorldSpace())
+	getDrawFrame().reset.activeZLayer = .background
 }
 
 setScreenSpace :: proc() {
+	flushBatch()
 	_setCoordSpaceValue(getScreenSpace())
+	getDrawFrame().reset.activeZLayer = .ui
 }
 
 @(private)
@@ -185,6 +189,8 @@ coreRenderFrameStart :: proc() {
 
 	sg.apply_pipeline(_renderState.pipeline)
 
+	setWorldSpace()
+
 	_clearedFrame = false
 }
 
@@ -232,7 +238,8 @@ _initDrawFrameLayers :: proc() {
 
 resetDrawFrame :: proc() {
 	drawFrame := getDrawFrame()
-	drawFrame.reset = {}
+	drawFrame.reset.coordSpace = {}
+	drawFrame.reset.shaderData = {}
 
 	for &layer in drawFrame.reset.quads {
 		clear(&layer)
@@ -393,7 +400,6 @@ loadAtlas :: proc() {
 }
 
 drawQuadProjected :: proc(
-	worldToClip: gmath.Mat4,
 	positions: [4]gmath.Vec2,
 	colors: [4]gmath.Vec4,
 	uvs: [4]gmath.Vec2,
@@ -430,10 +436,10 @@ drawQuadProjected :: proc(
 		}
 	}
 
-	vertices[0].position = (worldToClip * gmath.Vec4{positions[0].x, positions[0].y, 0.0, 1.0}).xy
-	vertices[1].position = (worldToClip * gmath.Vec4{positions[1].x, positions[1].y, 0.0, 1.0}).xy
-	vertices[2].position = (worldToClip * gmath.Vec4{positions[2].x, positions[2].y, 0.0, 1.0}).xy
-	vertices[3].position = (worldToClip * gmath.Vec4{positions[3].x, positions[3].y, 0.0, 1.0}).xy
+	vertices[0].position = positions[0]
+	vertices[1].position = positions[1]
+	vertices[2].position = positions[2]
+	vertices[3].position = positions[3]
 
 	vertices[0].color = colors[0]
 	vertices[1].color = colors[1]

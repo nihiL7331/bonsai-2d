@@ -13,6 +13,10 @@
 // NOTE: VERTEX SHADER
 @vs vs
 
+layout(binding=0) uniform ShaderData {
+  mat4 uViewProj;
+};
+
 in vec2 aPosition;
 in vec4 aColor;
 in vec2 aUv;
@@ -32,9 +36,9 @@ out vec4 vColorOverride;
 out vec4 vParams;
 
 void main() {
-  gl_Position = vec4(aPosition, 0, 1);
+  gl_Position = uViewProj * vec4(aPosition, 0, 1);
 
-  vPosition = gl_Position.xy;
+  vPosition = aPosition;
   vColor = aColor;
   vUv = aUv;
   vLocalUv = aLocalUv;
@@ -53,10 +57,6 @@ void main() {
 layout(binding=0) uniform texture2D uTex;
 layout(binding=1) uniform texture2D uFontTex;
 layout(binding=0) uniform sampler uDefaultSampler;
-layout(binding=0) uniform ShaderData {
-  mat4 ndcToWorldXForm;
-  vec4 bgRepeatTexAtlasUv;
-};
 
 in vec2 vPosition;
 in vec4 vColor;
@@ -76,9 +76,7 @@ out vec4 oColor;
 bool hasFlag(int flags, int flag) { return (flags & flag) != 0; }
 
 void main() {
-  int texIndex = int(vBytes.x * 255.0);
-  int flags = int(vBytes.z * 255.0);
-  vec2 worldPixel = (ndcToWorldXForm * vec4(vPosition.xy, 0, 1)).xy;
+  int texIndex = int(vBytes.x * 255.0 + 0.5);
   vec4 texColor = vec4(1.0);
 
   if (texIndex == 0) {
@@ -87,19 +85,7 @@ void main() {
     texColor.a = texture(sampler2D(uFontTex, uDefaultSampler), vUv).r;
   }
 
-  oColor = texColor;
-
-  if (hasFlag(flags, FLAG_backgroundPixels)) {
-    float wrapLength = 128.0; // repeat every 128px
-    vec2 ratio = worldPixel / wrapLength;
-    vec2 finalUv = localUvToAtlasUv(ratio, bgRepeatTexAtlasUv);
-
-    vec4 img = texture(sampler2D(uTex, uDefaultSampler), finalUv);
-    oColor.rgb = img.rgb;
-  }
-
-  oColor *= vColor;
-
+  oColor = texColor * vColor;
   oColor.rgb = mix(oColor.rgb, vColorOverride.rgb, vColorOverride.a);
 }
 

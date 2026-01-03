@@ -239,7 +239,7 @@ drawRectXForm :: proc(
 
 	assert(drawFrame.reset.coordSpace != {}, "No coord space set.")
 
-	localToClipSpace := drawFrame.reset.coordSpace.viewProj * xForm
+	worldMatrix := xForm
 
 	{
 		if cropTop != 0.0 {
@@ -256,7 +256,7 @@ drawRectXForm :: proc(
 			uvSize := gmath.rectSize(uv)
 			uv.x += uvSize.x * cropLeft
 
-			localToClipSpace *= gmath.xFormTranslate(gmath.Vec2{crop, 0})
+			worldMatrix *= gmath.xFormTranslate(gmath.Vec2{crop, 0})
 		}
 		if cropBottom != 0.0 {
 			crop := size.y * (1.0 - cropBottom)
@@ -265,7 +265,8 @@ drawRectXForm :: proc(
 			uvSize := gmath.rectSize(uv)
 
 			uv.y += uvSize.y * cropBottom
-			localToClipSpace *= gmath.xFormTranslate(gmath.Vec2{0, -diff})
+
+			worldMatrix *= gmath.xFormTranslate(gmath.Vec2{0, -diff})
 		}
 		if cropRight != 0.0 {
 			size.x *= 1.0 - cropRight
@@ -279,13 +280,18 @@ drawRectXForm :: proc(
 	topRight := gmath.Vec2{size.x, size.y}
 	bottomRight := gmath.Vec2{size.x, 0}
 
+	//transform local -> world
+	p0 := (worldMatrix * gmath.Vec4{bottomLeft.x, bottomLeft.y, 0, 1}).xy
+	p1 := (worldMatrix * gmath.Vec4{topLeft.x, topLeft.y, 0, 1}).xy
+	p2 := (worldMatrix * gmath.Vec4{topRight.x, topRight.y, 0, 1}).xy
+	p3 := (worldMatrix * gmath.Vec4{bottomRight.x, bottomRight.y, 0, 1}).xy
+
 	if texIndex == 0 && sprite == .nil {
 		texIndex = 255
 	}
 
 	drawQuadProjected(
-		localToClipSpace,
-		{bottomLeft, topLeft, topRight, bottomRight},
+		{p0, p1, p2, p3},
 		{col, col, col, col},
 		{uv.xy, uv.xw, uv.zw, uv.zy},
 		texIndex,
