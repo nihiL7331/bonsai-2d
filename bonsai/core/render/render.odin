@@ -195,31 +195,31 @@ _initDrawFrameLayers :: proc() {
 		[dynamic]gfx.Quad,
 		0,
 		512,
-		allocator = context.temp_allocator,
+		allocator = context.allocator,
 	)
 	drawFrame.reset.quads[game.ZLayer.shadow] = make(
 		[dynamic]gfx.Quad,
 		0,
 		128,
-		allocator = context.temp_allocator,
+		allocator = context.allocator,
 	)
 	drawFrame.reset.quads[game.ZLayer.playspace] = make(
 		[dynamic]gfx.Quad,
 		0,
 		256,
-		allocator = context.temp_allocator,
+		allocator = context.allocator,
 	)
 	drawFrame.reset.quads[game.ZLayer.tooltip] = make(
 		[dynamic]gfx.Quad,
 		0,
 		256,
-		allocator = context.temp_allocator,
+		allocator = context.allocator,
 	)
 	drawFrame.reset.quads[game.ZLayer.ui] = make(
 		[dynamic]gfx.Quad,
 		0,
 		1024,
-		allocator = context.temp_allocator,
+		allocator = context.allocator,
 	)
 }
 
