@@ -149,6 +149,7 @@ event :: proc "c" (e: ^sapp.Event) {
 cleanup :: proc "c" () {
 	context = odinContext
 
+	render.destroyFonts()
 	gameapp.shutdown()
 	sg.shutdown()
 	audio.shutdown()
