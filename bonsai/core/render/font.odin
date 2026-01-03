@@ -4,6 +4,7 @@ import io "bonsai:core/platform"
 import sg "bonsai:libs/sokol/gfx"
 import tt "bonsai:libs/stb/truetype"
 import game "bonsai:types/game"
+import "bonsai:types/gmath"
 
 import "core:fmt"
 import "core:log"
@@ -105,6 +106,45 @@ getFont :: proc(fontId: game.FontName, size: uint) -> (Font, bool) {
 	_fontCache[strings.clone(key)] = font
 
 	return font, true
+}
+
+// get width of unwrapped text given font and font size
+getTextSize :: proc(fontId: game.FontName, fontSize: uint, text: string) -> gmath.Vec2 {
+	font, found := getFont(fontId, fontSize)
+	if !found {
+		return gmath.Vec2{0, 0}
+	}
+
+	currentWidth: f32 = 0
+	maxWidth: f32 = 0
+	lines: f32 = 1
+
+	startChar :: 32
+	charCount :: 96
+
+	for textChar in text {
+		if textChar == '\n' {
+			if currentWidth > maxWidth {
+				maxWidth = currentWidth
+			}
+			currentWidth = 0
+			lines += 1
+			continue
+		}
+
+		index := int(textChar) - startChar
+		if index < 0 || index >= charCount do continue // not ascii
+
+		currentWidth += font.charData[index].xadvance
+	}
+
+	if currentWidth > maxWidth {
+		maxWidth = currentWidth
+	}
+
+	totalHeight := lines * f32(fontSize)
+
+	return gmath.Vec2{maxWidth, totalHeight}
 }
 
 destroyFonts :: proc() {
