@@ -4,6 +4,8 @@ import "core:math"
 import "core:math/linalg"
 
 Vec2Int :: [2]int
+Vec3Int :: [3]i32
+Vec4Int :: [4]i32
 Vec2 :: linalg.Vector2f32
 Vec3 :: linalg.Vector3f32
 Vec4 :: linalg.Vector4f32
