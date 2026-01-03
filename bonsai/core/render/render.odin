@@ -415,7 +415,6 @@ drawQuadProjected :: proc(
 	vertices: [4]gfx.Vertex
 	defer {
 		quadArray := &drawFrame.reset.quads[zLayer0]
-		quadArray.allocator = context.temp_allocator
 
 		if zLayerQueue == -1 {
 			append(quadArray, vertices)
