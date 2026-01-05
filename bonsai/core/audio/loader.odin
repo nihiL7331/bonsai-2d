@@ -12,8 +12,8 @@ _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 	sync.lock(&_mixer.lock)
 	defer sync.unlock(&_mixer.lock)
 
-	id := _mixer.next
-	_mixer.next += 1
+	id := _mixer.nextId
+	_mixer.nextId += 1
 
 	sound := Sound {
 		samples    = pcmData,
@@ -24,21 +24,26 @@ _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 	return id
 }
 
-// function for reading the audio file. uses the automatically generated enums based off sound name.
-// hence need to glue the path together
+// @ref
+// Loads an audio asset from the disk based on the provided *AudioName* enum.
+//
+// This function handles reading the file, parsing the audio data (WAV file format),
+// and registering it with the mixer.
+//
+// Returns 0 if loading or parsing fails.
 load :: proc(name: game.AudioName) -> SoundHandle {
 	filename := game.audioFilename[name]
 	path := fmt.tprintf("assets/audio/%s", filename)
 	data, success := io.read_entire_file(path)
 	if !success {
-		log.error("Failed to read audio file.")
+		log.errorf("Failed to read audio file at path: %s", path)
 		return 0
 	}
 	defer delete(data)
 
 	info, ok := parseFromBytes(data)
 	if !ok {
-		log.error("Failed to parse audio file (Header invalid).")
+		log.errorf("Failed to parse audio file: %s (Header invalid).", path)
 		return 0
 	}
 
