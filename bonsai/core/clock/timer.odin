@@ -10,11 +10,11 @@ import "core:log"
 import "core:time"
 
 // internal tracking for when the app actually started (real time)
-@(private)
+@(private = "file")
 _applicationStartTime: time.Time
 
 // for safe fallback durations
-@(private)
+@(private = "file")
 _SAFE_MAX_DURATION :: 99999999.0
 
 // @ref

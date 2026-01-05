@@ -7,7 +7,7 @@ import "core:sync"
 import io "bonsai:core/platform"
 import "bonsai:types/game"
 
-@(private) // private helper for registering sounds from pcm data
+@(private = "file") // private helper for registering sounds from pcm data
 _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 	sync.lock(&_mixer.lock)
 	defer sync.unlock(&_mixer.lock)

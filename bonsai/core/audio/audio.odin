@@ -76,7 +76,7 @@ Mixer :: struct {
 	busVolumes:       [Bus]f32,
 }
 
-@(private)
+@(private = "package")
 _mixer: Mixer
 
 // @ref
@@ -214,7 +214,7 @@ getListenerPosition :: proc() -> gmath.Vec2 {
 	return _mixer.listenerPosition
 }
 
-@(private)
+@(private = "file")
 _audioCallback :: proc "c" (buffer: ^f32, numFrames: i32, numChannels: i32) {
 	context = {}
 	sync.lock(&_mixer.lock)
