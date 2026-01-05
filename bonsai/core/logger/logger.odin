@@ -5,34 +5,19 @@ import "core:fmt"
 import "core:log"
 import "core:strings"
 
-// can be changed to any to filter logging, "Debug" means all messages
+// @ref
+// Global filter for logging. Messages below this level are ignored.
+// Defaults to .Debug (all messages).
+//
+// Change this at runtime to toggle verbosity (e.g. logger.globalLogLevel = .Info).
 globalLogLevel := log.Level.Debug
 
-// use ANSI color coding since it's widely supported (both on web and desktop)
-// and makes it easier to see important debug messages.
-// customize to your likings!
-// basic ANSI color table:
-// \x1b[X;CCm
-// X - attribute (can also leave empty and delete semicolon to not use any)
-// 0 - none
-// 1 - bold
-// 4 - underline
-// 5 - blink on
-// 21 - bold off
-// 24 - underline off
-// 25 - blink off
-// CC - color (add 60 to make color light, add 10 to set background color)
-// 30 - black
-// 31 - red
-// 32 - green
-// 33 - yellow
-// 34 - blue
-// 35 - purple
-// 36 - cyan
-// 37 - white
-PREFIX :: "\x1b[34m[ODIN]\x1b[0m "
+// prefix added to every log message to match the cli output
+@(private = "file")
+_LOG_PREFIX :: "\x1b[34m[ODIN]\x1b[0m "
 
-@(private)
+// ansi color headers for different log levels
+@(private = "file")
 _LevelHeaders := [?]string {
 	0 ..< 10 = "\x1b[32m[DEBUG] \x1b[0m",
 	10 ..< 20 = "\x1b[36m[INFO] \x1b[0m",
@@ -41,11 +26,17 @@ _LevelHeaders := [?]string {
 	40 ..< 50 = "\x1b[1;31m[FATAL] \x1b[0m",
 }
 
-logger :: proc() -> log.Logger {
-	return log.Logger{loggerProc, nil, globalLogLevel, nil}
+// @ref
+// Creates a new *Logger* instance configured with custom ANSI coloring.
+// This is assigned to *context.logger* at the start of the application.
+createInstance :: proc() -> log.Logger {
+	return log.Logger{_consoleLoggerProc, nil, globalLogLevel, nil}
 }
 
-// called for assert
+// @ref
+// Custom assertion failure handler.
+// Prints a formatted, colored error message before trapping the runtime.
+// This is assigned to *context.assertion_failure_proc*.
 assertionFailureProc :: proc(
 	prefix, message: string,
 	location: runtime.Source_Code_Location,
@@ -57,7 +48,7 @@ assertionFailureProc :: proc(
 	}
 
 	strings.write_string(&builder, "\x1b[4;35m[ASSERT]\x1b[0m")
-	_doLocationHeader(&builder, location)
+	_writeLocationHeader(&builder, location)
 	fmt.sbprint(&builder, message)
 	fmt.sbprint(&builder, '\n')
 
@@ -67,45 +58,46 @@ assertionFailureProc :: proc(
 	runtime.trap()
 }
 
-loggerProc :: proc(
+@(private = "file")
+_consoleLoggerProc :: proc(
 	data: rawptr,
 	level: log.Level,
 	text: string,
 	options: log.Options,
 	location := #caller_location,
 ) {
-	if level < globalLogLevel { 	// filter unimportant messages
+	// early exit for unimportant messages
+	if level < globalLogLevel {
 		return
 	}
 
 	builder := strings.builder_make(context.temp_allocator)
 
-	strings.write_string(&builder, PREFIX)
+	strings.write_string(&builder, _LOG_PREFIX)
 	strings.write_string(&builder, _LevelHeaders[level])
-	_doLocationHeader(&builder, location)
+	_writeLocationHeader(&builder, location)
 	fmt.sbprint(&builder, text)
 	fmt.sbprint(&builder, '\n')
 
 	output := strings.to_string(builder)
 	fmt.print(output)
 
+	// break into debugger on errors if in debug mode
 	when ODIN_DEBUG {
 		if level >= log.Level.Error do runtime.trap()
 	}
+
 	if level == .Fatal do runtime.panic(output, loc = location)
 }
 
-@(private)
-_doLocationHeader :: proc(builder: ^strings.Builder, location := #caller_location) {
+@(private = "file")
+_writeLocationHeader :: proc(builder: ^strings.Builder, location := #caller_location) {
 	filename := location.file_path
 
-	lastSeparatorIndex := 0
-	for rune, index in location.file_path {
-		if rune == '/' {
-			lastSeparatorIndex = index + 1
-		}
+	if lastSeparatorIndex := strings.last_index_byte(location.file_path, '/');
+	   lastSeparatorIndex >= 0 {
+		filename = location.file_path[lastSeparatorIndex + 1:]
 	}
-	filename = location.file_path[lastSeparatorIndex:]
 
 	fmt.sbprint(builder, filename)
 	fmt.sbprint(builder, ":")
