@@ -1,8 +1,10 @@
 package platform
 
-// This files sole purpose is to be a glue for functions that are different based off platform compiled.
-// Mainly (if not solely) it's I/O
+//
+// this file acts as a router to appropriate implementation based off the build target.
+//
 
+// determine if we are compiling for the web
 IS_WEB :: ODIN_ARCH == .wasm64p32 || ODIN_ARCH == .wasm32
 
 import "desktop"
@@ -12,7 +14,14 @@ import "web"
 _ :: desktop
 _ :: web
 
-// this one doesn't folow the naming convention since it's meant to "override" a built-in function
+// @ref
+// Reads an entire file into memory.
+//
+// Platform-agnostic wrapper.
+// - Web: Reads from the Emscripten Virtual File System.
+// - Desktop: Reads directly from the disk.
+//
+// **Note:** Naming follows *core:os* convention rather than camelCase to indicate standard library behavior.
 @(require_results)
 read_entire_file :: proc(
 	name: string,
@@ -29,6 +38,12 @@ read_entire_file :: proc(
 	}
 }
 
+// @ref
+// Writes a byte slice to a file.
+//
+// Platform-agnostic wrapper.
+// - Web: Writes to the Emscripten Virtual File System (non-persistent between sessions).
+// - Desktop: Writes directly to the disk.
 write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (success: bool) {
 	when IS_WEB {
 		return web.write_entire_file(name, data, truncate)
@@ -37,6 +52,9 @@ write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (succ
 	}
 }
 
+// @ref
+// Loads a struct from persistent storage.
+// Returns false if the key doesn't exist or data is corrupted.
 @(require_results)
 loadStruct :: proc(key: string, value: ^$T) -> (success: bool) {
 	when IS_WEB {
@@ -46,6 +64,10 @@ loadStruct :: proc(key: string, value: ^$T) -> (success: bool) {
 	}
 }
 
+// @ref
+// Serializes and saves a struct to persistent storage.
+// - Desktop: Saves to "saves/" directory as a binary file. (default)
+// - Web: Saves to LocalStorage (Base64 encoded string).
 saveStruct :: proc(key: string, value: ^$T) -> (success: bool) {
 	when IS_WEB {
 		return web.saveStruct(key, value)
@@ -54,6 +76,8 @@ saveStruct :: proc(key: string, value: ^$T) -> (success: bool) {
 	}
 }
 
+// @ref
+// Loads raw bytes from persistent storage.
 @(require_results)
 loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte, success: bool) {
 	when IS_WEB {
@@ -63,6 +87,8 @@ loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte,
 	}
 }
 
+// @ref
+// Saves raw bytes to persistent storage.
 saveBytes :: proc(key: string, data: []byte) -> (success: bool) {
 	when IS_WEB {
 		return web.saveBytes(key, data)

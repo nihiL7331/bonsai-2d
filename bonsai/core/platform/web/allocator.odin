@@ -1,15 +1,16 @@
 #+build wasm32, wasm64p32
 package web
 
-// karl zylinski's odin-sokol-web repository was a starting point for this project.
-// he's the author of this code.
+//
+// Custom allocator implementation for web using Emscripten's libc.
+// Credit: Based on Karl Zylinski's odin-sokol-web implementation.
+//
 
 import "base:intrinsics"
 import "core:c"
 import "core:mem"
 
-// This will create bindings to emscripten's implementation of libc
-// memory allocation features.
+// c/emscripten bindings
 @(default_calling_convention = "c")
 foreign _ {
 	calloc :: proc(num, size: c.size_t) -> rawptr ---
@@ -18,125 +19,147 @@ foreign _ {
 	realloc :: proc(ptr: rawptr, size: c.size_t) -> rawptr ---
 }
 
-emscripten_allocator :: proc "contextless" () -> mem.Allocator {
+// @ref
+// Returns a memory allocator that wraps Emscripten's *malloc* and *free*.
+//
+// This handles manual memory alignment, which is required for certain Odin features
+// like maps and SIMD that standard 'malloc' might not guarantee on WASM.
+allocator :: proc "contextless" () -> mem.Allocator {
 	return mem.Allocator{emscripten_allocator_proc, nil}
 }
 
-emscripten_allocator_proc :: proc(
-	allocator_data: rawptr,
+@(private = "file")
+_allocatorProc :: proc(
+	allocatorData: rawptr,
 	mode: mem.Allocator_Mode,
 	size, alignment: int,
-	old_memory: rawptr,
-	old_size: int,
+	oldMemory: rawptr,
+	oldSize: int,
 	location := #caller_location,
 ) -> (
 	data: []byte,
 	err: mem.Allocator_Error,
 ) {
-	// These aligned alloc procs are almost indentical those in
-	// `_heap_allocator_proc` in `core:os`. Without the proper alignment you
-	// cannot use maps and simd features.
 
-	aligned_alloc :: proc(
+	// internal helper
+	// allocates memory with specific alignment requirements
+	// allocates extra space to store the original pointer for free called later
+	_alignedAlloc :: proc(
 		size, alignment: int,
-		zero_memory: bool,
-		old_ptr: rawptr = nil,
+		zeroMemory: bool,
+		oldPtr: rawptr = nil,
 	) -> (
 		[]byte,
 		mem.Allocator_Error,
 	) {
-		a := max(alignment, align_of(rawptr))
-		space := size + a - 1
+		alignmentRequirement := max(alignment, align_of(rawptr))
+		totalSpace := size + alignmentRequirement - 1
 
-		allocated_mem: rawptr
-		if old_ptr != nil {
-			original_old_ptr := mem.ptr_offset((^rawptr)(old_ptr), -1)^
-			allocated_mem = realloc(original_old_ptr, c.size_t(space + size_of(rawptr)))
-		} else if zero_memory {
-			// calloc automatically zeros memory, but it takes a number + size
-			// instead of just size.
-			allocated_mem = calloc(c.size_t(space + size_of(rawptr)), 1)
+		allocatedMem: rawptr
+
+		if oldPtr != nil {
+			// retrieve the original pointer from the slot before the aligned memory
+			originalOldPtr := mem.ptr_offset((^rawptr)(oldPtr), -1)^
+			allocatedMem = realloc(originalOldPtr, c.size_t(space + size_of(rawptr)))
+		} else if zeroMemory {
+			// calloc zeros memory automatically
+			allocatedMem = calloc(c.size_t(space + size_of(rawptr)), 1)
 		} else {
-			allocated_mem = malloc(c.size_t(space + size_of(rawptr)))
-		}
-		aligned_mem := rawptr(mem.ptr_offset((^u8)(allocated_mem), size_of(rawptr)))
-
-		ptr := uintptr(aligned_mem)
-		aligned_ptr := (ptr - 1 + uintptr(a)) & -uintptr(a)
-		diff := int(aligned_ptr - ptr)
-		if (size + diff) > space || allocated_mem == nil {
-			return nil, .Out_Of_Memory
+			allocatedMem = malloc(c.size_t(space + size_of(rawptr)))
 		}
 
-		aligned_mem = rawptr(aligned_ptr)
-		mem.ptr_offset((^rawptr)(aligned_mem), -1)^ = allocated_mem
+		if allocatedMem == nil {
+			return nil, mem.Allocator_Error.Out_Of_Memory
+		}
 
-		return mem.byte_slice(aligned_mem, size), nil
+		// calculate aligned address
+		alignedMemStart := rawptr(mem.ptr_offset((^u8)(allocatedMem), size_of(rawptr)))
+		ptrAddr := uintptr(alignedMemStart)
+		alignedAddr :=
+			(ptrAddr - 1 + uintptr(alignmentRequirement)) & -uintptr(alignmentRequirement)
+
+		// store the original pointer immediately before the aligned address
+		alignedMem := rawptr(alignedAddr)
+		mem.ptr_offset((^rawptr)(alignedMem), -1)^ = allocatedMem
+
+		diff := int(alignedAddr - ptrAddr)
+		if (size + diff) > totalSpace {
+			return nil, mem.Allocator_Error.Out_Of_Memory
+		}
+
+		return mem.byte_slice(alignedMem, size), nil
 	}
 
-	aligned_free :: proc(p: rawptr) {
-		if p != nil {
-			free(mem.ptr_offset((^rawptr)(p), -1)^)
+	// internal helper
+	// frees memory allocated by _alignedAlloc
+	_alignedFree :: proc(ptr: rawptr) {
+		if ptr != nil {
+			originalPtr := mem.ptr_offset((^rawptr)(ptr), -1)^
+			free(originalPtr)
 		}
 	}
 
-	aligned_resize :: proc(
-		p: rawptr,
-		old_size: int,
-		new_size: int,
-		new_alignment: int,
+	// internal helper
+	// resizes aligned memory
+	_alignedResize :: proc(
+		ptr: rawptr,
+		oldSize: int,
+		newSize: int,
+		newAlignment: int,
 	) -> (
 		[]byte,
 		mem.Allocator_Error,
 	) {
-		if p == nil {
+		if ptr == nil {
 			return nil, nil
 		}
-		return aligned_alloc(new_size, new_alignment, true, p)
+		return _alignedAlloc(newSize, newAlignment, true, ptr)
 	}
 
+	// allocator mode switching
+
 	switch mode {
-	case .Alloc:
-		return aligned_alloc(size, alignment, true)
+	case mem.Allocator_Mode.Alloc:
+		return _alignedAlloc(size, alignment, true)
 
-	case .Alloc_Non_Zeroed:
-		return aligned_alloc(size, alignment, false)
+	case mem.Allocator_Mode.Alloc_Non_Zeroed:
+		return _alignedAlloc(size, alignment, false)
 
-	case .Free:
-		aligned_free(old_memory)
+	case mem.Allocator_Mode.Free:
+		_alignedFree(old_memory)
 		return nil, nil
 
-	case .Resize:
+	case mem.Allocator_Mode.Resize:
 		if old_memory == nil {
-			return aligned_alloc(size, alignment, true)
+			return _alignedAlloc(size, alignment, true)
 		}
 
-		bytes := aligned_resize(old_memory, old_size, size, alignment) or_return
+		bytes := _alignedResize(oldMemory, oldSize, size, alignment) or_return
 
 		// realloc doesn't zero the new bytes, so we do it manually.
 		if size > old_size {
-			new_region := raw_data(bytes[old_size:])
-			intrinsics.mem_zero(new_region, size - old_size)
+			newRegion := raw_data(bytes[old_size:])
+			intrinsics.mem_zero(newRegion, size - oldSize)
 		}
 
 		return bytes, nil
 
-	case .Resize_Non_Zeroed:
-		if old_memory == nil {
-			return aligned_alloc(size, alignment, false)
+	case mem.Allocator_Mode.Resize_Non_Zeroed:
+		if oldMemory == nil {
+			return _alignedAlloc(size, alignment, false)
 		}
 
-		return aligned_resize(old_memory, old_size, size, alignment)
+		return _alignedResize(oldMemory, oldSize, size, alignment)
 
-	case .Query_Features:
-		set := (^mem.Allocator_Mode_Set)(old_memory)
+	case mem.Allocator_Mode.Query_Features:
+		set := (^mem.Allocator_Mode_Set)(oldMemory)
 		if set != nil {
 			set^ = {.Alloc, .Free, .Resize, .Query_Features}
 		}
 		return nil, nil
 
-	case .Free_All, .Query_Info:
-		return nil, .Mode_Not_Implemented
+	case mem.Allocator_Mode.Free_All, mem.Allocator_Mode.Query_Info:
+		return nil, mem.Allocator_Error.Mode_Not_Implemented
 	}
-	return nil, .Mode_Not_Implemented
+	return nil, mem.Allocator_Error.Mode_Not_Implemented
 }
