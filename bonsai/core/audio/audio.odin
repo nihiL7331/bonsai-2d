@@ -1,9 +1,9 @@
 package audio
 
-import saudio "bonsai:libs/sokol/audio"
-import slog "bonsai:libs/sokol/log"
+import "bonsai:core/gmath"
+import sokol_audio "bonsai:libs/sokol/audio"
+import sokol_log "bonsai:libs/sokol/log"
 import "bonsai:types/game"
-import "bonsai:types/gmath"
 
 import "core:log"
 import "core:math"
@@ -11,20 +11,20 @@ import "core:slice"
 import "core:sync"
 
 // @ref
-// Amount of voices. Describes how many audio clips can play at once.
+// Amount of voices. Describes how many audio clips can play **at once**.
 MIXER_VOICE_CAPACITY :: 64
 // @ref
-// Default distance at which the falloff for spatial audio reaches 1.0 (max volume).
+// Default distance at which the falloff for spatial audio reaches **1.0** (max volume).
 DEFAULT_MIN_DISTANCE :: game.GAME_WIDTH / 4
 // @ref
-// Default distance at which the falloff for spatial audio reaches 0.0 (muted).
+// Default distance at which the falloff for spatial audio reaches **0.0** (muted).
 DEFAULT_MAX_DISTANCE :: game.GAME_WIDTH / 2
 
 // @ref
-// ID for a voice object.
+// ID for a **Voice** object.
 VoiceHandle :: distinct int
 // @ref
-// ID for a sound object.
+// ID for a **Sound** object.
 SoundHandle :: distinct u64
 
 // @ref
@@ -36,7 +36,7 @@ Bus :: enum {
 } // add more if needed
 
 // @ref
-// Structure definition for the "sound", being an audio clip container.
+// Structure definition for the "sound", being an **audio clip container**.
 //
 // Holds the raw sample data and format information.
 Sound :: struct {
@@ -48,11 +48,11 @@ Sound :: struct {
 // @ref
 // Structure definition for the "voice", which is essentialy the entity equivalent of the audio system.
 //
-// It defines all active state variables needed to output a specific instance of a sound.
+// It defines all active state variables needed to output a specific instance of **Sound.
 Voice :: struct {
 	id:          SoundHandle,
 	cursor:      int,
-	position:    gmath.Vec2,
+	position:    gmath.Vector2,
 	volume:      f32,
 	panning:     f32, // Values range from -1.0 to +1.0
 	minDistance: f32,
@@ -66,13 +66,13 @@ Voice :: struct {
 // @ref
 // Internal state container for the audio mixer.
 //
-// Holds the thread lock, the pool of voices, loaded sound data, and listener configuration.
+// Holds the thread lock, the pool of **Voices**, loaded **Sound** data, and listener configuration.
 Mixer :: struct {
 	lock:             sync.Mutex,
 	voices:           [MIXER_VOICE_CAPACITY]Voice,
 	sounds:           map[SoundHandle]Sound,
 	nextId:           SoundHandle,
-	listenerPosition: gmath.Vec2,
+	listenerPosition: gmath.Vector2,
 	busVolumes:       [Bus]f32,
 }
 
@@ -80,9 +80,9 @@ Mixer :: struct {
 _mixer: Mixer
 
 // @ref
-// Initializes the audio subsystem, sets up the Sokol audio backend, and prepares the mixer state.
+// Initializes the audio subsystem, sets up the **Sokol audio** backend, and prepares the mixer state.
 //
-// This must be called before loading or playing any sounds.
+// This **must** be called before loading or playing any sounds.
 init :: proc() {
 	_mixer.nextId = 1
 	//default volumes to full volume
@@ -90,20 +90,20 @@ init :: proc() {
 	_mixer.busVolumes[.SFX] = 1.0
 	_mixer.busVolumes[.Music] = 1.0
 	_mixer.sounds = make(map[SoundHandle]Sound)
-	description := saudio.Desc {
+	description := sokol_audio.Desc {
 		num_channels = 2,
 		sample_rate = 44100, // might want to go with lower quality for less memory usage
 		buffer_frames = 2048,
 		stream_cb = _audioCallback,
-		logger = {func = slog.func},
+		logger = {func = sokol_log.func},
 	}
-	saudio.setup(description)
+	sokol_audio.setup(description)
 }
 
 // @ref
 // Shuts down the audio subsystem and frees all loaded sound samples and mixer resources.
 shutdown :: proc() {
-	saudio.shutdown()
+	sokol_audio.shutdown()
 	for _, sound in _mixer.sounds {
 		delete(sound.samples)
 	}
@@ -114,7 +114,7 @@ shutdown :: proc() {
 // @ref
 // Main entry point for playing sounds.
 //
-// Use *playGlobal* for UI/Music and *playSpatial* for in-world sound effects.
+// Use **playGlobal** for UI/Music and **playSpatial** for in-world sound effects.
 play :: proc {
 	playGlobal,
 	playSpatial,
@@ -122,7 +122,7 @@ play :: proc {
 
 
 // @ref
-// Plays a sound in "global" mode (no spatial positioning).
+// Plays a sound in **global** mode (no spatial positioning).
 //
 // Ideal for UI sounds, background music, or narration.
 playGlobal :: proc(
@@ -153,13 +153,13 @@ playGlobal :: proc(
 }
 
 // @ref
-// Plays a sound at a specific position in the world.
+// Plays a sound at a **specific position in the world**.
 //
 // Volume and panning are automatically calculated based on the listener's position.
 playSpatial :: proc(
 	id: SoundHandle,
 	volume: f32 = 1.0,
-	position: gmath.Vec2,
+	position: gmath.Vector2,
 	bus: Bus = Bus.Master,
 	minDistance: f32 = DEFAULT_MIN_DISTANCE,
 	maxDistance: f32 = DEFAULT_MAX_DISTANCE,
@@ -203,14 +203,14 @@ stop :: proc(id: VoiceHandle) {
 // @ref
 // Updates the position of the "listener" (usually the camera or player) for spatial audio calculations.
 //
-// It defaults to the camera position. This should be called every frame to override that default behavior.
-setListenerPosition :: proc(position: gmath.Vec2) {
+// It **defaults to the camera position**. This should be called every frame to override that default behavior.
+setListenerPosition :: proc(position: gmath.Vector2) {
 	_mixer.listenerPosition = position
 }
 
 // @ref
 // Returns the current position of the audio listener.
-getListenerPosition :: proc() -> gmath.Vec2 {
+getListenerPosition :: proc() -> gmath.Vector2 {
 	return _mixer.listenerPosition
 }
 

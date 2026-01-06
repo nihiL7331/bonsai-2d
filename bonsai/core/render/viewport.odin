@@ -1,55 +1,76 @@
 package render
 
 import "bonsai:core"
+import "bonsai:core/gmath"
 import "bonsai:types/game"
 import "bonsai:types/gfx"
-import "bonsai:types/gmath"
 
 import "core:math/linalg"
 
+// @ref
+// Calculates the coordinate space for the main gameplay world.
+// Creates a **View-Projection matrix** based on the **camera's position** and **zoom**.
 getWorldSpace :: proc() -> gfx.CoordSpace {
-	proj := getWorldSpaceProj()
-	camera := getWorldSpaceCamera()
-	inverseCamera := linalg.inverse(camera)
+	projectionMatrix := getWorldSpaceProjectionMatrix()
+	// model matrix
+	cameraMatrix := getWorldSpaceCameraMatrix()
+	// view matrix
+	viewMatrix := linalg.inverse(cameraMatrix)
 
-	return {proj = proj, camera = camera, viewProj = proj * inverseCamera}
+	return {
+		projectionMatrix = projectionMatrix,
+		cameraMatrix = cameraMatrix,
+		viewProjectionMatrix = projectionMatrix * viewMatrix,
+	}
 }
+
+// @ref
+// Calculates the coordinate space for **UI/Screen elements**.
 getScreenSpace :: proc() -> gfx.CoordSpace {
-	proj := getScreenSpaceProj()
-	camera := gmath.Mat4(1)
+	projectionMatrix := getScreenSpaceProjectionMatrix()
+	cameraMatrix := gmath.Matrix4(1)
 
-	return {proj = proj, camera = camera, viewProj = proj}
+	return {
+		projectionMatrix = projectionMatrix,
+		cameraMatrix = cameraMatrix,
+		viewProjectionMatrix = projectionMatrix,
+	}
 }
 
-getWorldSpaceProj :: proc() -> gmath.Mat4 {
+// @ref
+// Generates the orthographic projection matrix for the world.
+// Centered on **(0, 0).**
+getWorldSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
-	return linalg.matrix_ortho3d_f32(
-		f32(coreContext.windowWidth) * -0.5,
-		f32(coreContext.windowWidth) * 0.5,
-		f32(coreContext.windowHeight) * -0.5,
-		f32(coreContext.windowHeight) * 0.5,
-		-1,
-		1,
-	)
+
+	halfWidth := f32(coreContext.windowWidth) * 0.5
+	halfHeight := f32(coreContext.windowHeight) * 0.5
+
+	return linalg.matrix_ortho3d_f32(-halfWidth, halfWidth, -halfHeight, halfHeight, -1, 1)
 }
 
-getWorldSpaceCamera :: proc() -> gmath.Mat4 {
+// @ref
+// Returns the camera's world transform **(model matrix)**.
+getWorldSpaceCameraMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
 
-	camera := gmath.Mat4(1)
-	camera *= gmath.xFormTranslate(coreContext.gameState.world.cameraPosition)
-	camera *= gmath.xFormScale(getCameraZoom())
+	camera := gmath.Matrix4(1)
+	camera *= gmath.matrixTranslate(coreContext.gameState.world.cameraPosition)
+	camera *= gmath.matrixScale(getCameraZoom())
 	return camera
 }
 
-setScissorRect :: proc(rect: gmath.Rect) {
+// @ref
+// Maps a **screen-space** rectangle to a screen-space scissor rectangle.
+// Used for clipping rendering to specific regions (masking).
+setScissorRectangle :: proc(rect: gmath.Rectangle) {
 	drawFrame := getDrawFrame()
 	coreContext := core.getCoreContext()
 
-	projection := drawFrame.reset.coordSpace.proj
+	projection := drawFrame.reset.coordSpace.projectionMatrix
 
-	bottomLeftWorld := gmath.Vec4{rect.x, rect.y, 0, 1}
-	topRightWorld := gmath.Vec4{rect.z, rect.w, 0, 1}
+	bottomLeftWorld := gmath.Vector4{rect.x, rect.y, 0, 1}
+	topRightWorld := gmath.Vector4{rect.z, rect.w, 0, 1}
 
 	bottomLeftClip := projection * bottomLeftWorld
 	topRightClip := projection * topRightWorld
@@ -66,15 +87,20 @@ setScissorRect :: proc(rect: gmath.Rect) {
 	scissorWidth := (topRightNdc.x + 1.0) * 0.5 * frameBufferWidth - scissorX
 	scissorHeight := (topRightNdc.y + 1.0) * 0.5 * frameBufferHeight - scissorY
 
-	setScissorCoordinates(gmath.Vec4{scissorX, scissorY, scissorWidth, scissorHeight})
+	setScissorCoordinates(gmath.Vector4{scissorX, scissorY, scissorWidth, scissorHeight})
 }
 
+// @ref
+// Calculates the **zoom** factor required to fit the fixed **GAME_HEIGHT** into the current window height.
 getCameraZoom :: proc() -> f32 {
 	coreContext := core.getCoreContext()
 	return f32(game.GAME_HEIGHT) / f32(coreContext.windowHeight)
 }
 
-getScreenSpaceProj :: proc() -> gmath.Mat4 {
+// @ref
+// Generates the projection matrix for the **UI**.
+// Handles aspect ratio scaling to ensure the UI fits within the design resolution (**GAME_WIDTH/HEIGHT**).
+getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
@@ -87,7 +113,10 @@ getScreenSpaceProj :: proc() -> gmath.Mat4 {
 	return linalg.matrix_ortho3d_f32(viewLeft, viewRight, 0, viewHeight, -1, 1)
 }
 
-screenPivot :: proc(pivot: gmath.Pivot) -> gmath.Vec2 {
+// @ref
+// Helper to get specific screen coordinates based on a **Pivot** (anchoring).
+// Useful for positioning UI elements relative to screen edges.
+getScreenSpacePivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
@@ -104,23 +133,23 @@ screenPivot :: proc(pivot: gmath.Pivot) -> gmath.Vec2 {
 
 	switch pivot {
 	case gmath.Pivot.topLeft:
-		return gmath.Vec2{left, top}
+		return gmath.Vector2{left, top}
 	case gmath.Pivot.topCenter:
-		return gmath.Vec2{centerX, top}
+		return gmath.Vector2{centerX, top}
 	case gmath.Pivot.topRight:
-		return gmath.Vec2{right, top}
+		return gmath.Vector2{right, top}
 	case gmath.Pivot.centerLeft:
-		return gmath.Vec2{left, centerY}
+		return gmath.Vector2{left, centerY}
 	case gmath.Pivot.centerCenter:
-		return gmath.Vec2{centerX, centerY}
+		return gmath.Vector2{centerX, centerY}
 	case gmath.Pivot.centerRight:
-		return gmath.Vec2{right, centerY}
+		return gmath.Vector2{right, centerY}
 	case gmath.Pivot.bottomLeft:
-		return gmath.Vec2{left, bottom}
+		return gmath.Vector2{left, bottom}
 	case gmath.Pivot.bottomCenter:
-		return gmath.Vec2{centerX, bottom}
+		return gmath.Vector2{centerX, bottom}
 	case gmath.Pivot.bottomRight:
-		return gmath.Vec2{right, bottom}
+		return gmath.Vector2{right, bottom}
 	}
-	return gmath.Vec2{0.0, 0.0}
+	return gmath.Vector2{0.0, 0.0}
 }

@@ -30,7 +30,7 @@ _WavHeader :: struct #packed {
 // Container for decoded PCM audio data.
 //
 // Contains the raw samples converted to f32 (ranging from -1.0 to +1.0) and format metadata.
-// Note: The caller is responsible for freeing the *samples* slice.
+// The caller is responsible for freeing the **samples** slice.
 ParseResult :: struct {
 	samples:    []f32,
 	channels:   int,
@@ -43,8 +43,8 @@ ParseResult :: struct {
 // Supports 8-bit (unsigned), 16-bit (signed), and 32-bit (float) WAV formats.
 //
 // Returns:
-// - *result*: The parsed sample data and metadata.
-// - *success*: False if the header is invalid or the format is unsupported.
+// - **result**: The parsed sample data and metadata.
+// - **success**: False if the header is invalid or the format is unsupported.
 parseFromBytes :: proc(data: []byte) -> (result: ParseResult, success: bool) {
 	// data is too small to even be a proper WAV file
 	if len(data) < size_of(_WavHeader) {

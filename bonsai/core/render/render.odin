@@ -1,105 +1,140 @@
 package render
 
 import "bonsai:core"
-import io "bonsai:core/platform"
-import sg "bonsai:libs/sokol/gfx"
-import sglue "bonsai:libs/sokol/glue"
-import slog "bonsai:libs/sokol/log"
-import stbi "bonsai:libs/stb/image"
+import "bonsai:core/gmath"
+import "bonsai:core/gmath/color"
+import "bonsai:core/platform"
+import sokol_gfx "bonsai:libs/sokol/gfx"
+import sokol_glue "bonsai:libs/sokol/glue"
+import sokol_log "bonsai:libs/sokol/log"
+import stb_image "bonsai:libs/stb/image"
 import "bonsai:shaders"
-import "bonsai:types/color"
 import "bonsai:types/game"
 import "bonsai:types/gfx"
-import "bonsai:types/gmath"
 
 import "core:log"
 import "core:mem"
 import "core:slice"
 
+// @ref
+// Maximum number of quads per batch flush.
+//
+// **Increase if you see "Quad buffer full" warnings, decrease to save memory.**
+MAX_QUADS :: 8192
+
+// @ref
+// Default UV coordinates covering the full texture (0,0 to 1,1).
+DEFAULT_UV :: gmath.Vector4{0, 0, 1, 1}
+
+// @ref
+// Default clear color **(background)**.
+CLEAR_COLOR :: color.BLACK
+
+// @ref
+// Internal render state wrapping **Sokol** pipelines and bindings.
 RenderState :: struct {
-	passAction: sg.Pass_Action,
-	pipeline:   sg.Pipeline, //TODO: separate pipeline for shadows so that their alpha dont add
-	bindings:   sg.Bindings,
+	passAction: sokol_gfx.Pass_Action,
+	pipeline:   sokol_gfx.Pipeline,
+	bindings:   sokol_gfx.Bindings,
 }
 
-// at build-time all sprites are packed to one atlas
+// @ref
+// Represents the global sprite atlas.
 Atlas :: struct {
-	view: sg.View,
+	view: sokol_gfx.View,
 }
 
 @(private)
 _renderState: RenderState
+
 @(private)
 _atlas: Atlas
+
 @(private)
 _drawFrame: gfx.DrawFrame
+
 @(private)
 _clearedFrame: bool
+
 @(private)
 _actualQuadData: [MAX_QUADS]gfx.Quad
+
 @(private)
 _scissorState: struct {
 	enabled:     bool,
-	coordinates: gmath.Vec4,
+	coordinates: gmath.Vector4,
 }
 
-MAX_QUADS :: 8192 // edit this as needed. greater amount - worse performance
-DEFAULT_UV :: gmath.Vec4{0, 0, 1, 1}
-CLEAR_COLOR :: color.BLACK // default background value
-
-setClearColor :: proc(col: gmath.Vec4) {
+// @ref
+// Sets the background clear color for the next frame.
+setClearColor :: proc(col: gmath.Vector4) {
 	_renderState.passAction = {
-		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sg.Color)(col)}},
+		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sokol_gfx.Color)(col)}},
 	}
 }
 
+// @ref
+// Returns a pointer to the **current frame's** draw data.
 getDrawFrame :: proc() -> ^gfx.DrawFrame {
 	return &_drawFrame
 }
 
-@(private)
-_setCoordSpaceDefault :: proc() {
-	_drawFrame.reset.coordSpace = {
-		proj     = gmath.Mat4(1),
-		camera   = gmath.Mat4(1),
-		viewProj = gmath.Mat4(1),
-	}
-}
-
-@(private)
-_setCoordSpaceValue :: proc(coordSpace: gfx.CoordSpace) {
-	_drawFrame.reset.coordSpace = coordSpace
-}
-
+// @ref
+// Sets the coordinate space (projection/camera matrices).
+//
+// **Overload:** Can take a full struct or reset to default identity matrices.
 setCoordSpace :: proc {
 	_setCoordSpaceValue,
 	_setCoordSpaceDefault,
 }
 
+// @ref
+// Flushses the current batch and switches coordinate space to **World Space (Gameplay)**.
+// Sets the active draw layer to **.background**.
 setWorldSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getWorldSpace())
-	getDrawFrame().reset.activeZLayer = .background
+	getDrawFrame().reset.activeDrawLayer = .background
 }
 
+// @ref
+// Flushes the current batch and switches coordinate space to **Screen Space (UI)**.
+// Sets the active draw layer to **.ui**.
 setScreenSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getScreenSpace())
-	getDrawFrame().reset.activeZLayer = .ui
+	getDrawFrame().reset.activeDrawLayer = .ui
 }
 
-@(private)
-_ySortCompare :: proc(a, b: gfx.Quad) -> bool {
-	aY := min(a[0].position.y, a[1].position.y, a[2].position.y, a[3].position.y)
-	bY := min(b[0].position.y, b[1].position.y, b[2].position.y, b[3].position.y)
-	return aY > bY
+// @ref
+// Sets the **scissor** (clipping) rectangle.
+// Flushes the batch if the scissor state changes.
+setScissorCoordinates :: proc(coordinates: gmath.Vector4) {
+	if _scissorState.enabled && _scissorState.coordinates == coordinates do return
+
+	flushBatch()
+
+	_scissorState.enabled = true
+	_scissorState.coordinates = coordinates
 }
 
+// @ref
+// Disables the scissor test.
+clearScissor :: proc() {
+	if !_scissorState.enabled do return
+
+	flushBatch()
+
+	_scissorState.enabled = false
+}
+
+// @ref
+// Initializes the rendering subsystem (**Sokol**, buffers, pipelines).
 init :: proc() {
-	sg.setup(
+	sokol_gfx.setup(
 		{
-			environment = sglue.environment(),
-			logger = {func = slog.func},
+			environment = sokol_glue.environment(),
+			logger = {func = sokol_log.func},
 			d3d11_shader_debugging = ODIN_DEBUG,
 		},
 	)
@@ -107,35 +142,39 @@ init :: proc() {
 	// load the atlas generated at build-time
 	loadAtlas()
 
-	// make the vertex buffer
-	_renderState.bindings.vertex_buffers[0] = sg.make_buffer(
+	// create dynamic vertex buffer
+	_renderState.bindings.vertex_buffers[0] = sokol_gfx.make_buffer(
 		{usage = {stream_update = true}, size = size_of(_actualQuadData)},
 	)
 
-	// make and fill the index buffer
+	// create and fill static index buffer
 	indexBufferCount :: MAX_QUADS * 6
 	indices, _ := mem.make([]u16, indexBufferCount, allocator = context.allocator)
+	defer delete(indices)
+
 	for i := 0; i < indexBufferCount; i += 6 {
 		// { 0, 1, 2,  0, 2, 3 }
-		indices[i + 0] = u16((i / 6) * 4 + 0)
-		indices[i + 1] = u16((i / 6) * 4 + 1)
-		indices[i + 2] = u16((i / 6) * 4 + 2)
-		indices[i + 3] = u16((i / 6) * 4 + 0)
-		indices[i + 4] = u16((i / 6) * 4 + 2)
-		indices[i + 5] = u16((i / 6) * 4 + 3)
+		baseIndex := u16((i / 6) * 4)
+		indices[i + 0] = baseIndex + 0
+		indices[i + 1] = baseIndex + 1
+		indices[i + 2] = baseIndex + 2
+		indices[i + 3] = baseIndex + 0
+		indices[i + 4] = baseIndex + 2
+		indices[i + 5] = baseIndex + 3
 	}
-	_renderState.bindings.index_buffer = sg.make_buffer(
+
+	_renderState.bindings.index_buffer = sokol_gfx.make_buffer(
 		{
 			usage = {index_buffer = true},
 			data = {ptr = raw_data(indices), size = size_of(u16) * indexBufferCount},
 		},
 	)
 
-	_renderState.bindings.samplers[shaders.SMP_uDefaultSampler] = sg.make_sampler({})
+	_renderState.bindings.samplers[shaders.SMP_uDefaultSampler] = sokol_gfx.make_sampler({})
 
 	// setup pipeline
-	pipelineDesc: sg.Pipeline_Desc = {
-		shader = sg.make_shader(shaders.quad_shader_desc(sg.query_backend())),
+	pipelineDesc: sokol_gfx.Pipeline_Desc = {
+		shader = sokol_gfx.make_shader(shaders.quad_shader_desc(sokol_gfx.query_backend())),
 		index_type = .UINT16,
 		layout = {
 			attrs = {
@@ -150,7 +189,9 @@ init :: proc() {
 			},
 		},
 	}
-	blendState: sg.Blend_State = {
+
+	// setup blending (alpha blend)
+	blendState: sokol_gfx.Blend_State = {
 		enabled          = true,
 		src_factor_rgb   = .SRC_ALPHA,
 		dst_factor_rgb   = .ONE_MINUS_SRC_ALPHA,
@@ -162,21 +203,21 @@ init :: proc() {
 	pipelineDesc.colors[0] = {
 		blend = blendState,
 	}
-	_renderState.pipeline = sg.make_pipeline(pipelineDesc)
+	_renderState.pipeline = sokol_gfx.make_pipeline(pipelineDesc)
 
 
-	// default pass action
-	_renderState.passAction = {
-		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sg.Color)(CLEAR_COLOR)}},
-	}
+	// set the initial clear color
+	setClearColor(CLEAR_COLOR)
 
 	_initDrawFrameLayers()
 }
 
+// @ref
+// Called at the start of every frame by the **Core loop** from **main.odin**.
 coreRenderFrameStart :: proc() {
 	resetDrawFrame()
 
-	if _atlas.view.id != sg.INVALID_ID {
+	if _atlas.view.id != sokol_gfx.INVALID_ID {
 		_renderState.bindings.views[shaders.VIEW_uTex] = _atlas.view
 		_renderState.bindings.views[shaders.VIEW_uFontTex] = _atlas.view //HACK: do that to avoid crash when font isnt loaded
 	}
@@ -185,57 +226,26 @@ coreRenderFrameStart :: proc() {
 
 	_scissorState.enabled = false
 
-	sg.begin_pass({action = _renderState.passAction, swapchain = sglue.swapchain()})
+	sokol_gfx.begin_pass({action = _renderState.passAction, swapchain = sokol_glue.swapchain()})
 
-	sg.apply_pipeline(_renderState.pipeline)
+	sokol_gfx.apply_pipeline(_renderState.pipeline)
 
 	setWorldSpace()
 
 	_clearedFrame = false
 }
 
+// @ref
+// Called at the end of every frame. Submits final batches to GPU.
+// Called from **main.odin**.
 coreRenderFrameEnd :: proc() {
 	flushBatch()
-	sg.end_pass()
-	sg.commit()
+	sokol_gfx.end_pass()
+	sokol_gfx.commit()
 }
 
-@(private)
-_initDrawFrameLayers :: proc() {
-	drawFrame := getDrawFrame()
-
-	drawFrame.reset.quads[game.ZLayer.background] = make(
-		[dynamic]gfx.Quad,
-		0,
-		512,
-		allocator = context.allocator,
-	)
-	drawFrame.reset.quads[game.ZLayer.shadow] = make(
-		[dynamic]gfx.Quad,
-		0,
-		128,
-		allocator = context.allocator,
-	)
-	drawFrame.reset.quads[game.ZLayer.playspace] = make(
-		[dynamic]gfx.Quad,
-		0,
-		256,
-		allocator = context.allocator,
-	)
-	drawFrame.reset.quads[game.ZLayer.tooltip] = make(
-		[dynamic]gfx.Quad,
-		0,
-		256,
-		allocator = context.allocator,
-	)
-	drawFrame.reset.quads[game.ZLayer.ui] = make(
-		[dynamic]gfx.Quad,
-		0,
-		1024,
-		allocator = context.allocator,
-	)
-}
-
+// @ref
+// Resets the **draw frame data** (clears quads, resets camera).
 resetDrawFrame :: proc() {
 	drawFrame := getDrawFrame()
 	drawFrame.reset.coordSpace = {}
@@ -245,50 +255,19 @@ resetDrawFrame :: proc() {
 		clear(&layer)
 	}
 
+	// reset default camera to center of the game height
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
-	coreContext.gameState.world.cameraRect = gmath.rectMake(
+	coreContext.gameState.world.cameraRectangle = gmath.rectangleMake(
 		coreContext.gameState.world.cameraPosition,
-		gmath.Vec2{game.GAME_HEIGHT * aspect, game.GAME_HEIGHT},
+		gmath.Vector2{game.GAME_HEIGHT * aspect, game.GAME_HEIGHT},
 		gmath.Pivot.centerCenter,
 	)
 }
 
-setTexture :: proc(view: sg.View) {
-	currentId := _renderState.bindings.views[shaders.VIEW_uTex].id
-
-	if currentId != view.id {
-		flushBatch()
-		_renderState.bindings.views[shaders.VIEW_uTex] = view
-	}
-}
-
-setFontTexture :: proc(view: sg.View) {
-	currentId := _renderState.bindings.views[shaders.VIEW_uFontTex].id
-
-	if currentId != view.id {
-		flushBatch()
-		_renderState.bindings.views[shaders.VIEW_uFontTex] = view
-	}
-}
-
-setScissorCoordinates :: proc(coordinates: gmath.Vec4) {
-	if _scissorState.enabled && _scissorState.coordinates == coordinates do return
-
-	flushBatch()
-
-	_scissorState.enabled = true
-	_scissorState.coordinates = coordinates
-}
-
-clearScissor :: proc() {
-	if !_scissorState.enabled do return
-
-	flushBatch()
-
-	_scissorState.enabled = false
-}
-
+// @ref
+// Flushes all queued quads to the GPU.
+// Sorts layers if necessary and handles batch splitting if **MAX_QUADS** is exceeded.
 flushBatch :: proc() {
 	drawFrame := getDrawFrame()
 
@@ -298,7 +277,7 @@ flushBatch :: proc() {
 		count := len(quadsInLayer)
 		if count == 0 do continue
 
-		currentLayer := game.ZLayer(layerIndex)
+		currentLayer := game.DrawLayer(layerIndex)
 		if currentLayer in drawFrame.reset.sortedLayers {
 			slice.sort_by(quadsInLayer[:], _ySortCompare)
 		}
@@ -306,15 +285,16 @@ flushBatch :: proc() {
 		spaceLeft := MAX_QUADS - quadIndex
 		if count > spaceLeft {
 			count = spaceLeft
-			log.warn("Quad buffer full.")
+			log.warnf("Quad buffer full. Truncating %d quads.", len(quadsInLayer) - count)
 		}
 
 		if count <= 0 do break
 
-		destPtr := &_actualQuadData[quadIndex]
-		srcPtr := raw_data(quadsInLayer)
+		// copy into single flat buffer
+		destinationPtr := &_actualQuadData[quadIndex]
+		sourcePtr := raw_data(quadsInLayer)
 
-		mem.copy(destPtr, srcPtr, count * size_of(gfx.Quad))
+		mem.copy(destinationPtr, sourcePtr, count * size_of(gfx.Quad))
 
 		quadIndex += count
 		if quadIndex >= MAX_QUADS do break
@@ -322,16 +302,18 @@ flushBatch :: proc() {
 
 	if quadIndex == 0 do return
 
-	offset := sg.append_buffer(
+	// upload to gpu
+	offset := sokol_gfx.append_buffer(
 		_renderState.bindings.vertex_buffers[0],
 		{ptr = raw_data(_actualQuadData[:]), size = uint(quadIndex) * size_of(gfx.Quad)},
 	)
 
 	_renderState.bindings.vertex_buffer_offsets[0] = offset
-	sg.apply_bindings(_renderState.bindings)
+	sokol_gfx.apply_bindings(_renderState.bindings)
 
+	// appply scissor
 	if _scissorState.enabled {
-		sg.apply_scissor_rectf(
+		sokol_gfx.apply_scissor_rectf(
 			_scissorState.coordinates.x,
 			_scissorState.coordinates.y,
 			_scissorState.coordinates.z, // width
@@ -339,50 +321,188 @@ flushBatch :: proc() {
 			false,
 		)
 	} else {
+		// default to full window
 		coreContext := core.getCoreContext()
-		sg.apply_scissor_rect(0, 0, coreContext.windowWidth, coreContext.windowHeight, false)
+		sokol_gfx.apply_scissor_rect(
+			0,
+			0,
+			coreContext.windowWidth,
+			coreContext.windowHeight,
+			false,
+		)
 	}
 
-	drawFrame.reset.shaderData.uViewProj = drawFrame.reset.coordSpace.viewProj
-	sg.apply_uniforms(
+	// upload uniforms
+	drawFrame.reset.shaderData.uViewProjectionMatrix =
+		drawFrame.reset.coordSpace.viewProjectionMatrix
+	sokol_gfx.apply_uniforms(
 		shaders.UB_ShaderData,
 		{ptr = &drawFrame.reset.shaderData, size = size_of(shaders.Shaderdata)},
 	)
 
-	sg.draw(0, 6 * i32(quadIndex), 1)
+	// draw
+	sokol_gfx.draw(0, 6 * i32(quadIndex), 1)
 
 	for &quadsInLayer in drawFrame.reset.quads {
 		clear(&quadsInLayer)
 	}
 }
 
-getImageData :: proc(
-	buffer: [^]byte,
-	bufferLength: i32,
-	width, height, channels: ^i32,
-) -> [^]byte {
-	imageData := stbi.load_from_memory(buffer, bufferLength, width, height, channels, 4)
-	if imageData == nil {
-		log.error("STB image failed to load the image.")
-		return nil
+// @ref
+// Changes the active **main texture view**.
+setTexture :: proc(view: sokol_gfx.View) {
+	currentId := _renderState.bindings.views[shaders.VIEW_uTex].id
+
+	if currentId != view.id {
+		flushBatch()
+		_renderState.bindings.views[shaders.VIEW_uTex] = view
 	}
-	return imageData
 }
 
+// @ref
+// Changes the active **font texture view**.
+setFontTexture :: proc(view: sokol_gfx.View) {
+	currentId := _renderState.bindings.views[shaders.VIEW_uFontTex].id
+
+	if currentId != view.id {
+		flushBatch()
+		_renderState.bindings.views[shaders.VIEW_uFontTex] = view
+	}
+}
+
+// @ref
+// Helper to retrieve **texture info** from **SpriteName**.
+atlasUvFromSprite :: proc(sprite: game.SpriteName) -> gmath.Vector4 {
+	return game.getSpriteData(sprite).uv
+}
+
+// @ref
+// Helper to retrieve **size** from **SpriteName**.
+getSpriteSize :: proc(sprite: game.SpriteName) -> gmath.Vector2 {
+	return game.getSpriteData(sprite).size
+}
+
+@(private)
+_setCoordSpaceDefault :: proc() {
+	_drawFrame.reset.coordSpace = {
+		projectionMatrix     = gmath.Matrix4(1),
+		cameraMatrix         = gmath.Matrix4(1),
+		viewProjectionMatrix = gmath.Matrix4(1),
+	}
+}
+
+@(private)
+_setCoordSpaceValue :: proc(coordSpace: gfx.CoordSpace) {
+	_drawFrame.reset.coordSpace = coordSpace
+}
+
+@(private)
+_ySortCompare :: proc(a, b: gfx.Quad) -> bool {
+	aY := min(a[0].position.y, a[1].position.y, a[2].position.y, a[3].position.y)
+	bY := min(b[0].position.y, b[1].position.y, b[2].position.y, b[3].position.y)
+	return aY > bY
+}
+
+@(private)
+_initDrawFrameLayers :: proc() {
+	drawFrame := getDrawFrame()
+	allocator := context.allocator
+
+	drawFrame.reset.quads[game.DrawLayer.background] = make([dynamic]gfx.Quad, 0, 512, allocator)
+	drawFrame.reset.quads[game.DrawLayer.shadow] = make([dynamic]gfx.Quad, 0, 128, allocator)
+	drawFrame.reset.quads[game.DrawLayer.playspace] = make([dynamic]gfx.Quad, 0, 256, allocator)
+	drawFrame.reset.quads[game.DrawLayer.tooltip] = make([dynamic]gfx.Quad, 0, 256, allocator)
+	drawFrame.reset.quads[game.DrawLayer.ui] = make([dynamic]gfx.Quad, 0, 1024, allocator)
+}
+
+// @ref
+// Core function for pushing a quad into the **draw list**.
+drawQuadProjected :: proc(
+	positions: [4]gmath.Vector2,
+	colors: [4]gmath.Vector4,
+	uvs: [4]gmath.Vector2,
+	textureIndex: u8,
+	spriteSize: gmath.Vector2,
+	colorOverride: gmath.Vector4,
+	drawLayer: game.DrawLayer = game.DrawLayer.nil,
+	flags: game.QuadFlags,
+	parameters := gmath.Vector4{},
+	drawLayerQueue := -1,
+) {
+	drawFrame := getDrawFrame()
+
+	mutDrawLayer := drawLayer
+	if mutDrawLayer == .nil { 	// default value for drawLayer
+		mutDrawLayer = drawFrame.reset.activeDrawLayer
+	}
+
+	vertices: [4]gfx.Vertex
+	defer {
+		quadArray := &drawFrame.reset.quads[mutDrawLayer]
+
+		if drawLayerQueue == -1 {
+			append(quadArray, vertices)
+		} else {
+			assert(drawLayerQueue < len(quadArray), "No elements pushed after the drawLayerQueue.")
+
+			resize_dynamic_array(quadArray, len(quadArray) + 1)
+			oldRange := quadArray[drawLayerQueue:len(quadArray) - 1]
+			newRange := quadArray[drawLayerQueue + 1:len(quadArray)]
+			copy(newRange, oldRange)
+
+			quadArray[drawLayerQueue] = vertices
+		}
+	}
+
+	vertices[0].position = positions[0]; vertices[1].position = positions[1]
+	vertices[2].position = positions[2]; vertices[3].position = positions[3]
+
+	vertices[0].color = colors[0]; vertices[1].color = colors[1]
+	vertices[2].color = colors[2]; vertices[3].color = colors[3]
+
+	vertices[0].uv = uvs[0]; vertices[1].uv = uvs[1]
+	vertices[2].uv = uvs[2]; vertices[3].uv = uvs[3]
+
+	vertices[0].localUv = {0, 0}; vertices[1].localUv = {0, 1}
+	vertices[2].localUv = {1, 1}; vertices[3].localUv = {1, 0}
+
+	vertices[0].textureIndex = textureIndex; vertices[1].textureIndex = textureIndex
+	vertices[2].textureIndex = textureIndex; vertices[3].textureIndex = textureIndex
+
+	vertices[0].size = spriteSize; vertices[1].size = spriteSize
+	vertices[2].size = spriteSize; vertices[3].size = spriteSize
+
+	vertices[0].colorOverride = colorOverride; vertices[1].colorOverride = colorOverride
+	vertices[2].colorOverride = colorOverride; vertices[3].colorOverride = colorOverride
+
+	vertices[0].drawLayer = u8(mutDrawLayer); vertices[1].drawLayer = u8(mutDrawLayer)
+	vertices[2].drawLayer = u8(mutDrawLayer); vertices[3].drawLayer = u8(mutDrawLayer)
+
+	combinedFlags := flags | drawFrame.reset.activeFlags
+	vertices[0].quadFlags = combinedFlags; vertices[1].quadFlags = combinedFlags
+	vertices[2].quadFlags = combinedFlags; vertices[3].quadFlags = combinedFlags
+
+	vertices[0].parameters = parameters; vertices[1].parameters = parameters
+	vertices[2].parameters = parameters; vertices[3].parameters = parameters
+}
+
+// image loading helpers
+
 loadAtlas :: proc() {
-	pngData, success := io.read_entire_file("assets/images/atlas.png")
+	filepath :: "assets/images/atlas.png"
+	pngData, success := platform.read_entire_file(filepath)
 	if !success {
-		log.errorf("Failed to read file %v.", pngData)
+		log.errorf("Failed to read atlas file at: %v", filepath)
 		return
 	}
 	defer delete(pngData)
 
 	width, height, channels: i32
 	imageData := getImageData(raw_data(pngData), i32(len(pngData)), &width, &height, &channels)
-	if imageData == nil do return
-	defer stbi.image_free(imageData)
+	if imageData == nil do return // already handled in getImageData
+	defer stb_image.image_free(imageData)
 
-	description: sg.Image_Desc
+	description: sokol_gfx.Image_Desc
 	description.width = width
 	description.height = height
 	description.pixel_format = .RGBA8
@@ -390,108 +510,25 @@ loadAtlas :: proc() {
 		ptr  = imageData,
 		size = uint(width * height * 4),
 	}
-	sgImage := sg.make_image(description)
-	if sgImage.id == sg.INVALID_ID {
+
+	sgImage := sokol_gfx.make_image(description)
+	if sgImage.id == sokol_gfx.INVALID_ID {
 		log.error("Failed to make an image.")
 		return
 	}
 
-	_atlas.view = sg.make_view({texture = sg.Texture_View_Desc({image = sgImage})})
+	_atlas.view = sokol_gfx.make_view({texture = sokol_gfx.Texture_View_Desc({image = sgImage})})
 }
 
-drawQuadProjected :: proc(
-	positions: [4]gmath.Vec2,
-	colors: [4]gmath.Vec4,
-	uvs: [4]gmath.Vec2,
-	textureIndex: u8,
-	spriteSize: gmath.Vec2,
-	colorOverride: gmath.Vec4,
-	zLayer: game.ZLayer = game.ZLayer.nil,
-	flags: game.QuadFlags,
-	parameters := gmath.Vec4{},
-	zLayerQueue := -1,
-) {
-	drawFrame := getDrawFrame()
-
-	zLayer0 := zLayer
-	if zLayer0 == .nil { 	// default value for zLayer
-		zLayer0 = drawFrame.reset.activeZLayer
+getImageData :: proc(
+	buffer: [^]byte,
+	bufferLength: i32,
+	width, height, channels: ^i32,
+) -> [^]byte {
+	imageData := stb_image.load_from_memory(buffer, bufferLength, width, height, channels, 4)
+	if imageData == nil {
+		log.error("STB failed to decode image data.")
+		return nil
 	}
-
-	vertices: [4]gfx.Vertex
-	defer {
-		quadArray := &drawFrame.reset.quads[zLayer0]
-
-		if zLayerQueue == -1 {
-			append(quadArray, vertices)
-		} else {
-			assert(zLayerQueue < len(quadArray), "No elements pushed after the zLayerQueue.")
-
-			resize_dynamic_array(quadArray, len(quadArray) + 1)
-			oldRange := quadArray[zLayerQueue:len(quadArray) - 1]
-			newRange := quadArray[zLayerQueue + 1:len(quadArray)]
-			copy(newRange, oldRange)
-
-			quadArray[zLayerQueue] = vertices
-		}
-	}
-
-	vertices[0].position = positions[0]
-	vertices[1].position = positions[1]
-	vertices[2].position = positions[2]
-	vertices[3].position = positions[3]
-
-	vertices[0].color = colors[0]
-	vertices[1].color = colors[1]
-	vertices[2].color = colors[2]
-	vertices[3].color = colors[3]
-
-	vertices[0].uv = uvs[0]
-	vertices[1].uv = uvs[1]
-	vertices[2].uv = uvs[2]
-	vertices[3].uv = uvs[3]
-
-	vertices[0].localUv = {0, 0}
-	vertices[1].localUv = {0, 1}
-	vertices[2].localUv = {1, 1}
-	vertices[3].localUv = {1, 0}
-
-	vertices[0].textureIndex = textureIndex
-	vertices[1].textureIndex = textureIndex
-	vertices[2].textureIndex = textureIndex
-	vertices[3].textureIndex = textureIndex
-
-	vertices[0].size = spriteSize
-	vertices[1].size = spriteSize
-	vertices[2].size = spriteSize
-	vertices[3].size = spriteSize
-
-	vertices[0].colorOverride = colorOverride
-	vertices[1].colorOverride = colorOverride
-	vertices[2].colorOverride = colorOverride
-	vertices[3].colorOverride = colorOverride
-
-	vertices[0].zLayer = u8(zLayer0)
-	vertices[1].zLayer = u8(zLayer0)
-	vertices[2].zLayer = u8(zLayer0)
-	vertices[3].zLayer = u8(zLayer0)
-
-	_flags := flags | drawFrame.reset.activeFlags
-	vertices[0].quadFlags = _flags
-	vertices[1].quadFlags = _flags
-	vertices[2].quadFlags = _flags
-	vertices[3].quadFlags = _flags
-
-	vertices[0].parameters = parameters
-	vertices[1].parameters = parameters
-	vertices[2].parameters = parameters
-	vertices[3].parameters = parameters
-}
-
-atlasUvFromSprite :: proc(sprite: game.SpriteName) -> gmath.Vec4 {
-	return game.getSpriteData(sprite).uv
-}
-
-getSpriteSize :: proc(sprite: game.SpriteName) -> gmath.Vec2 {
-	return game.getSpriteData(sprite).size
+	return imageData
 }

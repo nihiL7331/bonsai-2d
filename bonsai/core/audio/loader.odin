@@ -4,7 +4,7 @@ import "core:fmt"
 import "core:log"
 import "core:sync"
 
-import io "bonsai:core/platform"
+import "bonsai:core/platform"
 import "bonsai:types/game"
 
 @(private = "file") // private helper for registering sounds from pcm data
@@ -25,7 +25,7 @@ _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 }
 
 // @ref
-// Loads an audio asset from the disk based on the provided *AudioName* enum.
+// Loads an audio asset from the disk based on the provided **AudioName** enum.
 //
 // This function handles reading the file, parsing the audio data (WAV file format),
 // and registering it with the mixer.
@@ -34,7 +34,7 @@ _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 load :: proc(name: game.AudioName) -> SoundHandle {
 	filename := game.audioFilename[name]
 	path := fmt.tprintf("assets/audio/%s", filename)
-	data, success := io.read_entire_file(path)
+	data, success := platform.read_entire_file(path)
 	if !success {
 		log.errorf("Failed to read audio file at path: %s", path)
 		return 0

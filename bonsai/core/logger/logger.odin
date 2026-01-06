@@ -7,9 +7,9 @@ import "core:strings"
 
 // @ref
 // Global filter for logging. Messages below this level are ignored.
-// Defaults to .Debug (all messages).
+// **Defaults to .Debug (all messages)**.
 //
-// Change this at runtime to toggle verbosity (e.g. logger.globalLogLevel = .Info).
+// Change this at runtime to toggle **verbosity** (e.g. logger.globalLogLevel = .Info).
 globalLogLevel := log.Level.Debug
 
 // prefix added to every log message to match the cli output
@@ -27,16 +27,16 @@ _LevelHeaders := [?]string {
 }
 
 // @ref
-// Creates a new *Logger* instance configured with custom ANSI coloring.
-// This is assigned to *context.logger* at the start of the application.
+// Creates a new **Logger** instance configured with custom **ANSI** coloring.
+// This is assigned to **context.logger** at the start of the application.
 createInstance :: proc() -> log.Logger {
 	return log.Logger{_consoleLoggerProc, nil, globalLogLevel, nil}
 }
 
 // @ref
 // Custom assertion failure handler.
-// Prints a formatted, colored error message before trapping the runtime.
-// This is assigned to *context.assertion_failure_proc*.
+// Prints a formatted, colored error message before **trapping** the runtime.
+// This is assigned to **context.assertion_failure_proc**.
 assertionFailureProc :: proc(
 	prefix, message: string,
 	location: runtime.Source_Code_Location,

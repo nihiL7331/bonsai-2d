@@ -1,363 +1,326 @@
 package ui
 
+import "bonsai:core/gmath"
 import "bonsai:core/input"
-import "bonsai:core/render"
-import "bonsai:types/color"
-import "bonsai:types/game"
-import "bonsai:types/gmath"
 
+import "base:intrinsics"
+import "core:fmt"
+import "core:hash"
 import "core:log"
 import "core:math"
 
-Window :: proc(
+// @ref
+// Begins a new **Window** container.
+// Returns true if the window is open and expanded.
+// Objects inside the window should be within the **if-block**.
+//
+// **Example:**
+// ```Odin
+// if ui.window("Debug") {
+//   ui.button("Reset")
+// }
+// ```
+window :: proc(
 	title: string,
-	rect: gmath.Rect,
-	pivot: gmath.Pivot = gmath.Pivot.centerCenter,
+	position: gmath.Vector2 = {0, 0},
+	config: WindowConfig = DEFAULT_WINDOW_CONFIG,
 ) -> bool {
-	id := getId(title)
+	if !_uiVisible do return false
+
+	style := _resolveWindowStyle(config)
+
+	id := hash.fnv32(transmute([]u8)title)
+
 	if !(id in state.containers) {
-		pivotOffset := -gmath.rectSize(rect) * gmath.scaleFromPivot(pivot)
-		rect := rect
-		rect.xy += pivotOffset
-		rect.zw += pivotOffset
-		state.containers[id] = Container {
-			id     = id,
-			rect   = rect,
-			isOpen = true,
-		}
+		_initializeWindowState(id, title, position, style)
 	}
-	container := &state.containers[id]
+	container := state.containers[id]
 
 	if !container.isOpen do return false
 
-	handleWindowMovement(id, &container.rect)
-	renderWindow(title, container.rect)
-
-	container.cursor.x = _PADDING
-	container.cursor.y = _HEADER_HEIGHT
-
+	container.lastFrameIndex = state.frameIndex
+	clear(&container.commands)
 	state.currentContainer = container
-	container.isOpen = CloseButton((id * 16777619) ~ 1) //seed random number generation
+	container.widgetCount = 0
 
-	return container.isOpen
-}
+	container.contentHeight = container.currentCursorY
+	container.currentCursorY = 0
+	container.cursor.y = container.headerHeight
 
-handleWindowMovement :: proc(id: u32, rect: ^gmath.Rect) {
-	headerRect := gmath.Rect{rect.x, rect.w - _HEADER_HEIGHT, rect.z, rect.w}
+	viewHeight := (container.rectangle.w - container.rectangle.y) - container.headerHeight
+	container.isScrolling = container.contentHeight > viewHeight
+	maxScroll := max(0, container.contentHeight - viewHeight)
 
-	if state.active == 0 || state.active == id {
-		if gmath.rectContains(headerRect, gmath.Vec2{state.mouseX, state.mouseY}) &&
-		   state.hot == 0 {
-			state.hot = id
-
-			if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
-				input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
-				state.active = id
-			}
-		}
+	mouseInWindow := gmath.rectangleContains(container.rectangle, state.mousePosition)
+	if container.isScrolling && mouseInWindow {
+		container.scrollOffset -= input.getScrollY() * style.scrollbarSpeed
+		container.scrollOffset = clamp(container.scrollOffset, 0, maxScroll)
+	} else if !container.isScrolling {
+		container.scrollOffset = 0
 	}
 
-	if state.active == id {
-		mouseDelta := _getMouseDelta()
-		rect.xy += mouseDelta
-		rect.zw += mouseDelta
-
-		if input.keyReleased(input.KeyCode.LEFT_MOUSE) {
-			state.active = 0
-		}
-	}
-}
-
-renderWindow :: proc(title: string, rect: gmath.Rect) {
-	headerRect := gmath.Rect{rect.x, rect.w - _HEADER_HEIGHT, rect.z, rect.w}
-
-	render.drawRect(
-		rect,
-		col = _STYLE[.WINDOW],
-		zLayer = game.ZLayer.ui,
-		outlineCol = _STYLE[.OUTLINE],
+	headerBackgroundColor, headerTextColor, headerRectangle := _handleWindowMovement(
+		id,
+		container,
+		style,
 	)
-	render.drawRect(headerRect, col = _STYLE[.HEADER], zLayer = game.ZLayer.ui)
 
-	render.drawText(
-		gmath.Vec2{(rect.x + rect.z) / 2, (headerRect.y + headerRect.w) / 2},
+	if container.isExpanded {
+		append(
+			&container.commands,
+			DrawRectangleCommand {
+				rectangle = container.rectangle,
+				color = style.backgroundColor,
+				outlineColor = style.borderColor,
+			},
+		)
+		if container.isScrolling {
+			_handleScrollbarInteractionAndDraw(container, viewHeight, maxScroll, style)
+		}
+	}
+
+	_drawHeader(
+		id,
 		title,
-		.PixelCode,
-		12,
-		col = _STYLE[.TEXT],
-		zLayer = game.ZLayer.ui,
-		scale = 0.5,
-		pivot = gmath.Pivot.centerCenter,
+		container,
+		headerBackgroundColor,
+		headerTextColor,
+		headerRectangle,
+		style,
 	)
+
+	if container.isExpanded {
+		contentRectangle := gmath.Rectangle {
+			container.rectangle.x,
+			container.rectangle.y,
+			container.rectangle.z,
+			container.rectangle.w - container.headerHeight,
+		}
+
+		append(&container.commands, SetScissorCommand{rectangle = contentRectangle})
+	}
+
+	return container.isOpen && container.isExpanded
 }
 
-Button :: proc(label: string) -> bool {
+// @ref
+// Renders a clickable button. Returns **true** if clicked this frame.
+//
+// Must be used within a **Window if-block**.
+button :: proc(
+	label: string,
+	isInline: bool = false,
+	config: ButtonConfig = DEFAULT_BUTTON_CONFIG,
+) -> bool {
 	parent := state.currentContainer
-
 	if parent == nil {
 		log.error("No parent container set. Button", label, "can't be drawn.")
 		return false
-	} else if parent.rect.y > parent.rect.w - parent.cursor.y { 	//TODO: add scrolling container here
-		log.error("Button", label, "overflowed out of container.")
-		return false
 	}
 
-	parent.cursor.y += _BUTTON_HEIGHT + _SPACING
-	screenPos := gmath.Vec2{parent.rect.x + parent.cursor.x, parent.rect.w - parent.cursor.y}
+	style := _resolveButtonStyle(config)
 
-	size := gmath.Vec2{parent.rect.z - parent.rect.x - _PADDING * 2, _BUTTON_HEIGHT}
-	rect := gmath.rectMake(screenPos, size)
-	rectColor := _STYLE[.BUTTON]
-	textColor := _STYLE[.TEXT]
-
-	result := false
-	id := getId(label)
-
-	if gmath.rectContains(rect, gmath.Vec2{state.mouseX, state.mouseY}) &&
-	   (state.active == 0 || state.active == id) {
-		rectColor = _STYLE[.HOVER_BUTTON]
-		textColor = _STYLE[.HOVER_TEXT]
-		state.hot = id
-
-		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
-			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
-			state.active = id
-		}
-	}
-
-	if state.active == id {
-		rectColor = _STYLE[.ACTIVE_BUTTON]
-		textColor = _STYLE[.ACTIVE_TEXT]
-
-		if input.keyReleased(input.KeyCode.LEFT_MOUSE) {
-			result = true
-			state.active = 0
-		}
-	}
-
-	render.drawRect(rect, col = rectColor, zLayer = game.ZLayer.ui)
-
-	render.drawText(
-		screenPos + size / 2,
+	rectangle, isVisible := _calculateObjectLayout(
+		parent,
 		label,
-		.PixelCode,
-		12,
-		scale = 0.5,
-		zLayer = game.ZLayer.ui,
-		pivot = gmath.Pivot.centerCenter,
-		col = textColor,
+		style.pivot,
+		style.padding,
+		style.margin,
+		isInline,
 	)
 
-	return result
-}
-
-ColorPicker :: proc(val: ^gmath.Vec4, label: string, showAlpha: bool = false) {
-	Slider(&val.x, 0.0, 1.0, "Red", color.RED)
-	Slider(&val.y, 0.0, 1.0, "Blue", color.BLUE)
-	Slider(&val.z, 0.0, 1.0, "Green", color.GREEN)
-	if showAlpha {
-		Slider(&val.w, 0.0, 1.0, "Alpha", color.hexToRGBA(0xaaaaaaff))
-	}
-}
-
-Slider :: proc(
-	value: ^f32,
-	min, max: f32,
-	label: string,
-	fillColor: gmath.Vec4 = _STYLE[.SLIDER_FILL],
-) {
-	parent := state.currentContainer
-
-	if parent == nil {
-		log.error("No parent container set. Slider", label, "can't be drawn.")
-		return
-	} else if parent.rect.y > parent.rect.w - parent.cursor.y {
-		log.error("Slider", label, "overflowed out of container.")
-		return
-	}
-
-	parent.cursor.y += _SLIDER_HEIGHT + _SPACING
-	screenPos := gmath.Vec2{parent.rect.x + parent.cursor.x, parent.rect.w - parent.cursor.y}
-
-	size := gmath.Vec2{parent.rect.z - parent.rect.x - _PADDING * 2, _SLIDER_HEIGHT}
-	rect := gmath.rectMake(screenPos, size)
-	backgroundColor := _STYLE[.SLIDER_BACKGROUND]
-
-	id := getId(label)
-	if gmath.rectContains(rect, gmath.Vec2{state.mouseX, state.mouseY}) &&
-	   (state.active == 0 || state.active == id) {
-		state.hot = id
-
-		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
-			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
-			state.active = id
-		}
-	}
-
-	if state.active == id {
-		mouseX := state.mouseX
-		ratio := (mouseX - rect.x) / (rect.z - rect.x)
-		ratio = math.clamp(ratio, 0.0, 1.0)
-
-		value^ = min + (ratio * (max - min))
-
-		if input.keyReleased(.LEFT_MOUSE) {
-			state.active = 0
-		}
-	}
-
-	render.drawRect(rect, col = backgroundColor, zLayer = game.ZLayer.ui)
-
-	currentRatio := (value^ - min) / (max - min)
-	fillWidth := (rect.z - rect.x) * currentRatio
-	fillRect := gmath.Rect{rect.x, rect.y, rect.x + fillWidth, rect.w}
-	render.drawRect(fillRect, col = fillColor, zLayer = game.ZLayer.ui)
-
-	render.drawText(
-		screenPos + size / 2,
-		label,
-		.PixelCode,
-		12,
-		dropShadowCol = color.TRANSPARENT,
-		col = gmath.Vec4{1, 1, 1, 0.5},
-		scale = 0.5,
-		pivot = gmath.Pivot.centerCenter,
-		zLayer = game.ZLayer.ui,
-	)
-}
-
-Checkbox :: proc(val: ^bool, label: string) {
-	parent := state.currentContainer
-
-	if parent == nil {
-		log.error("No parent container set. Checkbox", label, "can't be drawn.")
-		return
-	} else if parent.rect.y > parent.rect.w - parent.cursor.y {
-		log.error("Checkbox", label, "overflowed out of container.")
-		return
-	}
-	parent.cursor.y += _BUTTON_HEIGHT + _SPACING
-	screenPos := gmath.Vec2 {
-		parent.rect.z - parent.cursor.x - _BUTTON_HEIGHT,
-		parent.rect.w - parent.cursor.y,
-	}
-
-	size := gmath.Vec2{_BUTTON_HEIGHT, _BUTTON_HEIGHT}
-	rect := gmath.rectMake(screenPos, size)
-	rectColor := _STYLE[.BUTTON]
+	if !isVisible do return false
 
 	id := getId(label)
 
-	if gmath.rectContains(rect, gmath.Vec2{state.mouseX, state.mouseY}) &&
-	   (state.active == 0 || state.active == id) {
-		state.hot = id
-
-		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
-			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
-			state.active = id
-		}
-	}
-
-	if state.active == id {
-		rectColor = _STYLE[.ACTIVE_BUTTON]
-
-		if input.keyReleased(input.KeyCode.LEFT_MOUSE) {
-			log.info("clicked")
-			val^ = !val^
-			state.active = 0
-		}
-	}
-
-	render.drawRect(rect, col = rectColor, zLayer = game.ZLayer.ui)
-	render.drawText(
-		gmath.Vec2{parent.rect.x + parent.cursor.x, screenPos.y + size.y / 2},
-		label,
-		.PixelCode,
-		12,
-		col = _STYLE[.TEXT],
-		scale = 0.5,
-		pivot = gmath.Pivot.centerLeft,
-	)
-	if val^ {
-		render.drawText(
-			screenPos + size / 2,
-			"X",
-			.PixelCode,
-			12,
-			zLayer = game.ZLayer.ui,
-			scale = 0.5,
-			pivot = gmath.Pivot.centerCenter,
-			col = _STYLE[.TEXT],
-		)
-	}
+	return _handleButtonInteractionAndDraw(id, rectangle, label, style, parent)
 }
 
-Header :: proc(label: string) { 	// technically a subheader, this one isn't draggable
-	parent := state.currentContainer
 
+// @ref
+// Renders a **static text label**.
+//
+// Must be used within a **Window if-block**.
+text :: proc(text: string, isInline: bool = false, config: TextConfig = DEFAULT_TEXT_CONFIG) {
+	parent := state.currentContainer
 	if parent == nil {
-		log.error("No parent container set. Checkbox", label, "can't be drawn.")
-		return
-	} else if parent.rect.y > parent.rect.w - parent.cursor.y {
-		log.error("Header", label, "overflowed out of container.")
+		log.error("No parent container set. Text", text, "can't be drawn.")
 		return
 	}
-	parent.cursor.y += _HEADER_HEIGHT + _SPACING
-	screenPos := gmath.Vec2 {
-		(parent.rect.x + parent.rect.z) / 2,
-		parent.rect.w - parent.cursor.y + _HEADER_HEIGHT / 2,
-	}
 
+	style := _resolveTextStyle(config)
 
-	textColor := _STYLE[.HEADER]
-	render.drawText(
-		screenPos,
-		label,
-		.PixelCode,
-		12,
-		col = textColor,
-		scale = 0.5,
-		pivot = gmath.Pivot.centerCenter,
+	rectangle, isVisible := _calculateObjectLayout(
+		parent,
+		text,
+		style.pivot,
+		style.padding,
+		style.margin,
+		isInline,
 	)
+	if !isVisible do return
+
+	_drawText(text, rectangle, style)
 }
 
-CloseButton :: proc(id: u32) -> bool { 	//we separate this from button for easier positioning
+// @ref
+// Renders a boolean checkbox toggle.
+// Modifies the **value** pointer directly. Returns **true** if the state has changed this frame.
+//
+// Must be used within a **Window if-block**.
+checkbox :: proc(
+	value: ^bool,
+	isInline: bool = false,
+	config: CheckboxConfig = DEFAULT_CHECKBOX_CONFIG,
+) -> bool {
 	parent := state.currentContainer
 
-	screenPos := gmath.Vec2 {
-		parent.rect.z - _PADDING - _CLOSE_SIZE,
-		parent.rect.w - _PADDING - _CLOSE_SIZE,
+	style := _resolveCheckboxStyle(config)
+
+	checkboxString := " "
+	if value^ {
+		checkboxString = fmt.tprintf("%r", style.checkboxRune)
 	}
 
-	size := gmath.Vec2{_CLOSE_SIZE, _CLOSE_SIZE}
-	rect := gmath.rectMake(screenPos, size)
-	rectColor := _STYLE[.CLOSE]
-	textColor := _STYLE[.CLOSE_TEXT]
+	id := getId(checkboxString)
 
-	if gmath.rectContains(rect, gmath.Vec2{state.mouseX, state.mouseY}) {
-		rectColor = _STYLE[.CLOSE_TEXT]
-		textColor = _STYLE[.CLOSE] // just flipping colors, seems pointless to add more colors
-		state.hot = id
-
-		if input.keyPressed(input.KeyCode.LEFT_MOUSE) {
-			input.consumeKeyPressed(input.KeyCode.LEFT_MOUSE)
-			log.info("clicked")
-			state.active = 0
-			return false
-		}
-	}
-
-	render.drawRect(rect, col = rectColor, zLayer = game.ZLayer.ui)
-	render.drawText(
-		screenPos + size / 2,
-		"X",
-		.PixelCode,
-		12,
-		zLayer = game.ZLayer.ui,
-		scale = 0.25,
-		pivot = gmath.Pivot.centerCenter,
-		col = textColor,
+	rectangle, isVisible := _calculateObjectLayout(
+		parent,
+		checkboxString,
+		style.pivot,
+		style.padding,
+		style.margin,
+		isInline,
+		true, // force square
+		style.checkboxRuneScale,
 	)
 
-	return true
+	if !isVisible do return false
+
+	clicked := _handleCheckboxInteractionAndDraw(
+		value,
+		rectangle,
+		parent,
+		id,
+		style,
+		checkboxString,
+		style.checkboxRuneScale,
+	)
+
+	if clicked {
+		value^ = !value^
+	}
+
+	return clicked
+}
+
+// @ref
+// Renders a **draggable slider** for numeric types (**int**, **float**, etc.).
+// Returns **true** if the value changed this frame.
+//
+// Must be used within a **Window if-block**.
+slider :: proc(
+	value: ^$T,
+	minimumValue: T,
+	maximumValue: T,
+	isInline: bool = false,
+	config: SliderConfig = DEFAULT_SLIDER_CONFIG,
+) -> bool where intrinsics.type_is_numeric(T) {
+	parent := state.currentContainer
+
+	style := _resolveSliderStyle(config)
+
+	// create unique id based on parent id and widget count, since sliders dont have any labels
+	id := getId(fmt.tprintf("slider_%d_%d", parent.id, parent.widgetCount))
+
+	currentValueF32 := f32(value^)
+	minimumValueF32 := f32(minimumValue)
+	maximumValueF32 := f32(maximumValue)
+
+	newValueF32 := _handleSliderInteractionAndDraw(
+		id,
+		parent,
+		isInline,
+		style,
+		currentValueF32,
+		minimumValueF32,
+		maximumValueF32,
+		intrinsics.type_is_integer(T),
+	)
+
+	if intrinsics.type_is_integer(T) {
+		value^ = T(math.round(newValueF32))
+	} else {
+		value^ = T(newValueF32)
+	}
+
+	return currentValueF32 != newValueF32
+}
+
+@(private = "package")
+_closeButton :: proc(
+	normalColor, hoverColor, activeColor: gmath.Vector4,
+	closeRune: rune,
+) -> bool {
+	parent := state.currentContainer
+
+	// create unique id based on parent id and rune
+	id := getId(fmt.tprintf("close_%d_%r", parent.id, closeRune))
+
+	size := gmath.Vector2{parent.closeWidth, parent.headerHeight}
+	position := gmath.Vector2 {
+		parent.rectangle.z - size.x,
+		parent.rectangle.w - size.y - f32(DEFAULT_FONT_SIZE / 8),
+	}
+
+	clicked, _ := _headerButton(
+		id,
+		position,
+		size,
+		normalColor,
+		hoverColor,
+		activeColor,
+		closeRune,
+	)
+
+	// returns true if the window is still meant to be open
+	return !clicked
+}
+
+@(private = "package")
+_toggleButton :: proc(
+	normalColor, hoverColor, activeColor: gmath.Vector4,
+	toggleRune: rune,
+) -> Maybe(bool) {
+	parent := state.currentContainer
+
+	// create unique id based on parent id and rune
+	id := getId(fmt.tprintf("%v_%r", parent.id, toggleRune))
+
+	size := gmath.Vector2{parent.toggleWidth, parent.headerHeight}
+	position := gmath.Vector2 {
+		parent.rectangle.x,
+		parent.rectangle.w - size.y - f32(DEFAULT_FONT_SIZE / 8),
+	}
+
+	// rotate caret when expanded
+	rotation: f32 = parent.isExpanded ? 180.0 : 0.0
+	offset := parent.isExpanded ? gmath.Vector2{0, 3} : gmath.Vector2{2, 0}
+
+	clicked, _ := _headerButton(
+		id,
+		position,
+		size,
+		normalColor,
+		hoverColor,
+		activeColor,
+		toggleRune,
+		rotation,
+		offset,
+	)
+
+	if clicked {
+		return !parent.isExpanded
+	}
+	return nil
 }

@@ -1,305 +1,328 @@
 package render
 
 import "bonsai:core"
-import "bonsai:types/color"
+import "bonsai:core/gmath"
+import colors "bonsai:core/gmath/color"
 import "bonsai:types/game"
-import "bonsai:types/gmath"
 
+// standard texture index reserved for a 1x1 white pixel
+@(private = "file")
+WHITE_TEXTURE_INDEX: u8 : 255
+
+// @ref
+// Main function for drawing game entities.
+// **Supports rotation, animations, pivoting and camera culling.**
 drawSprite :: proc(
-	position: gmath.Vec2,
+	position: gmath.Vector2,
 	sprite: game.SpriteName,
 	rotation: f32 = 0.0, // in radians
 	pivot := gmath.Pivot.centerCenter,
-	flipX := false,
-	drawOffset := gmath.Vec2{},
-	xForm := gmath.Mat4(1),
-	animIndex := 0,
-	col := color.WHITE,
-	colOverride := gmath.Vec4{},
-	zLayer := game.ZLayer{},
+	isFlippedX := false,
+	drawOffset := gmath.Vector2{},
+	transform := gmath.Matrix4(1),
+	animationIndex := 0,
+	color := colors.WHITE,
+	colorOverride := gmath.Vector4{},
+	drawLayer := game.DrawLayer{},
 	flags := game.QuadFlags{},
-	params := gmath.Vec4{},
+	parameters := gmath.Vector4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
-	zLayerQueue := -1,
-	culling := false,
+	drawLayerQueue := -1,
+	isCullingEnabled := false,
 ) {
-	rectSize := getSpriteSize(sprite)
+	rectangleSize := getSpriteSize(sprite)
 	frameCount := game.getFrameCount(sprite)
-	rectSize.x /= f32(frameCount) // NOTE: assuming that animations are exported as a horizontal slice
 
-	if culling {
+	// assuming horizontal strip animation layout
+	rectangleSize.x /= f32(frameCount)
+
+	// camera culling
+	if isCullingEnabled {
 		coreContext := core.getCoreContext()
-		cameraRect := coreContext.gameState.world.cameraRect
+		cameraRectangle := coreContext.gameState.world.cameraRectangle
 
-		maxDimension := max(rectSize.x, rectSize.y) // handles rotation safely
+		// uses max to handle rotation safely
+		maxDimension := max(rectangleSize.x, rectangleSize.y)
 
-		spriteRect := gmath.rectMake(position, gmath.Vec2{maxDimension, maxDimension}, pivot)
-		spriteRect = gmath.rectShift(spriteRect, -drawOffset)
+		spriteRectangle := gmath.rectangleMake(
+			position,
+			gmath.Vector2{maxDimension, maxDimension},
+			pivot,
+		)
+		spriteRectangle = gmath.rectangleShift(spriteRectangle, -drawOffset)
 
-		if !gmath.rectIntersects(spriteRect, cameraRect) do return
+		if !gmath.rectangleIntersects(spriteRectangle, cameraRectangle) do return
 	}
 
-	xForm0 := gmath.Mat4(1)
-	xForm0 *= gmath.xFormTranslate(position)
+	// calculate local transform matrix
+	localTransform := gmath.Matrix4(1)
+	localTransform *= gmath.matrixTranslate(position)
+
 	if rotation != 0 {
-		xForm0 *= gmath.xFormRotate(rotation)
+		localTransform *= gmath.matrixRotate(rotation)
 	}
-	xForm0 *= gmath.xFormScale(gmath.Vec2{flipX ? -1.0 : 1.0, 1.0})
-	xForm0 *= xForm
-	xForm0 *= gmath.xFormTranslate(rectSize * -gmath.scaleFromPivot(pivot))
-	xForm0 *= gmath.xFormTranslate(-drawOffset)
+	localTransform *= gmath.matrixScale(gmath.Vector2{isFlippedX ? -1.0 : 1.0, 1.0})
+	localTransform *= transform
 
-	drawRectXForm(
-		xForm0,
-		rectSize,
+	// pivot adjustment
+	pivotOffset := rectangleSize * -gmath.scaleFromPivot(pivot)
+	localTransform *= gmath.matrixTranslate(pivotOffset)
+	localTransform *= gmath.matrixTranslate(-drawOffset)
+
+	drawRectangleTransform(
+		localTransform,
+		rectangleSize,
 		sprite,
-		animIndex = animIndex,
-		col = col,
-		colOverride = colOverride,
-		zLayer = zLayer,
+		animationIndex = animationIndex,
+		color = color,
+		colorOverride = colorOverride,
+		drawLayer = drawLayer,
 		flags = flags,
-		params = params,
+		parameters = parameters,
 		cropTop = cropTop,
 		cropLeft = cropLeft,
 		cropBottom = cropBottom,
 		cropRight = cropRight,
-		zLayerQueue = zLayerQueue,
+		drawLayerQueue = drawLayerQueue,
 	)
 }
 
-drawRect :: proc(
-	rect: gmath.Rect,
+// @ref
+// Draws a simple **rectangle**. Useful for UI, debug shapes or non-sprite elements.
+// **Supports an optional 1px outline**.
+drawRectangle :: proc(
+	rectangle: gmath.Rectangle,
 	rotation: f32 = 0.0,
 	sprite := game.SpriteName.nil,
 	uv := DEFAULT_UV,
-	outlineCol := gmath.Vec4{},
-	col := color.WHITE,
-	colOverride := gmath.Vec4{},
-	zLayer := game.ZLayer{},
+	outlineColor := gmath.Vector4{},
+	color := colors.WHITE,
+	colorOverride := gmath.Vector4{},
+	drawLayer := game.DrawLayer{},
 	flags := game.QuadFlags{},
-	params := gmath.Vec4{},
+	parameters := gmath.Vector4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
-	zLayerQueue := -1,
-	culling := false,
+	drawLayerQueue := -1,
+	isCullingEnabled := false,
 ) {
-	if culling {
+	if isCullingEnabled {
 		coreContext := core.getCoreContext()
-		cameraRect := coreContext.gameState.world.cameraRect
+		cameraRectangle := coreContext.gameState.world.cameraRectangle
 
-		if !gmath.rectIntersects(cameraRect, rect) do return
+		if !gmath.rectangleIntersects(cameraRectangle, rectangle) do return
 	}
 
-	xForm := gmath.xFormTranslate(rect.xy)
+	transform := gmath.matrixTranslate(rectangle.xy)
 	if rotation != 0 {
-		xForm *= gmath.xFormRotate(rotation)
+		transform *= gmath.matrixRotate(rotation)
 	}
-	size := gmath.rectSize(rect)
+	size := gmath.getRectangleSize(rectangle)
 
-	if outlineCol != {} {
-		size += gmath.Vec2(2)
-		xForm *= gmath.xFormTranslate(gmath.Vec2(-1))
-		drawRectXForm(
-			xForm,
-			size,
-			col = outlineCol,
+	if outlineColor != {} {
+		outlineSize := size + gmath.Vector2(2)
+		outlineTransform := transform * gmath.matrixTranslate(gmath.Vector2(-1))
+
+		drawRectangleTransform(
+			outlineTransform,
+			outlineSize,
+			color = outlineColor,
 			uv = uv,
-			colOverride = colOverride,
-			zLayer = zLayer,
+			colorOverride = colorOverride,
+			drawLayer = drawLayer,
 			flags = flags,
-			params = params,
+			parameters = parameters,
 		)
 	}
 
-	drawRectXForm(
-		xForm,
+	drawRectangleTransform(
+		transform,
 		size,
 		sprite,
 		uv,
 		0,
 		0,
-		col,
-		colOverride,
-		zLayer,
+		color,
+		colorOverride,
+		drawLayer,
 		flags,
-		params,
+		parameters,
 		cropTop,
 		cropLeft,
 		cropBottom,
 		cropRight,
-		zLayerQueue,
+		drawLayerQueue,
 	)
 }
 
-drawSpriteInRect :: proc(
+// @ref
+// Helper to draw a sprite scaled to fit inside a target rectangle.
+// Maintains aspect ratio (letterboxing).
+drawSpriteInRectangle :: proc(
 	sprite: game.SpriteName,
-	pos: gmath.Vec2,
-	size: gmath.Vec2,
-	xForm := gmath.Mat4(1),
-	col := color.WHITE,
-	colOverride := gmath.Vec4{0, 0, 0, 0},
-	zLayer := game.ZLayer.nil,
+	position: gmath.Vector2,
+	size: gmath.Vector2,
+	transform := gmath.Matrix4(1),
+	color := colors.WHITE,
+	colorOverride := gmath.Vector4{},
+	drawLayer := game.DrawLayer.nil,
 	flags := game.QuadFlags(0),
 	paddingPercent: f32 = 0.1,
 ) {
-	imgSize := getSpriteSize(sprite)
-	rect := gmath.rectMake(pos, size)
-
-	{ 	// padding
-		rect = gmath.rectShift(rect, -rect.xy)
-		rect.xy += size * paddingPercent * 0.5
-		rect.zw -= size * paddingPercent * 0.5
-		rect = gmath.rectShift(rect, pos)
-	}
+	imageSize := getSpriteSize(sprite)
+	paddedSize := size * (1.0 - paddingPercent)
+	targetRectangle := gmath.rectangleMake(position, paddedSize)
 
 	{ 	//shrink rect if sprite is too small
-		rectSize := gmath.rectSize(rect)
-		sizeDiffX := rectSize.x - imgSize.x
-		if sizeDiffX < 0 {
-			sizeDiffX = 0
-		}
+		rectangleSize := gmath.getRectangleSize(targetRectangle)
+		sizeDifferenceX := max(0.0, rectangleSize.x - imageSize.x)
+		sizeDifferenceY := max(0.0, rectangleSize.y - imageSize.y)
 
-		sizeDiffY := rectSize.y - imgSize.y
-		if sizeDiffY < 0 {
-			sizeDiffY = 0
-		}
-		sizeDiff := gmath.Vec2{sizeDiffX, sizeDiffY}
+		sizeDifference := gmath.Vector2{sizeDifferenceX, sizeDifferenceY}
 
-		offset := rect.xy
-		rect = gmath.rectShift(rect, -rect.xy)
-		rect.xy += sizeDiff * 0.5
-		rect.zw -= sizeDiff * 0.5
-		rect = gmath.rectShift(rect, offset)
+		offset := targetRectangle.xy
+		targetRectangle = gmath.rectangleShift(targetRectangle, -targetRectangle.xy)
+		targetRectangle.xy += sizeDifference * 0.5
+		targetRectangle.zw -= sizeDifference * 0.5
+		targetRectangle = gmath.rectangleShift(targetRectangle, offset)
 	}
 
-	if imgSize.x > imgSize.y {
-		rectSize := gmath.rectSize(rect)
-		rect.w = rect.y + (rectSize.x * (imgSize.y / imgSize.x))
+	if imageSize.x > imageSize.y {
+		rectangleSize := gmath.getRectangleSize(targetRectangle)
+		targetRectangle.w = targetRectangle.y + (rectangleSize.x * (imageSize.y / imageSize.x))
 
-		newHeight := rect.w - rect.y
-		rect = gmath.rectShift(rect, gmath.Vec2{0, (rectSize.y - newHeight) * 0.5})
-	} else if imgSize.y > imgSize.x {
-		rectSize := gmath.rectSize(rect)
-		rect.z = rect.x + (rectSize.y * (imgSize.x / imgSize.y))
+		newHeight := targetRectangle.w - targetRectangle.y
+		targetRectangle = gmath.rectangleShift(
+			targetRectangle,
+			gmath.Vector2{0, (rectangleSize.y - newHeight) * 0.5},
+		)
+	} else if imageSize.y > imageSize.x {
+		rectangleSize := gmath.getRectangleSize(targetRectangle)
+		targetRectangle.z = targetRectangle.x + (rectangleSize.y * (imageSize.x / imageSize.y))
 
-		newWidth := rect.z - rect.x
-		rect = gmath.rectShift(rect, gmath.Vec2{0, (rectSize.x - newWidth) * 0.5})
+		newWidth := targetRectangle.z - targetRectangle.x
+		targetRectangle = gmath.rectangleShift(
+			targetRectangle,
+			gmath.Vector2{0, (rectangleSize.x - newWidth) * 0.5},
+		)
 	}
 
-	drawRect(
-		rect,
-		col = col,
+	drawRectangle(
+		targetRectangle,
+		color = color,
 		sprite = sprite,
-		colOverride = colOverride,
-		zLayer = zLayer,
+		colorOverride = colorOverride,
+		drawLayer = drawLayer,
 		flags = flags,
 	)
 }
 
-drawRectXForm :: proc(
-	xForm: gmath.Mat4,
-	size: gmath.Vec2,
+// @ref
+// Low-level function that pushes the final quad vertex data to the batcher.
+drawRectangleTransform :: proc(
+	transform: gmath.Matrix4,
+	size: gmath.Vector2,
 	sprite := game.SpriteName.nil,
 	uv := DEFAULT_UV,
-	texIndex: u8 = 0,
-	animIndex := 0,
-	col := color.WHITE,
-	colOverride := gmath.Vec4{},
-	zLayer := game.ZLayer{},
+	textureIndex: u8 = 0,
+	animationIndex := 0,
+	color := colors.WHITE,
+	colorOverride := gmath.Vector4{},
+	drawLayer := game.DrawLayer.nil,
 	flags := game.QuadFlags{},
-	params := gmath.Vec4{},
+	parameters := gmath.Vector4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
-	zLayerQueue := -1,
+	drawLayerQueue := -1,
 ) {
-	size := size
-	uv := uv
-	texIndex := texIndex // shadowing
+	mutSize := size
+	mutUv := uv
+	mutTextureIndex := textureIndex
 
 	drawFrame := getDrawFrame()
 
-	if uv == DEFAULT_UV {
-		uv = atlasUvFromSprite(sprite)
+	if mutUv == DEFAULT_UV {
+		mutUv = atlasUvFromSprite(sprite)
 
 		frameCount := game.getFrameCount(sprite)
-		frameSize := size
+		frameSize := mutSize
 		frameSize.x /= f32(frameCount)
-		uvSize := gmath.rectSize(uv)
-		uvFrameSize := uvSize * gmath.Vec2{frameSize.x / size.x, 1.0}
-		uv.zw = uv.xy + uvFrameSize
-		uv = gmath.rectShift(uv, gmath.Vec2{f32(animIndex) * uvFrameSize.x, 0})
+		uvSize := gmath.getRectangleSize(mutUv)
+		uvFrameSize := uvSize * gmath.Vector2{frameSize.x / mutSize.x, 1.0}
+		mutUv.zw = mutUv.xy + uvFrameSize
+		mutUv = gmath.rectangleShift(mutUv, gmath.Vector2{f32(animationIndex) * uvFrameSize.x, 0})
 	}
 
-	assert(drawFrame.reset.coordSpace != {}, "No coord space set.")
+	assert(drawFrame.reset.coordSpace != {}, "No coordinate space set.")
 
-	worldMatrix := xForm
+	worldMatrix := transform
 
-	{
+	{ 	// cropping
 		if cropTop != 0.0 {
-			newHeight := size.y * (1.0 - cropTop)
-			uvSize := gmath.rectSize(uv)
+			newHeight := mutSize.y * (1.0 - cropTop)
+			uvSize := gmath.getRectangleSize(mutUv)
 
-			uv.w -= uvSize.y * cropTop
-			size.y = newHeight
+			mutUv.w -= uvSize.y * cropTop
+			mutSize.y = newHeight
 		}
 		if cropLeft != 0.0 {
-			crop := size.x * cropLeft
-			size.x -= crop
+			crop := mutSize.x * cropLeft
+			mutSize.x -= crop
 
-			uvSize := gmath.rectSize(uv)
-			uv.x += uvSize.x * cropLeft
+			uvSize := gmath.getRectangleSize(mutUv)
+			mutUv.x += uvSize.x * cropLeft
 
-			worldMatrix *= gmath.xFormTranslate(gmath.Vec2{crop, 0})
+			worldMatrix *= gmath.matrixTranslate(gmath.Vector2{crop, 0})
 		}
 		if cropBottom != 0.0 {
-			crop := size.y * (1.0 - cropBottom)
-			diff: f32 = crop - size.y
-			size.y = crop
-			uvSize := gmath.rectSize(uv)
+			crop := mutSize.y * (1.0 - cropBottom)
+			difference: f32 = crop - mutSize.y
+			mutSize.y = crop
+			uvSize := gmath.getRectangleSize(mutUv)
 
-			uv.y += uvSize.y * cropBottom
+			mutUv.y += uvSize.y * cropBottom
 
-			worldMatrix *= gmath.xFormTranslate(gmath.Vec2{0, -diff})
+			worldMatrix *= gmath.matrixTranslate(gmath.Vector2{0, -difference})
 		}
 		if cropRight != 0.0 {
-			size.x *= 1.0 - cropRight
-			uvSize := gmath.rectSize(uv)
-			uv.z -= uvSize.x * cropRight
+			mutSize.x *= 1.0 - cropRight
+			uvSize := gmath.getRectangleSize(mutUv)
+			mutUv.z -= uvSize.x * cropRight
 		}
 	}
 
-	bottomLeft := gmath.Vec2{0, 0}
-	topLeft := gmath.Vec2{0, size.y}
-	topRight := gmath.Vec2{size.x, size.y}
-	bottomRight := gmath.Vec2{size.x, 0}
+	bottomLeft := gmath.Vector2{0, 0}
+	topLeft := gmath.Vector2{0, mutSize.y}
+	topRight := gmath.Vector2{mutSize.x, mutSize.y}
+	bottomRight := gmath.Vector2{mutSize.x, 0}
 
 	//transform local -> world
-	p0 := (worldMatrix * gmath.Vec4{bottomLeft.x, bottomLeft.y, 0, 1}).xy
-	p1 := (worldMatrix * gmath.Vec4{topLeft.x, topLeft.y, 0, 1}).xy
-	p2 := (worldMatrix * gmath.Vec4{topRight.x, topRight.y, 0, 1}).xy
-	p3 := (worldMatrix * gmath.Vec4{bottomRight.x, bottomRight.y, 0, 1}).xy
+	p0 := (worldMatrix * gmath.Vector4{bottomLeft.x, bottomLeft.y, 0, 1}).xy
+	p1 := (worldMatrix * gmath.Vector4{topLeft.x, topLeft.y, 0, 1}).xy
+	p2 := (worldMatrix * gmath.Vector4{topRight.x, topRight.y, 0, 1}).xy
+	p3 := (worldMatrix * gmath.Vector4{bottomRight.x, bottomRight.y, 0, 1}).xy
 
-	if texIndex == 0 && sprite == .nil {
-		texIndex = 255
+	if mutTextureIndex == 0 && sprite == .nil {
+		mutTextureIndex = WHITE_TEXTURE_INDEX
 	}
 
 	drawQuadProjected(
 		{p0, p1, p2, p3},
-		{col, col, col, col},
-		{uv.xy, uv.xw, uv.zw, uv.zy},
-		texIndex,
-		size,
-		colOverride,
-		zLayer,
+		{color, color, color, color},
+		{mutUv.xy, mutUv.xw, mutUv.zw, mutUv.zy},
+		mutTextureIndex,
+		mutSize,
+		colorOverride,
+		drawLayer,
 		flags,
-		params,
-		zLayerQueue,
+		parameters,
+		drawLayerQueue,
 	)
 }

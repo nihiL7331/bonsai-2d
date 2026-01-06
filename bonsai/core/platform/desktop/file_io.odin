@@ -26,8 +26,8 @@ _ :: mem
 // @ref
 // Reads an entire file into memory.
 //
-// Wraps *core:os.read_entire_file* to provide a consistent cross-platform API.
-// The caller owns the returned memory and must delete it.
+// Wraps **core:os.read_entire_file** to provide a consistent **cross-platform API**.
+// The caller owns the returned memory and **must** delete it.
 read_entire_file :: proc(
 	name: string,
 	allocator := context.allocator,
@@ -40,9 +40,9 @@ read_entire_file :: proc(
 }
 
 // @ref
-// Writes a byte slice to a file, creating it if it doesn't exist.
+// Writes a **byte slice** to a file, creating it if it doesn't exist.
 //
-// Wraps *core:os.write_entire_file*.
+// Wraps **core:os.write_entire_file**.
 write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (success: bool) {
 	return os.write_entire_file(name, data, truncate)
 }
@@ -52,9 +52,9 @@ write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (succ
 //
 
 // @ref
-// Saves raw bytes to a persistent file identified by a key.
+// Saves raw bytes to a persistent file **identified by a key**.
 // Automatically handles creating the save directory if missing.
-// Returns *success=false* if *data* is *nil*.
+// Returns **success=false** if **data** is **nil**.
 //
 // Example:
 // ```Odin
@@ -79,7 +79,7 @@ saveBytes :: proc(key: string, data: []byte) -> (success: bool) {
 
 // @ref
 // Loads raw bytes from a persistent file.
-// Returns *success=false* if the file does not exist.
+// Returns **success=false** if the file does not exist.
 loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte, success: bool) {
 	path := strings.concatenate({_SAVE_DIRECTORY, key, _SAVE_EXTENSION}, context.temp_allocator)
 
@@ -88,8 +88,8 @@ loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte,
 }
 
 // @ref
-// Serializes and saves a struct to disk.
-// This is a high-level helper for easy save states.
+// Serializes and saves a struct **to disk**.
+// This is a **high-level** helper for easy save states.
 //
 // **Warning:** This does a direct memory dump of the struct. It is not version-safe
 // if the struct layout changes (reordering fields, adding pointers, etc.).
@@ -115,11 +115,11 @@ saveStruct :: proc(key: string, data: ^$T) -> (success: bool) {
 }
 
 // @ref
-// Loads a struct from disk.
+// Loads a struct **from disk**.
 //
 // Includes safety checks for size mismatches:
-// - Debug Mode: Allows partial loads (padding with zeros) and warns the user.
-// - Release Mode: Fails strictly if sizes don't match to prevent corruption.
+// - **Debug Mode**: Allows partial loads (padding with zeros) and warns the user.
+// - **Release Mode**: Fails strictly if sizes don't match to prevent corruption.
 loadStruct :: proc(key: string, data: ^$T) -> (success: bool) {
 	if data == nil do return false
 	path := strings.concatenate({SAVE_DIRECTORY, key, SAVE_EXTENSION}, context.temp_allocator)

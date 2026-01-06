@@ -1,9 +1,9 @@
 package input
 
 import "bonsai:core"
+import "bonsai:core/gmath"
 import "bonsai:core/render"
-import sapp "bonsai:libs/sokol/app"
-import "bonsai:types/gmath"
+import sokol_app "bonsai:libs/sokol/app"
 
 import "core:math/linalg"
 
@@ -19,15 +19,15 @@ _TOUCH_EMULATE_MOUSE :: true
 _inputState: Input
 
 // @ref
-// Main container for the current frame's input state.
+// Main container for the **current frame**'s input state.
 Input :: struct {
 	keys:          [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
-	mousePosition: gmath.Vec2,
-	mouseScroll:   gmath.Vec2,
+	mousePosition: gmath.Vector2,
+	mouseScroll:   gmath.Vector2,
 }
 
 // @ref
-// Bit flags representing the state of a specific key or button in the current frame
+// Bit flags representing the state of a specific **key** or **button** in the **current frame**.
 InputFlag :: enum u8 {
 	down, // Key is currently held down
 	pressed, // Key was pressed this frame
@@ -36,8 +36,8 @@ InputFlag :: enum u8 {
 }
 
 // @ref
-// Default mapping of abstract game actions to physical keys.
-// This can be modified at runtime to support key re-binding.
+// Default mapping of **abstract game actions** to **physical** keys.
+// This can be modified at runtime to support **key re-binding**.
 actionMap: [InputAction]KeyCode = {
 	.left     = .A,
 	.right    = .D,
@@ -49,7 +49,7 @@ actionMap: [InputAction]KeyCode = {
 }
 
 // @ref
-// Abstract actions that decouple game logic from specific physical keys.
+// **Abstract** actions that decouple game logic from specific **physical** keys.
 InputAction :: enum u8 {
 	left,
 	right,
@@ -61,7 +61,7 @@ InputAction :: enum u8 {
 }
 
 // @ref
-// Physical key codes (Stripped from Sokol), but with included mouse buttons.
+// **Physical** key codes (Stripped from **Sokol**), but with included **mouse buttons**.
 KeyCode :: enum {
 	INVALID       = 0,
 	SPACE         = 32,
@@ -191,64 +191,71 @@ KeyCode :: enum {
 
 
 // @ref
-// Initializes the input subsystem.
+// Initializes the **input** subsystem.
 init :: proc() {
 	// reset state on init
-	_resetInputState(&_inputState)
+	resetInputState(&_inputState)
+}
+
+// @ref
+// Returns the input state for **current frame**.
+getInputState :: proc() -> ^Input {
+	return &_inputState
 }
 
 // @ref
 // Returns the internal input event callback.
 //
 // This is used by the core application loop to route window events into the input system.
-getInputEventCallback :: proc() -> proc "c" (event: ^sapp.Event) {
+// Called in **main.odin**.
+getInputEventCallback :: proc() -> proc "c" (event: ^sokol_app.Event) {
 	return _inputEventCallback
 }
 
 // @ref
-// Checks if a physical key was pressed this frame.
-// Returns true only on the frame the key went down.
+// Checks if a physical key was **pressed** this frame.
+// Returns **true** only on the frame the key went down.
 isKeyPressed :: proc(code: KeyCode) -> bool {
 	return .pressed in _inputState.keys[code]
 }
 
 // @ref
-// Checks if a physical key was released this frame.
-// Returns true only on the frame the key went up.
+// Checks if a physical key was **released** this frame.
+// Returns **true** only on the frame the key went up.
 isKeyReleased :: proc(code: KeyCode) -> bool {
 	return .released in _inputState.keys[code]
 }
 
 // @ref
-// Checks if a physical key is currently held down.
-// Returns true as long as the key is held.
+// Checks if a physical key is currently **held down**.
+// Returns **true** as long as the key is held.
 isKeyDown :: proc(code: KeyCode) -> bool {
 	return .down in _inputState.keys[code]
 }
 
 // @ref
-// Checks if a physical key is sending *repeat* events (OS specific).
+// Checks if a physical key is sending **repeat** events **(OS specific)**.
 // Useful for text input fields.
 isKeyRepeating :: proc(code: KeyCode) -> bool {
 	return .repeat in _inputState.keys[code]
 }
 
 // @ref
-// Manually consumes a *pressed* event for a key.
+// Manually consumes a **pressed** event for a key.
 // Useful if an event should only trigger one game action per frame.
 consumeKeyPressed :: proc(code: KeyCode) {
 	_inputState.keys[code] -= {.pressed}
 }
 
 // @ref
-// Manually consumes a "released" event for a key.
+// Manually consumes a **released** event for a key.
 consumeKeyReleased :: proc(code: KeyCode) {
 	_inputState.keys[code] -= {.released}
 }
 
 // @ref
-// Checks if any key is pressed this frame.
-// If found, it consumes that press and returns true.
+// Checks if **any** key is pressed this frame.
+// If found, it **consumes** that press and returns **true**.
 // Useful for "Press any key" interactions.
 consumeAnyKeyPress :: proc() -> bool {
 	for &flag, key in _inputState.keys {
@@ -263,47 +270,60 @@ consumeAnyKeyPress :: proc() -> bool {
 }
 
 // @ref
-// Checks if a mapped action (e.g. .use, .interact) was triggered this frame.
+// Checks if a mapped action (e.g. **.use**, **.interact**) was **pressed** this frame.
 isActionPressed :: proc(action: InputAction) -> bool {
 	key := _getKeyFromAction(action)
 	return isKeyPressed(key)
 }
 
 // @ref
-// Checks if a mapped action was released this frame.
+// Checks if a mapped action was **released** this frame.
 isActionReleased :: proc(action: InputAction) -> bool {
 	key := _getKeyFromAction(action)
 	return isKeyReleased(key)
 }
 
 // @ref
-// Checks if a mapped action is currently held down.
+// Checks if a mapped action is currently **held down**.
 isActionDown :: proc(action: InputAction) -> bool {
 	key := _getKeyFromAction(action)
 	return isKeyDown(key)
 }
 
 // @ref
-// Consumes the press event for a specific action.
+// Consumes the **press** event for a specific action.
 consumeActionPressed :: proc(action: InputAction) {
 	key := _getKeyFromAction(action)
 	consumeKeyPressed(key)
 }
 
 // @ref
-// Consumes the release event for a specific action.
+// Consumes the **release** event for a specific action.
 consumeActionReleased :: proc(action: InputAction) {
 	key := _getKeyFromAction(action)
 	consumeKeyReleased(key)
 }
 
 // @ref
+// Controls the visibility of the system (hardware) cursor.
+// Set to **false** if you intend to render your own custom cursor sprite.
+setCursorVisible :: proc(visible: bool) {
+	sokol_app.show_mouse(visible)
+}
+
+// @ref
+// Locks the cursor to the window.
+setCursorLocked :: proc(locked: bool) {
+	sokol_app.lock_mouse(locked)
+}
+
+// @ref
 // Helper to construct a normalized directional vector from the standard
 // up/down/left/right actions.
 //
-// Returns a zero vector if no input, or a normalized vector length 1.0.
-getInputVector :: proc() -> gmath.Vec2 {
-	input: gmath.Vec2
+// Returns a zero vector if no input, or a normalized vector (length equal to 1.0).
+getInputVector :: proc() -> gmath.Vector2 {
+	input: gmath.Vector2
 	if isActionDown(InputAction.left) do input.x -= 1.0
 	if isActionDown(InputAction.right) do input.x += 1.0
 	if isActionDown(InputAction.down) do input.y -= 1.0
@@ -319,7 +339,7 @@ getInputVector :: proc() -> gmath.Vec2 {
 // @ref
 // Converts the raw screen mouse coordinates into World/UI space coordinates
 // by un-projecting them using the current renderer's projection matrix.
-getMousePositionWorld :: proc() -> gmath.Vec2 {
+getMousePositionWorld :: proc() -> gmath.Vector2 {
 	drawFrame := render.getDrawFrame()
 	coreContext := core.getCoreContext()
 	projectionMatrix := drawFrame.reset.coordSpace.projectionMatrix
@@ -329,10 +349,10 @@ getMousePositionWorld :: proc() -> gmath.Vec2 {
 	// normalize mouse to -1.0 -> +1.0
 	normalX := (mousePosition.x / (f32(coreContext.windowWidth) * 0.5)) - 1.0
 	normalY := (mousePosition.y / (f32(coreContext.windowHeight) * 0.5)) - 1.0
-	normalY := -1
+	normalY *= -1
 
-	mouseNormal := gmath.Vec2{normalX, normalY}
-	mouseWorld := gmath.Vec4{mouseNormal.x, mouseNormal.y, 0, 1}
+	mouseNormal := gmath.Vector2{normalX, normalY}
+	mouseWorld := gmath.Vector4{mouseNormal.x, mouseNormal.y, 0, 1}
 
 	mouseWorld = linalg.inverse(projectionMatrix) * mouseWorld
 
@@ -353,8 +373,7 @@ _getKeyFromAction :: proc(action: InputAction) -> KeyCode {
 
 // resets per-frame flags.
 // called internally at the start of a frame.
-@(private = "file")
-_resetInputState :: proc(input: ^Input) {
+resetInputState :: proc(input: ^Input) {
 	for &key in input.keys {
 		key -= ~{.down}
 	}
@@ -362,7 +381,7 @@ _resetInputState :: proc(input: ^Input) {
 }
 
 @(private = "file")
-_inputEventCallback :: proc "c" (event: ^sapp.Event) {
+_inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
 	inputState := &_inputState
 
 	#partial switch event.type {
@@ -439,7 +458,7 @@ _inputEventCallback :: proc "c" (event: ^sapp.Event) {
 }
 
 @(private = "file")
-_mapSokolMouseButton :: proc "c" (sokolMouseButton: sapp.Mousebutton) -> KeyCode {
+_mapSokolMouseButton :: proc "c" (sokolMouseButton: sokol_app.Mousebutton) -> KeyCode {
 	#partial switch sokolMouseButton {
 	case .LEFT:
 		return .LEFT_MOUSE

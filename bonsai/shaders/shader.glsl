@@ -5,16 +5,16 @@
 // "u" for cpu called (uniforms)
 @header package shaders
 @header import sg "bonsai:libs/sokol/gfx"
-@header import "bonsai:types/gmath"
+@header import "bonsai:core/gmath"
 
-@ctype vec4 gmath.Vec4
-@ctype mat4 gmath.Mat4
+@ctype vec4 gmath.Vector4
+@ctype mat4 gmath.Matrix4
 
 // NOTE: VERTEX SHADER
 @vs vs
 
 layout(binding=0) uniform ShaderData {
-  mat4 uViewProj;
+  mat4 uViewProjectionMatrix;
 };
 
 in vec2 aPosition;
@@ -36,7 +36,7 @@ out vec4 vColorOverride;
 out vec4 vParams;
 
 void main() {
-  gl_Position = uViewProj * vec4(aPosition, 0, 1);
+  gl_Position = uViewProjectionMatrix * vec4(aPosition, 0, 1);
 
   vPosition = aPosition;
   vColor = aColor;

@@ -20,12 +20,12 @@ foreign _ {
 }
 
 // @ref
-// Returns a memory allocator that wraps Emscripten's *malloc* and *free*.
+// Returns a **memory allocator** that wraps **Emscripten's malloc** and **free**.
 //
-// This handles manual memory alignment, which is required for certain Odin features
-// like maps and SIMD that standard 'malloc' might not guarantee on WASM.
+// This handles manual memory alignment, which is required for certain **Odin** features
+// like **maps** and **SIMD** that standard **malloc** might not guarantee on **WASM**.
 allocator :: proc "contextless" () -> mem.Allocator {
-	return mem.Allocator{emscripten_allocator_proc, nil}
+	return mem.Allocator{_allocatorProc, nil}
 }
 
 @(private = "file")
@@ -60,12 +60,12 @@ _allocatorProc :: proc(
 		if oldPtr != nil {
 			// retrieve the original pointer from the slot before the aligned memory
 			originalOldPtr := mem.ptr_offset((^rawptr)(oldPtr), -1)^
-			allocatedMem = realloc(originalOldPtr, c.size_t(space + size_of(rawptr)))
+			allocatedMem = realloc(originalOldPtr, c.size_t(totalSpace + size_of(rawptr)))
 		} else if zeroMemory {
 			// calloc zeros memory automatically
-			allocatedMem = calloc(c.size_t(space + size_of(rawptr)), 1)
+			allocatedMem = calloc(c.size_t(totalSpace + size_of(rawptr)), 1)
 		} else {
-			allocatedMem = malloc(c.size_t(space + size_of(rawptr)))
+			allocatedMem = malloc(c.size_t(totalSpace + size_of(rawptr)))
 		}
 
 		if allocatedMem == nil {
@@ -126,19 +126,19 @@ _allocatorProc :: proc(
 		return _alignedAlloc(size, alignment, false)
 
 	case mem.Allocator_Mode.Free:
-		_alignedFree(old_memory)
+		_alignedFree(oldMemory)
 		return nil, nil
 
 	case mem.Allocator_Mode.Resize:
-		if old_memory == nil {
+		if oldMemory == nil {
 			return _alignedAlloc(size, alignment, true)
 		}
 
 		bytes := _alignedResize(oldMemory, oldSize, size, alignment) or_return
 
 		// realloc doesn't zero the new bytes, so we do it manually.
-		if size > old_size {
-			newRegion := raw_data(bytes[old_size:])
+		if size > oldSize {
+			newRegion := raw_data(bytes[oldSize:])
 			intrinsics.mem_zero(newRegion, size - oldSize)
 		}
 

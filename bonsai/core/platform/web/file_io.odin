@@ -36,7 +36,7 @@ Whence :: enum c.int {
 }
 
 // @ref
-// Reads a file from Emscripten's Virtual File System (MEMFS/IDBFS).
+// Reads a file from **Emscripten's Virtual File System (MEMFS/IDBFS)**.
 // **Note:** This does not read from the user's hard drive, but from the sandboxed browser memory.
 read_entire_file :: proc(
 	name: string,
@@ -51,7 +51,7 @@ read_entire_file :: proc(
 		return nil, false
 	}
 
-	mode := "rb"
+	mode: cstring = "rb"
 	file := fopen(strings.clone_to_cstring(name, context.temp_allocator), mode)
 
 	if file == nil {
@@ -89,7 +89,7 @@ read_entire_file :: proc(
 }
 
 // @ref
-// Writes to Emscripten's Virtual File System.
+// Writes to **Emscripten's Virtual File System**.
 write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (success: bool) {
 	if name == "" {
 		log.error("No file name provided.")
@@ -135,22 +135,22 @@ foreign js {
 }
 
 // @ref
-// Saves raw bytes to the Browser's LocalStorage.
-// Data is Base64 encoded to ensure safe storage as a string.
+// Saves raw bytes to the browser's **LocalStorage**.
+// Data is **Base64 encoded** to ensure safe storage as a string.
 saveBytes :: proc(key: string, data: []byte) -> (success: bool) {
 	if data == nil {
 		log.errorf("Attempted to save nil data for key: %v.", key)
 		return false
 	}
 
-	encoded := base64.encode(data, context.temp_allocator)
+	encoded := base64.encode(data, allocator = context.temp_allocator)
 
 	js_save(raw_data(key), len(key), raw_data(encoded), len(encoded))
 	return true
 }
 
 // @ref
-// Loads raw bytes from the Browser's LocalStorage.
+// Loads raw bytes from the browser's **LocalStorage**.
 loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte, success: bool) {
 	size := js_load_size(raw_data(key), len(key))
 	if size == 0 {
@@ -161,7 +161,7 @@ loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte,
 	base64Buffer := make([]byte, size, context.temp_allocator)
 	js_load(raw_data(key), len(key), raw_data(base64Buffer), size)
 
-	decodedData, error := base64.decode(string(base64Buffer), allocator)
+	decodedData, error := base64.decode(string(base64Buffer), allocator = allocator)
 	if error != .None {
 		log.errorf("Failed to decode key: %v.", key)
 		return nil, false
@@ -171,7 +171,7 @@ loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte,
 }
 
 // @ref
-// Serializes and saves a struct to LocalStorage.
+// Serializes and saves a struct to **LocalStorage**.
 saveStruct :: proc(key: string, data: ^$T) -> (success: bool) {
 	if data == nil {
 		log.errorf("Passed a nil struct pointer for key %v.", key)
@@ -191,8 +191,8 @@ saveStruct :: proc(key: string, data: ^$T) -> (success: bool) {
 }
 
 // @ref
-// Loads a struct from LocalStorage.
-// Handles size mismatches (debug vs release) similar to the *desktop* implementation.
+// Loads a struct from **LocalStorage**.
+// Handles size mismatches (debug vs release) similar to the **desktop** implementation.
 loadStruct :: proc(key: string, data: ^$T) -> (success: bool) {
 	if data == nil {
 		log.errorf("Passed a nil pointer for key %v.", key)

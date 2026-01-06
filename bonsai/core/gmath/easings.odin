@@ -2,7 +2,9 @@ package gmath
 
 import "core:math"
 
-EaseName :: enum {
+// @ref
+// Standard easing functions matching **https://easings.net**
+Easing :: enum {
 	Linear,
 	InSine,
 	OutSine,
@@ -36,7 +38,9 @@ EaseName :: enum {
 	InOutBounce,
 }
 
-ease :: proc(name: EaseName, t: f32) -> f32 {
+// @ref
+// Applies the specified easing curve to a normalized value **(0.0 to +1.0)**.
+ease :: proc(name: Easing, t: f32) -> f32 {
 	switch name {
 	case .Linear:
 		return t
@@ -105,7 +109,6 @@ ease :: proc(name: EaseName, t: f32) -> f32 {
 	}
 }
 
-// via easings.net<3
 inSine :: proc(x: f32) -> f32 {
 	return 1 - math.cos_f32((x * math.PI) / 2)
 }
