@@ -20,7 +20,7 @@ drawTextWrapped :: proc(
 	text: string,
 	font: ^Font,
 	wrapWidth: f32,
-	rotation: f32 = 0.0,
+	rotation: f32 = 0.0, // in radians
 	color := colors.WHITE,
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
@@ -49,7 +49,7 @@ drawTextWithDropShadow :: proc(
 	text: string,
 	fontName: game.FontName,
 	fontSize: uint = 12,
-	rotation: f32 = 0.0,
+	rotation: f32 = 0.0, // in radians
 	dropShadowColor := colors.BLACK,
 	color := colors.WHITE,
 	scale := 1.0,
@@ -100,7 +100,7 @@ drawTextWithDropShadow :: proc(
 // Calculates layout, pivots, and batches the quads.
 drawTextSimple :: proc(
 	position: gmath.Vector2,
-	rotation: f32,
+	rotation: f32, // in radians
 	text: string,
 	font: ^Font,
 	color := colors.WHITE,

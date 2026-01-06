@@ -8,7 +8,7 @@ Shape :: union {
 }
 
 // @ref
-// A circle defined by a **center position** and a **radius**.
+// A `Circle` defined by a **center** `position` and a `radius`.
 Circle :: struct {
 	position: Vector2,
 	radius:   f32,
@@ -16,20 +16,20 @@ Circle :: struct {
 
 // @ref
 // An Axis-Aligned Bounding Box (AABB) stored as a 4D vector.
-// **Format: { minX, minY, maxX, maxY }**
+// **Format:** `{ minX, minY, maxX, maxY }`
 // This corresponds to **(Left, Bottom, Right, Top)**.
 Rectangle :: Vector4
 
 // @ref
 // Checks if two Axis-Aligned Bounding Boxes (AABB) intersect.
-// Returns **true** if they overlap.
+// Returns `true` if they overlap.
 rectangleIntersects :: proc(a: Rectangle, b: Rectangle) -> bool {
 	return a.x <= b.z && a.z >= b.x && a.y <= b.w && a.w >= b.y
 }
 
 // @ref
-// Checks if a point lies inside the rectangle.
-// Returns **true** if it does.
+// Checks if a `point` lies inside the `Rectangle`.
+// Returns `true` if it does.
 rectangleContains :: proc(rectangle: Rectangle, point: Vector2) -> bool {
 	return(
 		(point.x >= rectangle.x) &&
@@ -40,7 +40,7 @@ rectangleContains :: proc(rectangle: Rectangle, point: Vector2) -> bool {
 }
 
 // @ref
-// Returns the **center point** of the rectangle.
+// Returns the **center point** of the `Rectangle`.
 getRectangleCenter :: proc(rectangle: Rectangle) -> Vector2 {
 	minPoint := rectangle.xy
 	maxPoint := rectangle.zw
@@ -51,13 +51,13 @@ getRectangleCenter :: proc(rectangle: Rectangle) -> Vector2 {
 }
 
 // @ref
-// Returns the **width** and **height** of the rectangle.
+// Returns the **width** and **height** of the `Rectangle` as a `Vector2`.
 getRectangleSize :: proc(rectangle: Rectangle) -> Vector2 {
 	return {rectangle.z - rectangle.x, rectangle.w - rectangle.y}
 }
 
 // @ref
-// Creates a rectangle from a specific anchor position (pivot) and total size.
+// Creates a `Rectangle` from a specific anchor position (`Pivot`) and total `size`.
 //
 // **Example:**
 // ```Odin
@@ -78,20 +78,20 @@ rectangleFromPositionSize :: proc(
 }
 
 // @ref
-// Creates a rectangle at **(0,0)** with the given **size**, adjusted by **Pivot**.
+// Creates a `Rectangle` at **(0,0)** with the given `size`, adjusted by `Pivot`.
 rectangleFromSize :: proc(size: Vector2, pivot: Pivot) -> Rectangle {
 	return rectangleFromPositionSize({}, size, pivot)
 }
 
 // @ref
-// Overload group for creating rectangles.
+// Overload group for creating `Rectangle`.
 rectangleMake :: proc {
 	rectangleFromPositionSize,
 	rectangleFromSize,
 }
 
 // @ref
-// Moves a rectangle by the specific **delta** vector.
+// Moves a `Rectangle` by the specific `delta` vector.
 rectangleShift :: proc(rectangle: Rectangle, delta: Vector2) -> Rectangle {
 	return {
 		rectangle.x + delta.x,
@@ -102,7 +102,7 @@ rectangleShift :: proc(rectangle: Rectangle, delta: Vector2) -> Rectangle {
 }
 
 // @ref
-// Scales a rectangle around its own center point by a uniform factor.
+// Scales a `Rectangle` around its own center point by a uniform factor.
 rectangleScale :: proc(rectangle: Rectangle, scale: f32) -> Rectangle {
 	center := getRectangleCenter(rectangle)
 	size := getRectangleSize(rectangle)
@@ -119,7 +119,7 @@ rectangleScale :: proc(rectangle: Rectangle, scale: f32) -> Rectangle {
 }
 
 // @ref
-// Scales a rectangle around its own center point by separate **X/Y** factors.
+// Scales a `Rectangle` around its own center point by `Vector2` x/y factors.
 rectangleScaleVector2 :: proc(rectangle: Rectangle, scale: Vector2) -> Rectangle {
 	center := getRectangleCenter(rectangle)
 	size := getRectangleSize(rectangle)
@@ -136,8 +136,8 @@ rectangleScaleVector2 :: proc(rectangle: Rectangle, scale: Vector2) -> Rectangle
 }
 
 // @ref
-// Expands the rectangle boundaries outwards by **amount** on all sides.
-// A negative amount **shrinks** the rectangle.
+// Expands the `Rectangle` boundaries outwards by `amount` on all sides.
+// A negative amount **shrinks** the `Rectangle`.
 rectangleExpand :: proc(rectangle: Rectangle, amount: f32) -> Rectangle {
 	return Rectangle {
 		rectangle.x - amount,
@@ -148,14 +148,14 @@ rectangleExpand :: proc(rectangle: Rectangle, amount: f32) -> Rectangle {
 }
 
 // @ref
-// Moves a circle by the specified **delta** vector.
+// Moves a `Circle` by the specified `delta` vector.
 circleShift :: proc(circle: Circle, delta: Vector2) -> Circle {
 	return Circle{position = circle.position + delta, radius = circle.radius}
 }
 
 // @ref
-// Polymorphic shift for the **Shape** union.
-// Moves any supported shape type by the **delta** vector.
+// Polymorphic shift for the `Shape` union.
+// Moves any supported shape type by the `delta` vector.
 shift :: proc(shape: Shape, delta: Vector2) -> Shape {
 	if delta == {} {
 		return shape

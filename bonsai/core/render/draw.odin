@@ -95,7 +95,7 @@ drawSprite :: proc(
 // **Supports an optional 1px outline**.
 drawRectangle :: proc(
 	rectangle: gmath.Rectangle,
-	rotation: f32 = 0.0,
+	rotation: f32 = 0.0, // in radians
 	sprite := game.SpriteName.nil,
 	uv := DEFAULT_UV,
 	outlineColor := gmath.Vector4{},
