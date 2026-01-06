@@ -61,6 +61,7 @@ Voice :: struct {
 	isActive:    bool,
 	isLooped:    bool,
 	isSpatial:   bool,
+	isPaused:    bool,
 }
 
 // @ref
@@ -140,6 +141,7 @@ playGlobal :: proc(
 			voice.id = id
 			voice.cursor = 0
 			voice.isActive = true
+			voice.isPaused = false
 			voice.volume = volume
 			voice.isLooped = isLooped
 			voice.panning = panning
@@ -173,6 +175,7 @@ playSpatial :: proc(
 			voice.id = id
 			voice.cursor = 0
 			voice.isActive = true
+			voice.isPaused = false
 			voice.volume = volume
 			voice.isLooped = isLooped
 			voice.isSpatial = true
@@ -185,6 +188,40 @@ playSpatial :: proc(
 	}
 	log.warn("No space for a new voice in mixer.")
 	return -1
+}
+
+// @ref
+// Pauses the specific voice. The voice retains its cursor position.
+pause :: proc(id: VoiceHandle) {
+	sync.lock(&_mixer.lock)
+	defer sync.unlock(&_mixer.lock)
+
+	if id >= 0 && int(id) < len(_mixer.voices) {
+		_mixer.voices[id].isPaused = true
+	}
+}
+
+// @Ref
+// Resumes a paused voice.
+resume :: proc(id: VoiceHandle) {
+	sync.lock(&_mixer.lock)
+	defer sync.unlock(&_mixer.lock)
+
+	if id >= 0 && int(id) < len(_mixer.voices) {
+		if _mixer.voices[id].isActive {
+			_mixer.voices[id].isPaused = false
+		}
+	}
+}
+
+// @ref
+// Returns **true** if the voice is currently valid and not paused.
+isPlaying :: proc(id: VoiceHandle) -> bool {
+	if id < 0 || int(id) >= len(_mixer.voices) do return false
+
+	voice := _mixer.voices[id]
+
+	return voice.isActive && !voice.isPaused
 }
 
 // @ref
@@ -226,7 +263,7 @@ _audioCallback :: proc "c" (buffer: ^f32, numFrames: i32, numChannels: i32) {
 	slice.fill(output, 0.0)
 
 	for &voice in _mixer.voices {
-		if !voice.isActive do continue
+		if !voice.isActive || voice.isPaused do continue
 		sound, ok := _mixer.sounds[voice.id]
 		if !ok {
 			voice.isActive = false
