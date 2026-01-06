@@ -16,60 +16,73 @@ import "core:log"
 import "bonsai:core"
 import "bonsai:core/audio"
 import "bonsai:core/clock"
+import "bonsai:core/gmath"
 import "bonsai:core/input"
 import "bonsai:core/logger"
 import "bonsai:core/platform/web"
 import "bonsai:core/render"
-import sapp "bonsai:libs/sokol/app"
-import sg "bonsai:libs/sokol/gfx"
-import slog "bonsai:libs/sokol/log"
 import "bonsai:types/game"
 
-import gameapp "game"
+import sokol_app "bonsai:libs/sokol/app"
+import sokol_gfx "bonsai:libs/sokol/gfx"
+import sokol_log "bonsai:libs/sokol/log"
+import stb_image "bonsai:libs/stb/image"
+
+import game_app "game"
 import "game:scenes"
 
+// force import of web package for non-web builds to prevent compilation errors
 _ :: web
 
 IS_WEB :: ODIN_ARCH == .wasm32 || ODIN_ARCH == .wasm64p32
 ICON_DATA :: #load("../assets/icon.png")
 
+// required to restore the odin context inside c callbacks
 odinContext: runtime.Context
 
+// global storage for the game state
 @(private)
-_actualGameState: ^game.GameState
+_globalGameState: ^game.GameState
 
 main :: proc() {
 	when IS_WEB { 	// via karl zylinski's odin-sokol-web
 		// The WASM allocator doesn't seem to work properly in combination with
 		// emscripten. There is some kind of conflict with how they manage
 		// memory. So this sets up an allocator that uses emscripten's malloc.
-		context.allocator = web.emscripten_allocator()
+		context.allocator = web.allocator()
 
 		// Make temp allocator use new `context.allocator` by re-initing it.
 		runtime.init_global_temporary_allocator(1 * runtime.Megabyte)
 	}
 
-	context.logger = logger.logger()
+	// logging setup
+	context.logger = logger.createInstance()
 	context.assertion_failure_proc = logger.assertionFailureProc
+
+	// capture the configured context for c callbacks
 	odinContext = context
 
-	coreContext := core.initCoreContext()
+	// core initialization
+	coreContext := core.initCoreContext(1280, 720)
 
-	description: sapp.Desc
+	// sokol app configuration
+	description: sokol_app.Desc
 	description.init_cb = init
 	description.frame_cb = frame
 	description.event_cb = event
 	description.cleanup_cb = cleanup
+
 	description.width = coreContext.windowWidth
 	description.height = coreContext.windowHeight
 	description.sample_count = 4 //MSAA
-	description.window_title = gameapp.WINDOW_TITLE
-	_setupIcon(&description)
-	description.logger.func = slog.func
-	description.html5_update_document_title = true
+	description.window_title = game_app.WINDOW_TITLE
 	description.high_dpi = true
+	description.html5_update_document_title = true
+	description.logger.func = sokol_log.func
 
-	sapp.run(description)
+	_setupWindowIcon(&description)
+
+	sokol_app.run(description)
 }
 
 
@@ -77,85 +90,85 @@ init :: proc "c" () {
 	context = odinContext
 
 	coreContext := core.getCoreContext()
-	_actualGameState = new(game.GameState)
-	_actualGameState.world = new(game.WorldState)
-	coreContext.gameState = _actualGameState
 
-	// we instantly update windowWidth and windowHeight to fix scale issues on web
-	coreContext.windowWidth = sapp.width()
-	coreContext.windowHeight = sapp.height()
+	// allocate game state
+	_globalGameState = new(game.GameState)
+	_globalGameState.world = new(game.WorldState)
+	coreContext.gameState = _globalGameState
 
+	// sync core window size
+	// instantly update windowWidth and windowHeight to fix scale issues on web
+	coreContext.windowWidth = sokol_app.width()
+	coreContext.windowHeight = sokol_app.height()
+
+	// initialize subsystems
+	gmath.setRandomSeed(u64(clock.getApplicationInitTime()))
 	scenes.initRegistry()
 	input.init()
 	audio.init()
 	render.init()
-	gameapp.init()
+
+	// initialize dev game logic
+	game_app.init()
 }
 
-frameTime: f64
+@(private = "file")
 lastFrameTime: f64
 
 frame :: proc "c" () {
 	context = odinContext
 
-	{ 	// calculate the delta time
-		currentTime := clock.secondsSinceInit()
-		frameTime = currentTime - lastFrameTime
-		lastFrameTime = currentTime
-
-		MAX_FRAME_TIME :: 1.0 / 20.0
-		if frameTime > MAX_FRAME_TIME {
-			frameTime = MAX_FRAME_TIME
-		}
+	// global fullscreen toggle
+	if input.isKeyPressed(.ENTER) && input.isKeyDown(.LEFT_ALT) {
+		sokol_app.toggle_fullscreen()
 	}
 
 	coreContext := core.getCoreContext()
 
-	coreContext.deltaTime = f32(frameTime)
-
-	if input.keyPressed(.ENTER) && input.keyDown(.LEFT_ALT) {
-		sapp.toggle_fullscreen()
-	}
-
-	coreContext.gameState.time.gameTimeElapsed += f64(coreContext.deltaTime)
-	coreContext.gameState.time.ticks += 1
-
+	// audio update
+	// sync audio listener to camera position for spatial audio
 	audio.setListenerPosition(coreContext.gameState.world.cameraPosition)
 
+	// clock data update
+	clock.tick()
+
+	// game loop
 	render.coreRenderFrameStart()
-	gameapp.update()
 
+	game_app.update()
+	game_app.draw()
 
-	gameapp.draw()
 	render.coreRenderFrameEnd()
 
-	input.resetInputState(input.state)
-
+	// cleanup
+	input.resetInputState(input.getInputState())
 	free_all(context.temp_allocator)
 }
 
-event :: proc "c" (e: ^sapp.Event) {
+event :: proc "c" (e: ^sokol_app.Event) {
 	context = odinContext
 
 	if e.type == .RESIZED {
+		// keep window size information up to date
 		coreContext := core.getCoreContext()
-		coreContext.windowWidth = sapp.width()
-		coreContext.windowHeight = sapp.height()
+		coreContext.windowWidth = sokol_app.width()
+		coreContext.windowHeight = sokol_app.height()
 	}
 
-	input.inputEventCallback(e)
+	input.getInputEventCallback()(e)
 }
 
 cleanup :: proc "c" () {
 	context = odinContext
 
+	// shutdown in reverse order of init
 	render.destroyFonts()
-	gameapp.shutdown()
-	sg.shutdown()
+	game_app.shutdown()
+	sokol_gfx.shutdown()
 	audio.shutdown()
 
-	free(_actualGameState.world)
-	free(_actualGameState)
+	free(_globalGameState.world)
+	free(_globalGameState)
 
 	when IS_WEB {
 		runtime._cleanup_runtime()
@@ -163,8 +176,10 @@ cleanup :: proc "c" () {
 }
 
 @(private = "file")
-_setupIcon :: proc(description: ^sapp.Desc) {
+_setupWindowIcon :: proc(description: ^sokol_app.Desc) {
 	width, height, channels: i32
+
+	// decode png from memory
 	imageData := render.getImageData(
 		raw_data(ICON_DATA),
 		i32(len(ICON_DATA)),
@@ -174,13 +189,14 @@ _setupIcon :: proc(description: ^sapp.Desc) {
 	)
 
 	if imageData == nil {
-		log.error("Using default sokol icon.")
+		log.error("Failed to decode window icon. Using default Sokol icon.")
 		description.icon.sokol_default = true
 		return
 	}
+	defer stb_image.image_free(imageData)
 
 	description.icon.sokol_default = false
-	description.icon.images[0] = sapp.Image_Desc {
+	description.icon.images[0] = sokol_app.Image_Desc {
 		width = width,
 		height = height,
 		pixels = {ptr = imageData, size = uint(width * height * 4)},
