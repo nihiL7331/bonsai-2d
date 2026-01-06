@@ -289,8 +289,8 @@ _handleWindowMovement :: proc(
 	container: ^Container,
 	style: WindowStyle,
 ) -> (
-	headerBackgroundColor: gmath.Vector4,
-	headerTextColor: gmath.Vector4,
+	headerBackgroundColor: gmath.Color,
+	headerTextColor: gmath.Color,
 	headerRectangle: gmath.Rectangle,
 ) {
 	headerRectangle = gmath.Rectangle {
@@ -562,8 +562,8 @@ _drawHeader :: proc(
 	id: u32,
 	title: string,
 	container: ^Container,
-	headerBackgroundColor: gmath.Vector4,
-	headerTextColor: gmath.Vector4,
+	headerBackgroundColor: gmath.Color,
+	headerTextColor: gmath.Color,
 	headerRectangle: gmath.Rectangle,
 	style: WindowStyle,
 ) {
@@ -677,7 +677,7 @@ _headerButton :: proc(
 	id: u32,
 	position: gmath.Vector2,
 	size: gmath.Vector2,
-	textNormalColor, textHoverColor, textActiveColor: gmath.Vector4,
+	textNormalColor, textHoverColor, textActiveColor: gmath.Color,
 	content: any,
 	rotation: f32 = 0,
 	offset: gmath.Vector2 = {0, 0},

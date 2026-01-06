@@ -7,20 +7,20 @@ DEFAULT_FONT_SIZE :: 12
 DEFAULT_FONT :: game.FontName.PixelCode
 
 // --- GRUVBOX MATERIAL PALETTE (Dark Hard) ---
-GRUV_BG_HARD :: gmath.Vector4{40.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0, 1.0} // #282828
-GRUV_BG_SOFT :: gmath.Vector4{50.0 / 255.0, 48.0 / 255.0, 47.0 / 255.0, 1.0} // #32302f
-GRUV_BG0 :: gmath.Vector4{60.0 / 255.0, 56.0 / 255.0, 54.0 / 255.0, 1.0} // #3c3836
-GRUV_BG1 :: gmath.Vector4{80.0 / 255.0, 73.0 / 255.0, 69.0 / 255.0, 1.0} // #504945
-GRUV_FG0 :: gmath.Vector4{212.0 / 255.0, 190.0 / 255.0, 152.0 / 255.0, 1.0} // #d4be98
-GRUV_FG1 :: gmath.Vector4{221.0 / 255.0, 199.0 / 255.0, 161.0 / 255.0, 1.0} // #ddc7a1
+GRUV_BG_HARD :: gmath.Color{40.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0, 1.0} // #282828
+GRUV_BG_SOFT :: gmath.Color{50.0 / 255.0, 48.0 / 255.0, 47.0 / 255.0, 1.0} // #32302f
+GRUV_BG0 :: gmath.Color{60.0 / 255.0, 56.0 / 255.0, 54.0 / 255.0, 1.0} // #3c3836
+GRUV_BG1 :: gmath.Color{80.0 / 255.0, 73.0 / 255.0, 69.0 / 255.0, 1.0} // #504945
+GRUV_FG0 :: gmath.Color{212.0 / 255.0, 190.0 / 255.0, 152.0 / 255.0, 1.0} // #d4be98
+GRUV_FG1 :: gmath.Color{221.0 / 255.0, 199.0 / 255.0, 161.0 / 255.0, 1.0} // #ddc7a1
 
-GRUV_RED :: gmath.Vector4{234.0 / 255.0, 105.0 / 255.0, 98.0 / 255.0, 1.0} // #ea6962
-GRUV_ORANGE :: gmath.Vector4{231.0 / 255.0, 138.0 / 255.0, 78.0 / 255.0, 1.0} // #e78a4e
-GRUV_YELLOW :: gmath.Vector4{216.0 / 255.0, 166.0 / 255.0, 87.0 / 255.0, 1.0} // #d8a657
-GRUV_GREEN :: gmath.Vector4{169.0 / 255.0, 182.0 / 255.0, 101.0 / 255.0, 1.0} // #a9b665
-GRUV_AQUA :: gmath.Vector4{137.0 / 255.0, 180.0 / 255.0, 250.0 / 255.0, 1.0} // #89b482
-GRUV_BLUE :: gmath.Vector4{125.0 / 255.0, 174.0 / 255.0, 163.0 / 255.0, 1.0} // #7daea3
-GRUV_GREY :: gmath.Vector4{146.0 / 255.0, 131.0 / 255.0, 116.0 / 255.0, 1.0} // #928374
+GRUV_RED :: gmath.Color{234.0 / 255.0, 105.0 / 255.0, 98.0 / 255.0, 1.0} // #ea6962
+GRUV_ORANGE :: gmath.Color{231.0 / 255.0, 138.0 / 255.0, 78.0 / 255.0, 1.0} // #e78a4e
+GRUV_YELLOW :: gmath.Color{216.0 / 255.0, 166.0 / 255.0, 87.0 / 255.0, 1.0} // #d8a657
+GRUV_GREEN :: gmath.Color{169.0 / 255.0, 182.0 / 255.0, 101.0 / 255.0, 1.0} // #a9b665
+GRUV_AQUA :: gmath.Color{137.0 / 255.0, 180.0 / 255.0, 250.0 / 255.0, 1.0} // #89b482
+GRUV_BLUE :: gmath.Color{125.0 / 255.0, 174.0 / 255.0, 163.0 / 255.0, 1.0} // #7daea3
+GRUV_GREY :: gmath.Color{146.0 / 255.0, 131.0 / 255.0, 116.0 / 255.0, 1.0} // #928374
 
 DEFAULT_WINDOW_CONFIG: WindowConfig = {
 	// LAYOUT
@@ -77,7 +77,7 @@ DEFAULT_TEXT_CONFIG: TextConfig = {
 	padding         = gmath.Vector2{2, 2},
 	margin          = gmath.Vector4{2, 2, 2, 2},
 	// COLORS
-	backgroundColor = gmath.Vector4{0, 0, 0, 0},
+	backgroundColor = gmath.Color{0, 0, 0, 0},
 	textColor       = GRUV_FG0,
 }
 
@@ -127,31 +127,31 @@ WindowConfig :: struct {
 	pivot:                       Maybe(gmath.Pivot),
 	maximumHeight:               Maybe(f32),
 	// WINDOW STYLE
-	backgroundColor:             Maybe(gmath.Vector4),
-	borderColor:                 Maybe(gmath.Vector4),
+	backgroundColor:             Maybe(gmath.Color),
+	borderColor:                 Maybe(gmath.Color),
 	// HEADER STYLE
 	headerMargin:                Maybe(gmath.Vector4),
 	// HEADER BACKGROUND COLORS
-	headerBackgroundNormalColor: Maybe(gmath.Vector4),
-	headerBackgroundHoverColor:  Maybe(gmath.Vector4),
-	headerBackgroundActiveColor: Maybe(gmath.Vector4),
+	headerBackgroundNormalColor: Maybe(gmath.Color),
+	headerBackgroundHoverColor:  Maybe(gmath.Color),
+	headerBackgroundActiveColor: Maybe(gmath.Color),
 	// HEADER TEXT COLORS
-	headerTextNormalColor:       Maybe(gmath.Vector4),
-	headerTextHoverColor:        Maybe(gmath.Vector4),
-	headerTextActiveColor:       Maybe(gmath.Vector4),
+	headerTextNormalColor:       Maybe(gmath.Color),
+	headerTextHoverColor:        Maybe(gmath.Color),
+	headerTextActiveColor:       Maybe(gmath.Color),
 	// CLOSE BUTTON STYLE
-	closeNormalColor:            Maybe(gmath.Vector4),
-	closeHoverColor:             Maybe(gmath.Vector4),
-	closeActiveColor:            Maybe(gmath.Vector4),
+	closeNormalColor:            Maybe(gmath.Color),
+	closeHoverColor:             Maybe(gmath.Color),
+	closeActiveColor:            Maybe(gmath.Color),
 	closeRune:                   Maybe(rune),
 	// TOGGLE BUTTON STYLE
-	toggleNormalColor:           Maybe(gmath.Vector4),
-	toggleHoverColor:            Maybe(gmath.Vector4),
-	toggleActiveColor:           Maybe(gmath.Vector4),
+	toggleNormalColor:           Maybe(gmath.Color),
+	toggleHoverColor:            Maybe(gmath.Color),
+	toggleActiveColor:           Maybe(gmath.Color),
 	toggleRune:                  Maybe(rune),
 	// SCROLLBAR STYLE
-	scrollbarBackgroundColor:    Maybe(gmath.Vector4),
-	scrollbarThumbColor:         Maybe(gmath.Vector4),
+	scrollbarBackgroundColor:    Maybe(gmath.Color),
+	scrollbarThumbColor:         Maybe(gmath.Color),
 	scrollbarWidth:              Maybe(f32),
 	scrollbarSpeed:              Maybe(f32),
 }
@@ -161,31 +161,31 @@ WindowStyle :: struct {
 	pivot:                       gmath.Pivot,
 	maximumHeight:               f32,
 	// WINDOW STYLE
-	backgroundColor:             gmath.Vector4,
-	borderColor:                 gmath.Vector4,
+	backgroundColor:             gmath.Color,
+	borderColor:                 gmath.Color,
 	// HEADER STYLE
 	headerMargin:                gmath.Vector4,
 	// HEADER BACKGROUND COLORS
-	headerBackgroundNormalColor: gmath.Vector4,
-	headerBackgroundHoverColor:  gmath.Vector4,
-	headerBackgroundActiveColor: gmath.Vector4,
+	headerBackgroundNormalColor: gmath.Color,
+	headerBackgroundHoverColor:  gmath.Color,
+	headerBackgroundActiveColor: gmath.Color,
 	// HEADER TEXT COLORS
-	headerTextNormalColor:       gmath.Vector4,
-	headerTextHoverColor:        gmath.Vector4,
-	headerTextActiveColor:       gmath.Vector4,
+	headerTextNormalColor:       gmath.Color,
+	headerTextHoverColor:        gmath.Color,
+	headerTextActiveColor:       gmath.Color,
 	// CLOSE BUTTON STYLE
-	closeNormalColor:            gmath.Vector4,
-	closeHoverColor:             gmath.Vector4,
-	closeActiveColor:            gmath.Vector4,
+	closeNormalColor:            gmath.Color,
+	closeHoverColor:             gmath.Color,
+	closeActiveColor:            gmath.Color,
 	closeRune:                   rune,
 	// TOGGLE BUTTON STYLE
-	toggleNormalColor:           gmath.Vector4,
-	toggleHoverColor:            gmath.Vector4,
-	toggleActiveColor:           gmath.Vector4,
+	toggleNormalColor:           gmath.Color,
+	toggleHoverColor:            gmath.Color,
+	toggleActiveColor:           gmath.Color,
 	toggleRune:                  rune,
 	// SCROLLBAR STYLE
-	scrollbarBackgroundColor:    gmath.Vector4,
-	scrollbarThumbColor:         gmath.Vector4,
+	scrollbarBackgroundColor:    gmath.Color,
+	scrollbarThumbColor:         gmath.Color,
 	scrollbarWidth:              f32,
 	scrollbarSpeed:              f32,
 }
@@ -196,13 +196,13 @@ ButtonConfig :: struct {
 	padding:               Maybe(gmath.Vector2),
 	margin:                Maybe(gmath.Vector4),
 	// BACKGROUND COLORS
-	backgroundNormalColor: Maybe(gmath.Vector4),
-	backgroundHoverColor:  Maybe(gmath.Vector4),
-	backgroundActiveColor: Maybe(gmath.Vector4),
+	backgroundNormalColor: Maybe(gmath.Color),
+	backgroundHoverColor:  Maybe(gmath.Color),
+	backgroundActiveColor: Maybe(gmath.Color),
 	// TEXT COLORS
-	textNormalColor:       Maybe(gmath.Vector4),
-	textHoverColor:        Maybe(gmath.Vector4),
-	textActiveColor:       Maybe(gmath.Vector4),
+	textNormalColor:       Maybe(gmath.Color),
+	textHoverColor:        Maybe(gmath.Color),
+	textActiveColor:       Maybe(gmath.Color),
 }
 
 ButtonStyle :: struct {
@@ -211,13 +211,13 @@ ButtonStyle :: struct {
 	padding:               gmath.Vector2,
 	margin:                gmath.Vector4,
 	// BACKGROUND COLORS
-	backgroundNormalColor: gmath.Vector4,
-	backgroundHoverColor:  gmath.Vector4,
-	backgroundActiveColor: gmath.Vector4,
+	backgroundNormalColor: gmath.Color,
+	backgroundHoverColor:  gmath.Color,
+	backgroundActiveColor: gmath.Color,
 	// TEXT COLORS
-	textNormalColor:       gmath.Vector4,
-	textHoverColor:        gmath.Vector4,
-	textActiveColor:       gmath.Vector4,
+	textNormalColor:       gmath.Color,
+	textHoverColor:        gmath.Color,
+	textActiveColor:       gmath.Color,
 }
 
 TextConfig :: struct {
@@ -226,8 +226,8 @@ TextConfig :: struct {
 	padding:         Maybe(gmath.Vector2),
 	margin:          Maybe(gmath.Vector4),
 	// COLORS
-	backgroundColor: Maybe(gmath.Vector4),
-	textColor:       Maybe(gmath.Vector4),
+	backgroundColor: Maybe(gmath.Color),
+	textColor:       Maybe(gmath.Color),
 }
 
 TextStyle :: struct {
@@ -236,8 +236,8 @@ TextStyle :: struct {
 	padding:         gmath.Vector2,
 	margin:          gmath.Vector4,
 	// COLORS
-	backgroundColor: gmath.Vector4,
-	textColor:       gmath.Vector4,
+	backgroundColor: gmath.Color,
+	textColor:       gmath.Color,
 }
 
 CheckboxConfig :: struct {
@@ -246,13 +246,13 @@ CheckboxConfig :: struct {
 	padding:               Maybe(gmath.Vector2),
 	margin:                Maybe(gmath.Vector4),
 	// BACKGROUND COLORS
-	backgroundNormalColor: Maybe(gmath.Vector4),
-	backgroundHoverColor:  Maybe(gmath.Vector4),
-	backgroundActiveColor: Maybe(gmath.Vector4),
+	backgroundNormalColor: Maybe(gmath.Color),
+	backgroundHoverColor:  Maybe(gmath.Color),
+	backgroundActiveColor: Maybe(gmath.Color),
 	// TEXT COLORS
-	textNormalColor:       Maybe(gmath.Vector4),
-	textHoverColor:        Maybe(gmath.Vector4),
-	textActiveColor:       Maybe(gmath.Vector4),
+	textNormalColor:       Maybe(gmath.Color),
+	textHoverColor:        Maybe(gmath.Color),
+	textActiveColor:       Maybe(gmath.Color),
 	// TEXT STYLE
 	checkboxRune:          Maybe(rune),
 	checkboxRuneScale:     Maybe(f32),
@@ -264,13 +264,13 @@ CheckboxStyle :: struct {
 	padding:               gmath.Vector2,
 	margin:                gmath.Vector4,
 	// BACKGROUND COLORS
-	backgroundNormalColor: gmath.Vector4,
-	backgroundHoverColor:  gmath.Vector4,
-	backgroundActiveColor: gmath.Vector4,
+	backgroundNormalColor: gmath.Color,
+	backgroundHoverColor:  gmath.Color,
+	backgroundActiveColor: gmath.Color,
 	// TEXT COLORS
-	textNormalColor:       gmath.Vector4,
-	textHoverColor:        gmath.Vector4,
-	textActiveColor:       gmath.Vector4,
+	textNormalColor:       gmath.Color,
+	textHoverColor:        gmath.Color,
+	textActiveColor:       gmath.Color,
 	// TEXT STYLE
 	checkboxRune:          rune,
 	checkboxRuneScale:     f32,
@@ -281,19 +281,19 @@ SliderConfig :: struct {
 	padding:               Maybe(gmath.Vector2),
 	margin:                Maybe(gmath.Vector4),
 	// BACKGROUND COLORS
-	backgroundNormalColor: Maybe(gmath.Vector4),
-	backgroundHoverColor:  Maybe(gmath.Vector4),
-	backgroundActiveColor: Maybe(gmath.Vector4),
+	backgroundNormalColor: Maybe(gmath.Color),
+	backgroundHoverColor:  Maybe(gmath.Color),
+	backgroundActiveColor: Maybe(gmath.Color),
 	// BACKGROUND STYLE
 	backgroundHeight:      Maybe(f32),
 	// FILL COLORS
-	fillNormalColor:       Maybe(gmath.Vector4),
-	fillHoverColor:        Maybe(gmath.Vector4),
-	fillActiveColor:       Maybe(gmath.Vector4),
+	fillNormalColor:       Maybe(gmath.Color),
+	fillHoverColor:        Maybe(gmath.Color),
+	fillActiveColor:       Maybe(gmath.Color),
 	// THUMB COLORS
-	thumbNormalColor:      Maybe(gmath.Vector4),
-	thumbHoverColor:       Maybe(gmath.Vector4),
-	thumbActiveColor:      Maybe(gmath.Vector4),
+	thumbNormalColor:      Maybe(gmath.Color),
+	thumbHoverColor:       Maybe(gmath.Color),
+	thumbActiveColor:      Maybe(gmath.Color),
 	// THUMB STYLE
 	thumbWidth:            Maybe(f32),
 	thumbPadding:          Maybe(gmath.Vector2),
@@ -304,19 +304,19 @@ SliderStyle :: struct {
 	padding:               gmath.Vector2,
 	margin:                gmath.Vector4,
 	// BACKGROUND COLORS
-	backgroundNormalColor: gmath.Vector4,
-	backgroundHoverColor:  gmath.Vector4,
-	backgroundActiveColor: gmath.Vector4,
+	backgroundNormalColor: gmath.Color,
+	backgroundHoverColor:  gmath.Color,
+	backgroundActiveColor: gmath.Color,
 	// BACKGROUND STYLE
 	backgroundHeight:      f32,
 	// FILL COLORS
-	fillNormalColor:       gmath.Vector4,
-	fillHoverColor:        gmath.Vector4,
-	fillActiveColor:       gmath.Vector4,
+	fillNormalColor:       gmath.Color,
+	fillHoverColor:        gmath.Color,
+	fillActiveColor:       gmath.Color,
 	// THUMB COLORS
-	thumbNormalColor:      gmath.Vector4,
-	thumbHoverColor:       gmath.Vector4,
-	thumbActiveColor:      gmath.Vector4,
+	thumbNormalColor:      gmath.Color,
+	thumbHoverColor:       gmath.Color,
+	thumbActiveColor:      gmath.Color,
 	// THUMB STYLE
 	thumbWidth:            f32,
 	thumbPadding:          gmath.Vector2,

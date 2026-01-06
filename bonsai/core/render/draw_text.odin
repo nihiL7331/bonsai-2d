@@ -1,7 +1,7 @@
 package render
 
 import "bonsai:core/gmath"
-import colors "bonsai:core/gmath/color"
+import "bonsai:core/gmath/colors"
 import stb_truetype "bonsai:libs/stb/truetype"
 import "bonsai:types/game"
 
@@ -25,7 +25,7 @@ drawTextWrapped :: proc(
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := game.DrawLayer.nil,
-	colorOverride := gmath.Vector4{},
+	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
 	//TODO: wrapping text
 	return drawTextSimple(
@@ -55,7 +55,7 @@ drawTextWithDropShadow :: proc(
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := game.DrawLayer.nil,
-	colorOverride := gmath.Vector4{},
+	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
 	shadowOffset := gmath.Vector2{1, -1} * f32(scale)
 
@@ -107,7 +107,7 @@ drawTextSimple :: proc(
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := game.DrawLayer.nil,
-	colorOverride := gmath.Vector4{},
+	colorOverride := gmath.Color{},
 ) -> (
 	textBounds: gmath.Vector2,
 ) {

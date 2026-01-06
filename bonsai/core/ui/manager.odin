@@ -18,14 +18,14 @@ FNV_PRIME :: 16777619
 
 DrawRectangleCommand :: struct {
 	rectangle:    gmath.Rectangle,
-	color:        gmath.Vector4,
-	outlineColor: gmath.Vector4,
+	color:        gmath.Color,
+	outlineColor: gmath.Color,
 }
 
 DrawTextCommand :: struct {
 	text:     string,
 	position: gmath.Vector2,
-	color:    gmath.Vector4,
+	color:    gmath.Color,
 	pivot:    gmath.Pivot,
 	scale:    f32,
 	rotation: f32,

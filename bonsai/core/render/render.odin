@@ -2,7 +2,7 @@ package render
 
 import "bonsai:core"
 import "bonsai:core/gmath"
-import "bonsai:core/gmath/color"
+import "bonsai:core/gmath/colors"
 import "bonsai:core/platform"
 import sokol_gfx "bonsai:libs/sokol/gfx"
 import sokol_glue "bonsai:libs/sokol/glue"
@@ -28,7 +28,7 @@ DEFAULT_UV :: gmath.Vector4{0, 0, 1, 1}
 
 // @ref
 // Default clear color **(background)**.
-CLEAR_COLOR :: color.BLACK
+CLEAR_COLOR :: colors.BLACK
 
 // @ref
 // Internal render state wrapping **Sokol** pipelines and bindings.
@@ -419,11 +419,11 @@ _initDrawFrameLayers :: proc() {
 // Core function for pushing a quad into the **draw list**.
 drawQuadProjected :: proc(
 	positions: [4]gmath.Vector2,
-	colors: [4]gmath.Vector4,
+	colors: [4]gmath.Color,
 	uvs: [4]gmath.Vector2,
 	textureIndex: u8,
 	spriteSize: gmath.Vector2,
-	colorOverride: gmath.Vector4,
+	colorOverride: gmath.Color,
 	drawLayer: game.DrawLayer = game.DrawLayer.nil,
 	flags: game.QuadFlags,
 	parameters := gmath.Vector4{},

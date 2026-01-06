@@ -2,7 +2,7 @@ package render
 
 import "bonsai:core"
 import "bonsai:core/gmath"
-import colors "bonsai:core/gmath/color"
+import "bonsai:core/gmath/colors"
 import "bonsai:types/game"
 
 // standard texture index reserved for a 1x1 white pixel
@@ -22,7 +22,7 @@ drawSprite :: proc(
 	transform := gmath.Matrix4(1),
 	animationIndex := 0,
 	color := colors.WHITE,
-	colorOverride := gmath.Vector4{},
+	colorOverride := gmath.Color{},
 	drawLayer := game.DrawLayer{},
 	flags := game.QuadFlags{},
 	parameters := gmath.Vector4{},
@@ -169,7 +169,7 @@ drawSpriteInRectangle :: proc(
 	size: gmath.Vector2,
 	transform := gmath.Matrix4(1),
 	color := colors.WHITE,
-	colorOverride := gmath.Vector4{},
+	colorOverride := gmath.Color{},
 	drawLayer := game.DrawLayer.nil,
 	flags := game.QuadFlags(0),
 	paddingPercent: f32 = 0.1,
@@ -232,7 +232,7 @@ drawRectangleTransform :: proc(
 	textureIndex: u8 = 0,
 	animationIndex := 0,
 	color := colors.WHITE,
-	colorOverride := gmath.Vector4{},
+	colorOverride := gmath.Color{},
 	drawLayer := game.DrawLayer.nil,
 	flags := game.QuadFlags{},
 	parameters := gmath.Vector4{},

@@ -32,6 +32,10 @@ Vector4 :: linalg.Vector4f32
 Matrix4 :: linalg.Matrix4f32
 
 // @ref
+// Color is an alias for a standard 4D Float Vector.
+Color :: Vector4
+
+// @ref
 // Enum representing the 9 cardinal points of a rectangle.
 // Used for anchoring UI and aligning sprites.
 Pivot :: enum {
