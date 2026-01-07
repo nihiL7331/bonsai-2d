@@ -5,8 +5,6 @@ import "bonsai:core/gmath"
 import "bonsai:core/render"
 import sokol_app "bonsai:libs/sokol/app"
 
-import "core:math/linalg"
-
 // internal capacity for the input buffer
 @(private = "file")
 _KEY_CODE_CAPACITY :: 512
@@ -332,7 +330,7 @@ getInputVector :: proc() -> gmath.Vector2 {
 	if input == {} {
 		return {}
 	} else {
-		return linalg.normalize(input)
+		return gmath.normalize(input)
 	}
 }
 
@@ -354,7 +352,7 @@ getMousePositionWorld :: proc() -> gmath.Vector2 {
 	mouseNormal := gmath.Vector2{normalX, normalY}
 	mouseWorld := gmath.Vector4{mouseNormal.x, mouseNormal.y, 0, 1}
 
-	mouseWorld = linalg.inverse(projectionMatrix) * mouseWorld
+	mouseWorld = gmath.matrixInverse(projectionMatrix) * mouseWorld
 
 	return mouseWorld.xy
 }
