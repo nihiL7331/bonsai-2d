@@ -1,11 +1,6 @@
 package gmath
 
-// @ref
-// Generic union for any **supported** geometric shape.
-Shape :: union {
-	Rectangle,
-	Circle,
-}
+import "base:intrinsics"
 
 // @ref
 // A `Circle` defined by a **center** `position` and a `radius`.
@@ -56,15 +51,61 @@ getRectangleSize :: proc(rectangle: Rectangle) -> Vector2 {
 	return {rectangle.z - rectangle.x, rectangle.w - rectangle.y}
 }
 
+
 // @ref
-// Creates a `Rectangle` from a specific anchor position (`Pivot`) and total `size`.
+// Overload group for creating a `Rectangle`.
+// Accepts arguments:
+// - `position` as `Vector2` (optional, default: gmath.Vector2{0, 0}).
+// - `size` as `Vector2`.
+// - `pivot` as `Pivot` (optional, default: gmath.Pivot.bottomLeft).
+rectangleMake :: proc {
+	_rectangleFromPositionSize,
+	_rectangleFromSize,
+}
+
+
+// @ref
+// Scales a `Rectangle` around its own center point.
+//
+// Accepts a scalar or `Vector2` as a `scale`.
+rectangleScale :: proc {
+	_rectangleScaleScalar,
+	_rectangleScaleVector2,
+}
+
+// @ref
+// Expands the `Rectangle` boundaries outwards by `amount` on all sides.
+// A negative amount **shrinks** the `Rectangle`.
+//
+// Accepts a scalar or `Vector2` as an `amount` by which the rectangle is expanded.
 //
 // **Example:**
 // ```Odin
-// // creates a box centered at gmath.Vector2{10, 10} of size gmath.Vector2{100, 100}
-// gmath.rectangleFromPositionSize(gmath.Vector2{10, 10}, gmath.Vector2{100, 100}, gmath.Pivot.centerCenter)
+// rectangle := gmath.rectangleMake(gmath.Vector2{10, 10}) // size is gmath.Vector2{10, 10}
+// rectangle = gmath.rectangleExpand(rectangle, gmath.Vector2{5, 5}) // size is gmath.Vector2{20, 20}
 // ```
-rectangleFromPositionSize :: proc(
+rectangleExpand :: proc {
+	_rectangleExpandScalar,
+	_rectangleExpandVector2,
+}
+
+
+// @ref
+// Moves `Circle` or `Rectangle` by the `delta` vector.
+//
+// **Example:**
+// ```Odin
+// rectangle := gmath.rectangleMake(gmath.Vector2{5, 5}, gmath.Vector2{10, 10}) // position is gmath.Vector2{5, 5}
+// rectangle = gmath.shift(rectangle, gmath.Vector2{10, 10}) // position is gmath.Vector2{15, 15}
+// ```
+shift :: proc {
+	_circleShift,
+	_rectangleShift,
+}
+
+// Position/Size helper for rectangleMake function
+@(private = "file")
+_rectangleFromPositionSize :: proc(
 	position: Vector2,
 	size: Vector2,
 	pivot := Pivot.bottomLeft,
@@ -74,26 +115,19 @@ rectangleFromPositionSize :: proc(
 	pivotOffset := scaleFromPivot(pivot) * size
 	finalPosition := position - pivotOffset
 
-	return rectangleShift(baseRectangle, finalPosition)
+	return shift(baseRectangle, finalPosition)
 }
 
-// @ref
-// Creates a `Rectangle` at **(0,0)** with the given `size`, adjusted by `Pivot`.
-rectangleFromSize :: proc(size: Vector2, pivot: Pivot) -> Rectangle {
-	return rectangleFromPositionSize({}, size, pivot)
+// Size helper for rectangleMake function
+@(private = "file")
+_rectangleFromSize :: proc(size: Vector2, pivot: Pivot) -> Rectangle {
+	return _rectangleFromPositionSize({}, size, pivot)
 }
 
-// @ref
-// Overload group for creating `Rectangle`.
-rectangleMake :: proc {
-	rectangleFromPositionSize,
-	rectangleFromSize,
-}
-
-// @ref
-// Moves a `Rectangle` by the specific `delta` vector.
-rectangleShift :: proc(rectangle: Rectangle, delta: Vector2) -> Rectangle {
-	return {
+// Rectangle helper for shift function
+@(private = "file")
+_rectangleShift :: proc(rectangle: Rectangle, delta: Vector2) -> Rectangle {
+	return Rectangle {
 		rectangle.x + delta.x,
 		rectangle.y + delta.y,
 		rectangle.z + delta.x,
@@ -101,15 +135,21 @@ rectangleShift :: proc(rectangle: Rectangle, delta: Vector2) -> Rectangle {
 	}
 }
 
-// @ref
-// Scales a `Rectangle` around its own center point by a uniform factor.
-rectangleScale :: proc(rectangle: Rectangle, scale: f32) -> Rectangle {
+// Circle helper for shift function
+@(private = "file")
+_circleShift :: proc(circle: Circle, delta: Vector2) -> Circle {
+	return Circle{position = circle.position + delta, radius = circle.radius}
+}
+
+// Scalar helper for rectangleScale function
+@(private = "file")
+_rectangleScaleScalar :: proc(rectangle: Rectangle, scale: $T) -> Rectangle {
 	center := getRectangleCenter(rectangle)
 	size := getRectangleSize(rectangle)
 
 	newSize := size * scale
-
 	halfSize := newSize * 0.5
+
 	return Rectangle {
 		center.x - halfSize.x,
 		center.y - halfSize.y,
@@ -118,15 +158,15 @@ rectangleScale :: proc(rectangle: Rectangle, scale: f32) -> Rectangle {
 	}
 }
 
-// @ref
-// Scales a `Rectangle` around its own center point by `Vector2` x/y factors.
-rectangleScaleVector2 :: proc(rectangle: Rectangle, scale: Vector2) -> Rectangle {
+// Vector2 helper for rectangleScale function
+@(private = "file")
+_rectangleScaleVector2 :: proc(rectangle: Rectangle, scale: Vector2) -> Rectangle {
 	center := getRectangleCenter(rectangle)
 	size := getRectangleSize(rectangle)
 
 	newSize := size * scale
-
 	halfSize := newSize * 0.5
+
 	return Rectangle {
 		center.x - halfSize.x,
 		center.y - halfSize.y,
@@ -135,10 +175,12 @@ rectangleScaleVector2 :: proc(rectangle: Rectangle, scale: Vector2) -> Rectangle
 	}
 }
 
-// @ref
-// Expands the `Rectangle` boundaries outwards by `amount` on all sides.
-// A negative amount **shrinks** the `Rectangle`.
-rectangleExpand :: proc(rectangle: Rectangle, amount: f32) -> Rectangle {
+
+@(private = "file")
+_rectangleExpandScalar :: proc(
+	rectangle: Rectangle,
+	amount: $T,
+) -> Rectangle where intrinsics.type_is_float(T) {
 	return Rectangle {
 		rectangle.x - amount,
 		rectangle.y - amount,
@@ -147,25 +189,12 @@ rectangleExpand :: proc(rectangle: Rectangle, amount: f32) -> Rectangle {
 	}
 }
 
-// @ref
-// Moves a `Circle` by the specified `delta` vector.
-circleShift :: proc(circle: Circle, delta: Vector2) -> Circle {
-	return Circle{position = circle.position + delta, radius = circle.radius}
-}
-
-// @ref
-// Polymorphic shift for the `Shape` union.
-// Moves any supported shape type by the `delta` vector.
-shift :: proc(shape: Shape, delta: Vector2) -> Shape {
-	if delta == {} {
-		return shape
+@(private = "file")
+_rectangleExpandVector2 :: proc(rectangle: Rectangle, amount: Vector2) -> Rectangle {
+	return Rectangle {
+		rectangle.x - amount.x,
+		rectangle.y - amount.y,
+		rectangle.z + amount.x,
+		rectangle.w + amount.y,
 	}
-
-	switch s in shape {
-	case Rectangle:
-		return rectangleShift(s, delta)
-	case Circle:
-		return circleShift(s, delta)
-	}
-	return shape
 }

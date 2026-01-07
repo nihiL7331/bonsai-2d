@@ -185,6 +185,31 @@ matrixRotate :: proc(radians: f32) -> Matrix4 {
 }
 
 // @ref
+// Multiplies a vector by a matrix, effectively transforming the point.
+// Assumes z = 0 and w = 1.
+transformPoint :: proc(mat: Matrix4, point: Vector2) -> Vector2 {
+	res := mat * Vector4{point.x, point.y, 0, 1}
+	return res.xy
+}
+
+// @ref
+// Returns the inverse of the 4x4 matrix.
+// Useful for creating view matrices and converting world space to screen space.
+//
+// **Note:** Matrix inversion is computationally expensive.
+matrixInverse :: proc(mat: Matrix4) -> Matrix4 {
+	return linalg.matrix4_inverse(mat)
+}
+
+// @ref
+// Creates an orthographic projection matrix.
+// This defines the viewing volume as a rectangular box.
+// Objects inside this box are visible, objects outside are clipped.
+matrixOrtho3d :: proc(left, right, bottom, top, near, far: $T) -> Matrix4 {
+	return linalg.matrix_ortho3d(left, right, bottom, top, near, far)
+}
+
+// @ref
 // Creates a scaling matrix. Z-scale is locked to 1.0.
 matrixScale :: proc(scale: Vector2) -> Matrix4 {
 	return linalg.matrix4_scale(Vector3{scale.x, scale.y, 1})
@@ -221,7 +246,7 @@ clamp :: proc {
 }
 
 // @ref
-// Rounds the float `input` vector to the nearest integer vector.
+// Rounds the float `input` vector to the nearest integer **vector**, changing its type.
 //
 // **Example:**
 // ```Odin
@@ -232,6 +257,36 @@ roundToInt :: proc {
 	_roundToIntVector2,
 	_roundToIntVector3,
 	_roundToIntVector4,
+}
+
+// @ref
+// Rounds the value to the nearest whole number.
+// Accepts scalar and vector values as an argument.
+round :: proc {
+	_roundScalar,
+	_roundVector2,
+	_roundVector3,
+	_roundVector4,
+}
+
+// @ref
+// Returns the largest whole number less than or equal to the `input`.
+// Accepts scalar and vector values as an argument.
+floor :: proc {
+	_floorScalar,
+	_floorVector2,
+	_floorVector3,
+	_floorVector4,
+}
+
+// @ref
+// Returns the smallest whole number greater than or equal to the `input`.
+// Accepts scalar and vector values as an argument.
+ceil :: proc {
+	_ceilScalar,
+	_ceilVector2,
+	_ceilVector3,
+	_ceilVector4,
 }
 
 // @ref
@@ -275,6 +330,12 @@ sign :: proc(input: $T) -> T {
 }
 
 // @ref
+// Returns the square root of `input` value.
+sqrt :: proc(input: $T) -> T {
+	return math.sqrt(input)
+}
+
+// @ref
 // Returns the smallest value among all arguments.
 // If arguments are vectors, returns a component-wise minimum vector.
 // Accepts any number of arguments (minimum 1).
@@ -286,7 +347,8 @@ sign :: proc(input: $T) -> T {
 // vectorMinimum := gmath.min(vectorA, vectorB) // vectorMinimum is a component-wise minimum vector
 // ```
 min :: proc {
-	_minScalar,
+	_minScalarVariadic,
+	_minScalarBinary,
 	_minVector2,
 	_minVector3,
 	_minVector4,
@@ -307,7 +369,8 @@ min :: proc {
 // vectorMaximum := gmath.max(vectorA, vectorB) // vectorMaximum is a component-wise maximum vector
 // ```
 max :: proc {
-	_maxScalar,
+	_maxScalarVariadic,
+	_maxScalarBinary,
 	_maxVector2,
 	_maxVector3,
 	_maxVector4,
@@ -695,7 +758,7 @@ _roundToIntVector4 :: proc(input: Vector4) -> Vector4Int {
 
 // Scalar helper for the min function.
 @(private = "file")
-_minScalar :: proc(inputs: ..$T) -> T {
+_minScalarVariadic :: proc(inputs: ..$T) -> T where intrinsics.type_is_numeric(T) {
 	if len(inputs) == 0 do return 0
 
 	result := inputs[0]
@@ -703,6 +766,13 @@ _minScalar :: proc(inputs: ..$T) -> T {
 		if input < result do result = input
 	}
 	return result
+}
+
+// Binary scalar helper for the min function.
+@(private = "file")
+_minScalarBinary :: proc(a, b: $T) -> T where intrinsics.type_is_numeric(T) {
+	if a < b do return a
+	return b
 }
 
 // Vector2 helper for the min function.
@@ -794,7 +864,7 @@ _minVector4Int :: proc(inputs: ..Vector4Int) -> Vector4Int {
 
 // Scalar helper for the max function.
 @(private = "file")
-_maxScalar :: proc(inputs: ..$T) -> T {
+_maxScalarVariadic :: proc(inputs: ..$T) -> T where intrinsics.type_is_float(T) {
 	if len(inputs) == 0 do return 0
 
 	result := inputs[0]
@@ -802,6 +872,13 @@ _maxScalar :: proc(inputs: ..$T) -> T {
 		if input > result do result = input
 	}
 	return result
+}
+
+// Binary scalar helper for the max function.
+@(private = "file")
+_maxScalarBinary :: proc(a, b: $T) -> T where intrinsics.type_is_float(T) {
+	if a > b do return a
+	return b
 }
 
 // Vector2 helper for the min function.
@@ -888,4 +965,86 @@ _maxVector4Int :: proc(inputs: ..Vector4Int) -> Vector4Int {
 		if input.w > result.w do result.w = input.w
 	}
 	return result
+}
+
+// Scalar helper for the round function.
+@(private = "file")
+_roundScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
+	return math.round(input)
+}
+
+// Vector2 helper for the round function.
+@(private = "file")
+_roundVector2 :: proc(input: Vector2) -> Vector2 {
+	return Vector2{math.round(input.x), math.round(input.y)}
+}
+
+// Vector3 helper for the round function.
+@(private = "file")
+_roundVector3 :: proc(input: Vector3) -> Vector3 {
+	return Vector3{math.round(input.x), math.round(input.y), math.round(input.z)}
+}
+
+// Vector4 helper for the round function.
+@(private = "file")
+_roundVector4 :: proc(input: Vector4) -> Vector4 {
+	return Vector4 {
+		math.round(input.x),
+		math.round(input.y),
+		math.round(input.z),
+		math.round(input.w),
+	}
+}
+
+// Scalar helper for the floor function.
+@(private = "file")
+_floorScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
+	return math.floor(input)
+}
+
+// Vector2 helper for the floor function.
+@(private = "file")
+_floorVector2 :: proc(input: Vector2) -> Vector2 {
+	return Vector2{math.floor(input.x), math.floor(input.y)}
+}
+
+// Vector3 helper for the floor function.
+@(private = "file")
+_floorVector3 :: proc(input: Vector3) -> Vector3 {
+	return Vector3{math.floor(input.x), math.floor(input.y), math.floor(input.z)}
+}
+
+// Vector4 helper for the floor function.
+@(private = "file")
+_floorVector4 :: proc(input: Vector4) -> Vector4 {
+	return Vector4 {
+		math.floor(input.x),
+		math.floor(input.y),
+		math.floor(input.z),
+		math.floor(input.w),
+	}
+}
+
+// Scalar helper for the ceil function.
+@(private = "file")
+_ceilScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
+	return math.ceil(input)
+}
+
+// Vector2 helper for the ceil function.
+@(private = "file")
+_ceilVector2 :: proc(input: Vector2) -> Vector2 {
+	return Vector2{math.ceil(input.x), math.ceil(input.y)}
+}
+
+// Vector3 helper for the ceil function.
+@(private = "file")
+_ceilVector3 :: proc(input: Vector3) -> Vector3 {
+	return Vector3{math.ceil(input.x), math.ceil(input.y), math.ceil(input.z)}
+}
+
+// Vector4 helper for the ceil function.
+@(private = "file")
+_ceilVector4 :: proc(input: Vector4) -> Vector4 {
+	return Vector4{math.ceil(input.x), math.ceil(input.y), math.ceil(input.z), math.ceil(input.w)}
 }
