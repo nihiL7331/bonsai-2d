@@ -5,7 +5,7 @@ import "core:log"
 import "core:sync"
 
 import "bonsai:core/platform"
-import "bonsai:types/game"
+import "bonsai:generated"
 
 @(private = "file") // private helper for registering sounds from pcm data
 _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
@@ -25,14 +25,14 @@ _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 }
 
 // @ref
-// Loads an audio asset from the disk based on the provided **AudioName** enum.
+// Loads an audio asset from the disk based on the provided `AudioName` enum.
 //
 // This function handles reading the file, parsing the audio data (WAV file format),
 // and registering it with the mixer.
 //
-// Returns 0 if loading or parsing fails.
-load :: proc(name: game.AudioName) -> SoundHandle {
-	filename := game.audioFilename[name]
+// Returns `0` if loading or parsing fails.
+load :: proc(name: generated.AudioName) -> SoundHandle {
+	filename := generated.audioFilename[name]
 	path := fmt.tprintf("assets/audio/%s", filename)
 	data, success := platform.read_entire_file(path)
 	if !success {

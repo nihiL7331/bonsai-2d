@@ -1,12 +1,11 @@
 package audio
 
+import "bonsai:core"
 import "bonsai:core/gmath"
 import sokol_audio "bonsai:libs/sokol/audio"
 import sokol_log "bonsai:libs/sokol/log"
-import "bonsai:types/game"
 
 import "core:log"
-import "core:math"
 import "core:slice"
 import "core:sync"
 
@@ -15,16 +14,16 @@ import "core:sync"
 MIXER_VOICE_CAPACITY :: 64
 // @ref
 // Default distance at which the falloff for spatial audio reaches **1.0** (max volume).
-DEFAULT_MIN_DISTANCE :: game.GAME_WIDTH / 4
+DEFAULT_MIN_DISTANCE :: core.GAME_WIDTH / 8
 // @ref
 // Default distance at which the falloff for spatial audio reaches **0.0** (muted).
-DEFAULT_MAX_DISTANCE :: game.GAME_WIDTH / 2
+DEFAULT_MAX_DISTANCE :: core.GAME_WIDTH / 2
 
 // @ref
-// ID for a **Voice** object.
-VoiceHandle :: distinct int
+// ID for a `Voice` object.
+VoiceHandle :: distinct u64
 // @ref
-// ID for a **Sound** object.
+// ID for a `Sound` object.
 SoundHandle :: distinct u64
 
 // @ref
@@ -48,7 +47,7 @@ Sound :: struct {
 // @ref
 // Structure definition for the "voice", which is essentialy the entity equivalent of the audio system.
 //
-// It defines all active state variables needed to output a specific instance of **Sound.
+// It defines all active state variables needed to output a specific instance of `Sound`.
 Voice :: struct {
 	id:          SoundHandle,
 	cursor:      int,
@@ -67,7 +66,7 @@ Voice :: struct {
 // @ref
 // Internal state container for the audio mixer.
 //
-// Holds the thread lock, the pool of **Voices**, loaded **Sound** data, and listener configuration.
+// Holds the thread lock, the pool of `Voice`, loaded `Sound` data, and listener configuration.
 Mixer :: struct {
 	lock:             sync.Mutex,
 	voices:           [MIXER_VOICE_CAPACITY]Voice,
@@ -83,7 +82,7 @@ _mixer: Mixer
 // @ref
 // Initializes the audio subsystem, sets up the **Sokol audio** backend, and prepares the mixer state.
 //
-// This **must** be called before loading or playing any sounds.
+// Called in the **main.odin** file.
 init :: proc() {
 	_mixer.nextId = 1
 	//default volumes to full volume
@@ -115,7 +114,7 @@ shutdown :: proc() {
 // @ref
 // Main entry point for playing sounds.
 //
-// Use **playGlobal** for UI/Music and **playSpatial** for in-world sound effects.
+// Use `playGlobal` for UI/Music and `playSpatial` for in-world sound effects.
 play :: proc {
 	playGlobal,
 	playSpatial,
@@ -151,7 +150,7 @@ playGlobal :: proc(
 		}
 	}
 	log.warn("No space for a new voice in mixer.")
-	return -1
+	return 0
 }
 
 // @ref
@@ -187,7 +186,7 @@ playSpatial :: proc(
 		}
 	}
 	log.warn("No space for a new voice in mixer.")
-	return -1
+	return 0
 }
 
 // @ref
@@ -215,7 +214,7 @@ resume :: proc(id: VoiceHandle) {
 }
 
 // @ref
-// Returns **true** if the voice is currently valid and not paused.
+// Returns `true` if the voice is currently valid and not paused.
 isPlaying :: proc(id: VoiceHandle) -> bool {
 	if id < 0 || int(id) >= len(_mixer.voices) do return false
 
@@ -238,6 +237,12 @@ stop :: proc(id: VoiceHandle) {
 }
 
 // @ref
+// Resets the playback position of `Voice` to the beginning.
+rewind :: proc(id: VoiceHandle) {
+	seek(id, 0.0)
+}
+
+// @ref
 // Updates the position of the "listener" (usually the camera or player) for spatial audio calculations.
 //
 // It **defaults to the camera position**. This should be called every frame to override that default behavior.
@@ -249,6 +254,26 @@ setListenerPosition :: proc(position: gmath.Vector2) {
 // Returns the current position of the audio listener.
 getListenerPosition :: proc() -> gmath.Vector2 {
 	return _mixer.listenerPosition
+}
+
+// @ref
+// Sets the playback position of `Voice` to a specific time **in seconds**.
+// If the time is out of bounds, it will be clamped.
+seek :: proc(id: VoiceHandle, timeSeconds: f32) {
+	sync.lock(&_mixer.lock)
+	defer sync.unlock(&_mixer.lock)
+
+	if id >= 0 && int(id) < len(_mixer.voices) {
+		voice := &_mixer.voices[id]
+		if !voice.isActive do return
+
+		sound, ok := _mixer.sounds[voice.id]
+		if !ok do return
+
+		targetSample := int(timeSeconds * f32(sound.sampleRate)) * sound.channels
+
+		voice.cursor = gmath.clamp(targetSample, 0, len(sound.samples) - 1)
+	}
 }
 
 @(private = "file")
@@ -276,7 +301,7 @@ _audioCallback :: proc "c" (buffer: ^f32, numFrames: i32, numChannels: i32) {
 		if voice.isSpatial {
 			distanceX := voice.position.x - _mixer.listenerPosition.x
 			distanceY := voice.position.y - _mixer.listenerPosition.y
-			distance := math.sqrt(distanceX * distanceX + distanceY * distanceY)
+			distance := gmath.sqrt(distanceX * distanceX + distanceY * distanceY)
 
 			if distance > voice.maxDistance {
 				volume = 0
@@ -286,7 +311,7 @@ _audioCallback :: proc "c" (buffer: ^f32, numFrames: i32, numChannels: i32) {
 			}
 
 			// basic panning, based on horizontal distance to voice. might want to move to a proper normal calculation.
-			panning = math.clamp(distanceX / game.GAME_WIDTH, -1.0, 1.0)
+			panning = gmath.clamp(distanceX / core.GAME_WIDTH, -1.0, 1.0)
 		}
 
 		if volume < 0.001 {
@@ -295,8 +320,8 @@ _audioCallback :: proc "c" (buffer: ^f32, numFrames: i32, numChannels: i32) {
 			continue
 		}
 
-		gainLeft := math.min(1.0, 1.0 - panning) * volume
-		gainRight := math.min(1.0, 1.0 + panning) * volume
+		gainLeft := gmath.min(f32(1.0), 1.0 - panning) * volume
+		gainRight := gmath.min(f32(1.0), 1.0 + panning) * volume
 
 		for frameIndex := 0; frameIndex < int(numFrames); frameIndex += 1 {
 			if voice.cursor >= len(sound.samples) {
