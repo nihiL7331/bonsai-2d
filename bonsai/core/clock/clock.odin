@@ -73,7 +73,7 @@ tick :: proc() {
 
 // @ref
 // Returns the scaled time since the last frame in **seconds**.
-// Returns **0.0** if the game is paused.
+// Returns `0.0` if the game is paused.
 // Use this for game logic (movement, physics).
 getDeltaTime :: proc() -> f32 {
 	return _deltaTime
@@ -101,13 +101,13 @@ getTicks :: proc() -> u64 {
 }
 
 // @ref
-// Setter for pausing the game (equivalent to _timeScale = 0.0).
+// Setter for pausing the game (equivalent to `_timeScale = 0.0`).
 setPaused :: proc(paused: bool) {
 	_paused = paused
 }
 
 // @ref
-// Returns **true**, if game is paused.
+// Returns `true`, if game is paused.
 isPaused :: proc() -> bool {
 	return _paused
 }
@@ -170,7 +170,7 @@ getApplicationInitTime :: proc() -> i64 {
 // Checks if the current game time has passed a specific target timestamp (in **seconds**).
 //
 // Useful for cooldowns or timers.
-// Returns **false** if the target timestamp is **-1** (unset).
+// Returns `false` if the target timestamp is `-1` (unset).
 hasTimestampPassed :: proc(targetTimestamp: f64) -> bool {
 	if targetTimestamp == -1 {
 		return false
