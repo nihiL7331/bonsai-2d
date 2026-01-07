@@ -1,31 +1,27 @@
 package scene_manager
 
 import "bonsai:core"
-import "bonsai:types/game"
+import "bonsai:core/scene/type"
+import "bonsai:generated"
 
 import "core:log"
 
+
 // internal lookup table for all scenes, indexed by the SceneName enum
 @(private = "file")
-_scenes: [game.SceneName]game.Scene
-
-// helper to access the global world state
-@(private = "file")
-_getWorldState :: proc() -> ^game.WorldState {
-	return core.getCoreContext().gameState.world
-}
+_scenes: [generated.SceneName]type.Scene
 
 // @ref
 // Bootstraps the **Scene Manager** with the starting scene.
 // Immediately initializes and **sets the current scene**.
-init :: proc(sceneName: game.SceneName) {
-	if sceneName == game.SceneName.nil {
+init :: proc(sceneName: generated.SceneName) {
+	if sceneName == generated.SceneName.nil {
 		log.error("Initializing with an empty/nil scene is not supported.")
 		return
 	}
 
 	startScene := &_scenes[sceneName]
-	_getWorldState().currentScene = startScene
+	core.getCoreContext().currentScene = startScene
 
 	if startScene.init != nil {
 		startScene.init(startScene.data)
@@ -35,15 +31,15 @@ init :: proc(sceneName: game.SceneName) {
 // @ref
 // Registers a scene implementation to the internal registry.
 // Called by the auto-generated code in **generated_registry.odin**.
-register :: proc(sceneName: game.SceneName, scene: game.Scene) {
+register :: proc(sceneName: generated.SceneName, scene: type.Scene) {
 	_scenes[sceneName] = scene
 }
 
 // @ref
 // Queues a transition to a new scene.
 // The actual transition occurs at the start of the **next frame**.
-change :: proc(sceneName: game.SceneName) {
-	if sceneName == game.SceneName.nil {
+change :: proc(sceneName: generated.SceneName) {
+	if sceneName == generated.SceneName.nil {
 		log.error("Cannot change to .nil scene.")
 		return
 	}
@@ -55,16 +51,16 @@ change :: proc(sceneName: game.SceneName) {
 		return
 	}
 
-	_getWorldState().nextScene = nextScene
+	core.getCoreContext().nextScene = nextScene
 }
 
 // @ref
 // Main update loop for the active scene.
 // Handles the lifecycle of scene transitions **automatically**.
 update :: proc() {
-	world := _getWorldState()
-	currentScene := world.currentScene
-	nextScene := world.nextScene
+	coreContext := core.getCoreContext()
+	currentScene := coreContext.currentScene
+	nextScene := coreContext.nextScene
 
 	if nextScene != nil {
 		// exit previous scene
@@ -73,11 +69,11 @@ update :: proc() {
 		}
 
 		// swap references
-		world.currentScene = nextScene
-		world.nextScene = nil
+		coreContext.currentScene = nextScene
+		coreContext.nextScene = nil
 
 		// update local reference
-		currentScene = world.currentScene
+		currentScene = coreContext.currentScene
 
 		// init new scene
 		if currentScene.init != nil {
@@ -94,7 +90,7 @@ update :: proc() {
 // @ref
 // Calls the draw procedure of the **currently active** scene.
 draw :: proc() {
-	currentScene := _getWorldState().currentScene
+	currentScene := core.getCoreContext().currentScene
 	if currentScene != nil && currentScene.draw != nil {
 		currentScene.draw(currentScene.data)
 	}

@@ -195,3 +195,4 @@ bonsai/libs/sokol/app/sokol_app_macos_x64_metal_debug.a
 bonsai/libs/sokol/app/sokol_app_macos_x64_metal_release.a
 bonsai/libs/sokol/app/sokol_app_wasm_gl_debug.a
 bonsai/libs/sokol/app/sokol_app_wasm_gl_release.a
+bonsai/generated

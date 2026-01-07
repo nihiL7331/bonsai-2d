@@ -5,7 +5,6 @@ import "bonsai:core/input"
 import "bonsai:core/render"
 
 import "core:fmt"
-import "core:math"
 
 @(private = "package")
 _resolveWindowStyle :: proc(config: WindowConfig) -> (style: WindowStyle) {
@@ -311,8 +310,8 @@ _handleWindowMovement :: proc(
 		headerTextColor = style.headerTextActiveColor
 
 		mouseDelta := _getMouseDelta()
-		container.rectangle = gmath.rectangleShift(container.rectangle, mouseDelta)
-		headerRectangle = gmath.rectangleShift(headerRectangle, mouseDelta)
+		container.rectangle = gmath.shift(container.rectangle, mouseDelta)
+		headerRectangle = gmath.shift(headerRectangle, mouseDelta)
 
 		if input.isKeyReleased(input.KeyCode.LEFT_MOUSE) {
 			state.active = 0
@@ -414,7 +413,7 @@ _handleSliderInteractionAndDraw :: proc(
 
 		value = minimumValue + (newRatio * (maximumValue - minimumValue))
 		if isInteger {
-			value = math.round(value)
+			value = gmath.round(value)
 		}
 
 		if input.isKeyReleased(input.KeyCode.LEFT_MOUSE) {

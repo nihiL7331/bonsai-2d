@@ -2,20 +2,16 @@ package render
 
 import "bonsai:core"
 import "bonsai:core/gmath"
-import "bonsai:types/game"
-import "bonsai:types/gfx"
-
-import "core:math/linalg"
 
 // @ref
 // Calculates the coordinate space for the main gameplay world.
 // Creates a **View-Projection matrix** based on the **camera's position** and **zoom**.
-getWorldSpace :: proc() -> gfx.CoordSpace {
+getWorldSpace :: proc() -> CoordSpace {
 	projectionMatrix := getWorldSpaceProjectionMatrix()
 	// model matrix
 	cameraMatrix := getWorldSpaceCameraMatrix()
 	// view matrix
-	viewMatrix := linalg.inverse(cameraMatrix)
+	viewMatrix := gmath.matrixInverse(cameraMatrix)
 
 	return {
 		projectionMatrix = projectionMatrix,
@@ -26,7 +22,7 @@ getWorldSpace :: proc() -> gfx.CoordSpace {
 
 // @ref
 // Calculates the coordinate space for **UI/Screen elements**.
-getScreenSpace :: proc() -> gfx.CoordSpace {
+getScreenSpace :: proc() -> CoordSpace {
 	projectionMatrix := getScreenSpaceProjectionMatrix()
 	cameraMatrix := gmath.Matrix4(1)
 
@@ -46,7 +42,7 @@ getWorldSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 	halfWidth := f32(coreContext.windowWidth) * 0.5
 	halfHeight := f32(coreContext.windowHeight) * 0.5
 
-	return linalg.matrix_ortho3d_f32(-halfWidth, halfWidth, -halfHeight, halfHeight, -1, 1)
+	return gmath.matrixOrtho3d(-halfWidth, halfWidth, -halfHeight, halfHeight, -1, 1)
 }
 
 // @ref
@@ -55,7 +51,7 @@ getWorldSpaceCameraMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
 
 	camera := gmath.Matrix4(1)
-	camera *= gmath.matrixTranslate(coreContext.gameState.world.cameraPosition)
+	camera *= gmath.matrixTranslate(coreContext.camera.position)
 	camera *= gmath.matrixScale(getCameraZoom())
 	return camera
 }
@@ -94,7 +90,7 @@ setScissorRectangle :: proc(rect: gmath.Rectangle) {
 // Calculates the **zoom** factor required to fit the fixed **GAME_HEIGHT** into the current window height.
 getCameraZoom :: proc() -> f32 {
 	coreContext := core.getCoreContext()
-	return f32(game.GAME_HEIGHT) / f32(coreContext.windowHeight)
+	return f32(core.GAME_HEIGHT) / f32(coreContext.windowHeight)
 }
 
 // @ref
@@ -104,13 +100,13 @@ getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
-	viewHeight := f32(game.GAME_HEIGHT)
+	viewHeight := f32(core.GAME_HEIGHT)
 	viewWidth := viewHeight * aspect
 
-	viewLeft := (f32(game.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
+	viewLeft := (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
 	viewRight := viewLeft + viewWidth
 
-	return linalg.matrix_ortho3d_f32(viewLeft, viewRight, 0, viewHeight, -1, 1)
+	return gmath.matrixOrtho3d(viewLeft, viewRight, 0, viewHeight, -1, 1)
 }
 
 // @ref
@@ -120,10 +116,10 @@ getScreenSpacePivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
-	viewHeight := f32(game.GAME_HEIGHT)
+	viewHeight := f32(core.GAME_HEIGHT)
 	viewWidth := viewHeight * aspect
 
-	left: f32 = (f32(game.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
+	left: f32 = (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
 	right: f32 = left + viewWidth
 	top: f32 = viewHeight
 	bottom: f32 = 0.0

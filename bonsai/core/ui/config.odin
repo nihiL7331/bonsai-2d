@@ -1,10 +1,10 @@
 package ui
 
 import "bonsai:core/gmath"
-import "bonsai:types/game"
+import "bonsai:generated"
 
 DEFAULT_FONT_SIZE :: 12
-DEFAULT_FONT :: game.FontName.PixelCode
+DEFAULT_FONT :: generated.FontName.PixelCode
 
 // --- GRUVBOX MATERIAL PALETTE (Dark Hard) ---
 GRUV_BG_HARD :: gmath.Color{40.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0, 1.0} // #282828

@@ -264,7 +264,7 @@ end :: proc() {
 
 		// layout fixup for first frame
 		if !container.isInitialized {
-			container.rectangle = gmath.rectangleShift(
+			container.rectangle = gmath.shift(
 				container.rectangle,
 				gmath.Vector2 {
 					0,
@@ -280,7 +280,10 @@ end :: proc() {
 		for command in container.commands {
 			switch c in command {
 			case DrawRectangleCommand:
-				render.drawRectangle(c.rectangle, outlineColor = c.outlineColor, color = c.color)
+				render.drawRectangle(c.rectangle, color = c.color)
+				if c.outlineColor.a != 0 {
+					render.drawRectangleLines(c.rectangle, c.outlineColor)
+				}
 			case DrawTextCommand:
 				render.drawText(
 					c.position,

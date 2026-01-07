@@ -1,16 +1,53 @@
 package core
 
-import "bonsai:types/game"
+import "bonsai:core/gmath"
+import "bonsai:core/scene/type"
+
+// @ref
+// The internal design resolution width **in pixels**.
+// The game renders to this fixed size, which is then **upscaled to fit the physical window**.
+GAME_WIDTH :: 480
+
+// @ref
+// The internal design resolution height **in pixels**.
+GAME_HEIGHT :: 270
+
+WINDOW_TITLE :: "bonsai"
+
+// @ref
+// A standard 2D Camera definition.
+Camera :: struct {
+	position: gmath.Vector2,
+	zoom:     f32,
+	bounds:   gmath.Rectangle,
+}
+
+// @ref
+// The core context holding global engine state shared across systems.
+// Acts as the bridge between the platform layer (**Sokol**), **core logic**, and **renderer**.
+CoreContext :: struct {
+	// updated on every window resize event
+	windowWidth:  i32, // equal to sokol_app.width()
+	windowHeight: i32, // equal to sokol_app.height()
+
+	// .update() and .draw() are called from here
+	currentScene: ^type.Scene,
+	nextScene:    ^type.Scene,
+	camera:       Camera,
+
+	// userData can be used to plug in own game-specific state
+	userData:     rawptr,
+}
 
 // global singleton storing the engine's core state
 // restricted to file scope to force access via the public getter/setter api
 @(private = "file")
-_coreContext: game.CoreContext
+_coreContext: CoreContext
 
 // @ref
 // Initializes the core context with **default** values.
 // Called by the **main.odin** file at the very start of initialization.
-initCoreContext :: proc(windowWidth, windowHeight: i32) -> ^game.CoreContext {
+initCoreContext :: proc(windowWidth, windowHeight: i32) -> ^CoreContext {
 	_coreContext.windowWidth = windowWidth
 	_coreContext.windowHeight = windowHeight
 
@@ -19,15 +56,13 @@ initCoreContext :: proc(windowWidth, windowHeight: i32) -> ^game.CoreContext {
 
 // @ref
 // Updates the global core context state.
-// Typically used by the platform layer to push
-// window resize events or input state updates into the core engine.
-setCoreContext :: proc(coreContext: game.CoreContext) {
+setCoreContext :: proc(coreContext: CoreContext) {
 	_coreContext = coreContext
 }
 
 // @ref
-// Returns a **pointer** to the global **CoreContext**.
+// Returns a **pointer** to the global `CoreContext`.
 // This is the primary way systems access shared state (Window size, GameState, Input).
-getCoreContext :: proc() -> ^game.CoreContext {
+getCoreContext :: proc() -> ^CoreContext {
 	return &_coreContext
 }

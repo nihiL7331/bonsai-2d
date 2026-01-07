@@ -304,7 +304,7 @@ _toggleButton :: proc(
 	}
 
 	// rotate caret when expanded
-	rotation: f32 = parent.isExpanded ? 180.0 : 0.0
+	rotation: f32 = parent.isExpanded ? gmath.PI : 0.0
 	offset := parent.isExpanded ? gmath.Vector2{0, 3} : gmath.Vector2{2, 0}
 
 	clicked, _ := _headerButton(

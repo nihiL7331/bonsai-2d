@@ -2,68 +2,36 @@ package render
 
 import "bonsai:core"
 import "bonsai:core/gmath"
-import "bonsai:core/gmath/colors"
 import "bonsai:core/platform"
+import "bonsai:generated"
+import "bonsai:shaders"
+
 import sokol_gfx "bonsai:libs/sokol/gfx"
 import sokol_glue "bonsai:libs/sokol/glue"
 import sokol_log "bonsai:libs/sokol/log"
 import stb_image "bonsai:libs/stb/image"
-import "bonsai:shaders"
-import "bonsai:types/game"
-import "bonsai:types/gfx"
 
 import "core:log"
 import "core:mem"
 import "core:slice"
 
-// @ref
-// Maximum number of quads per batch flush.
-//
-// **Increase if you see "Quad buffer full" warnings, decrease to save memory.**
-MAX_QUADS :: 8192
-
-// @ref
-// Default UV coordinates covering the full texture (0,0 to 1,1).
-DEFAULT_UV :: gmath.Vector4{0, 0, 1, 1}
-
-// @ref
-// Default clear color **(background)**.
-CLEAR_COLOR :: colors.BLACK
-
-// @ref
-// Internal render state wrapping **Sokol** pipelines and bindings.
-RenderState :: struct {
-	passAction: sokol_gfx.Pass_Action,
-	pipeline:   sokol_gfx.Pipeline,
-	bindings:   sokol_gfx.Bindings,
-}
-
-// @ref
-// Represents the global sprite atlas.
-Atlas :: struct {
-	view: sokol_gfx.View,
-}
-
-@(private)
+@(private = "file")
 _renderState: RenderState
 
-@(private)
+@(private = "file")
 _atlas: Atlas
 
-@(private)
-_drawFrame: gfx.DrawFrame
+@(private = "file")
+_drawFrame: DrawFrame
 
-@(private)
+@(private = "file")
 _clearedFrame: bool
 
-@(private)
-_actualQuadData: [MAX_QUADS]gfx.Quad
+@(private = "file")
+_actualQuadData: [MAX_QUADS]Quad
 
-@(private)
-_scissorState: struct {
-	enabled:     bool,
-	coordinates: gmath.Vector4,
-}
+@(private = "file")
+_scissorState: ScissorState
 
 // @ref
 // Sets the background clear color for the next frame.
@@ -75,7 +43,7 @@ setClearColor :: proc(col: gmath.Vector4) {
 
 // @ref
 // Returns a pointer to the **current frame's** draw data.
-getDrawFrame :: proc() -> ^gfx.DrawFrame {
+getDrawFrame :: proc() -> ^DrawFrame {
 	return &_drawFrame
 }
 
@@ -90,20 +58,20 @@ setCoordSpace :: proc {
 
 // @ref
 // Flushses the current batch and switches coordinate space to **World Space (Gameplay)**.
-// Sets the active draw layer to **.background**.
+// Sets the active draw layer to `DrawLayer.background`.
 setWorldSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getWorldSpace())
-	getDrawFrame().reset.activeDrawLayer = .background
+	getDrawFrame().reset.activeDrawLayer = DrawLayer.background
 }
 
 // @ref
 // Flushes the current batch and switches coordinate space to **Screen Space (UI)**.
-// Sets the active draw layer to **.ui**.
+// Sets the active draw layer to `DrawLayer.ui`.
 setScreenSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getScreenSpace())
-	getDrawFrame().reset.activeDrawLayer = .ui
+	getDrawFrame().reset.activeDrawLayer = DrawLayer.ui
 }
 
 // @ref
@@ -258,16 +226,16 @@ resetDrawFrame :: proc() {
 	// reset default camera to center of the game height
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
-	coreContext.gameState.world.cameraRectangle = gmath.rectangleMake(
-		coreContext.gameState.world.cameraPosition,
-		gmath.Vector2{game.GAME_HEIGHT * aspect, game.GAME_HEIGHT},
+	coreContext.camera.bounds = gmath.rectangleMake(
+		coreContext.camera.position,
+		gmath.Vector2{core.GAME_HEIGHT * aspect, core.GAME_HEIGHT},
 		gmath.Pivot.centerCenter,
 	)
 }
 
 // @ref
 // Flushes all queued quads to the GPU.
-// Sorts layers if necessary and handles batch splitting if **MAX_QUADS** is exceeded.
+// Sorts layers if necessary and handles batch splitting if `MAX_QUADS` is exceeded.
 flushBatch :: proc() {
 	drawFrame := getDrawFrame()
 
@@ -277,7 +245,7 @@ flushBatch :: proc() {
 		count := len(quadsInLayer)
 		if count == 0 do continue
 
-		currentLayer := game.DrawLayer(layerIndex)
+		currentLayer := DrawLayer(layerIndex)
 		if currentLayer in drawFrame.reset.sortedLayers {
 			slice.sort_by(quadsInLayer[:], _ySortCompare)
 		}
@@ -294,7 +262,7 @@ flushBatch :: proc() {
 		destinationPtr := &_actualQuadData[quadIndex]
 		sourcePtr := raw_data(quadsInLayer)
 
-		mem.copy(destinationPtr, sourcePtr, count * size_of(gfx.Quad))
+		mem.copy(destinationPtr, sourcePtr, count * size_of(Quad))
 
 		quadIndex += count
 		if quadIndex >= MAX_QUADS do break
@@ -305,7 +273,7 @@ flushBatch :: proc() {
 	// upload to gpu
 	offset := sokol_gfx.append_buffer(
 		_renderState.bindings.vertex_buffers[0],
-		{ptr = raw_data(_actualQuadData[:]), size = uint(quadIndex) * size_of(gfx.Quad)},
+		{ptr = raw_data(_actualQuadData[:]), size = uint(quadIndex) * size_of(Quad)},
 	)
 
 	_renderState.bindings.vertex_buffer_offsets[0] = offset
@@ -371,18 +339,18 @@ setFontTexture :: proc(view: sokol_gfx.View) {
 }
 
 // @ref
-// Helper to retrieve **texture info** from **SpriteName**.
-atlasUvFromSprite :: proc(sprite: game.SpriteName) -> gmath.Vector4 {
-	return game.getSpriteData(sprite).uv
+// Helper to retrieve **texture info** from `SpriteName`.
+getAtlasUv :: proc(sprite: generated.SpriteName) -> gmath.Vector4 {
+	return generated.getSpriteData(sprite).uv
 }
 
 // @ref
-// Helper to retrieve **size** from **SpriteName**.
-getSpriteSize :: proc(sprite: game.SpriteName) -> gmath.Vector2 {
-	return game.getSpriteData(sprite).size
+// Helper to retrieve **size** from `SpriteName`.
+getSpriteSize :: proc(sprite: generated.SpriteName) -> gmath.Vector2 {
+	return generated.getSpriteData(sprite).size
 }
 
-@(private)
+@(private = "file")
 _setCoordSpaceDefault :: proc() {
 	_drawFrame.reset.coordSpace = {
 		projectionMatrix     = gmath.Matrix4(1),
@@ -391,28 +359,28 @@ _setCoordSpaceDefault :: proc() {
 	}
 }
 
-@(private)
-_setCoordSpaceValue :: proc(coordSpace: gfx.CoordSpace) {
+@(private = "file")
+_setCoordSpaceValue :: proc(coordSpace: CoordSpace) {
 	_drawFrame.reset.coordSpace = coordSpace
 }
 
-@(private)
-_ySortCompare :: proc(a, b: gfx.Quad) -> bool {
+@(private = "file")
+_ySortCompare :: proc(a, b: Quad) -> bool {
 	aY := min(a[0].position.y, a[1].position.y, a[2].position.y, a[3].position.y)
 	bY := min(b[0].position.y, b[1].position.y, b[2].position.y, b[3].position.y)
 	return aY > bY
 }
 
-@(private)
+@(private = "file")
 _initDrawFrameLayers :: proc() {
 	drawFrame := getDrawFrame()
 	allocator := context.allocator
 
-	drawFrame.reset.quads[game.DrawLayer.background] = make([dynamic]gfx.Quad, 0, 512, allocator)
-	drawFrame.reset.quads[game.DrawLayer.shadow] = make([dynamic]gfx.Quad, 0, 128, allocator)
-	drawFrame.reset.quads[game.DrawLayer.playspace] = make([dynamic]gfx.Quad, 0, 256, allocator)
-	drawFrame.reset.quads[game.DrawLayer.tooltip] = make([dynamic]gfx.Quad, 0, 256, allocator)
-	drawFrame.reset.quads[game.DrawLayer.ui] = make([dynamic]gfx.Quad, 0, 1024, allocator)
+	drawFrame.reset.quads[DrawLayer.background] = make([dynamic]Quad, 0, 512, allocator)
+	drawFrame.reset.quads[DrawLayer.shadow] = make([dynamic]Quad, 0, 128, allocator)
+	drawFrame.reset.quads[DrawLayer.playspace] = make([dynamic]Quad, 0, 256, allocator)
+	drawFrame.reset.quads[DrawLayer.tooltip] = make([dynamic]Quad, 0, 256, allocator)
+	drawFrame.reset.quads[DrawLayer.ui] = make([dynamic]Quad, 0, 1024, allocator)
 }
 
 // @ref
@@ -424,8 +392,8 @@ drawQuadProjected :: proc(
 	textureIndex: u8,
 	spriteSize: gmath.Vector2,
 	colorOverride: gmath.Color,
-	drawLayer: game.DrawLayer = game.DrawLayer.nil,
-	flags: game.QuadFlags,
+	drawLayer: DrawLayer = DrawLayer.nil,
+	flags: QuadFlags,
 	parameters := gmath.Vector4{},
 	drawLayerQueue := -1,
 ) {
@@ -436,7 +404,7 @@ drawQuadProjected :: proc(
 		mutDrawLayer = drawFrame.reset.activeDrawLayer
 	}
 
-	vertices: [4]gfx.Vertex
+	vertices: [4]Vertex
 	defer {
 		quadArray := &drawFrame.reset.quads[mutDrawLayer]
 
@@ -499,7 +467,7 @@ loadAtlas :: proc() {
 
 	width, height, channels: i32
 	imageData := getImageData(raw_data(pngData), i32(len(pngData)), &width, &height, &channels)
-	if imageData == nil do return // already handled in getImageData
+	if imageData == nil do return // error already handled in getImageData
 	defer stb_image.image_free(imageData)
 
 	description: sokol_gfx.Image_Desc

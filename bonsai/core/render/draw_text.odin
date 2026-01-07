@@ -2,44 +2,14 @@ package render
 
 import "bonsai:core/gmath"
 import "bonsai:core/gmath/colors"
+import "bonsai:generated"
 import stb_truetype "bonsai:libs/stb/truetype"
-import "bonsai:types/game"
 
 import "core:log"
-
-// texture index for font atlas
-@(private = "file")
-FONT_TEXTURE_INDEX: u8 : 1
 
 // @ref
 // Default text drawing alias **(includes drop shadow)**.
 drawText :: drawTextWithDropShadow
-
-drawTextWrapped :: proc(
-	position: gmath.Vector2,
-	text: string,
-	font: ^Font,
-	wrapWidth: f32,
-	rotation: f32 = 0.0, // in radians
-	color := colors.WHITE,
-	scale := 1.0,
-	pivot := gmath.Pivot.bottomLeft,
-	drawLayer := game.DrawLayer.nil,
-	colorOverride := gmath.Color{},
-) -> gmath.Vector2 {
-	//TODO: wrapping text
-	return drawTextSimple(
-		position,
-		rotation,
-		text,
-		font,
-		color,
-		scale,
-		pivot,
-		drawLayer,
-		colorOverride,
-	)
-}
 
 // @ref
 // Draws text with a **hard-coded** drop shadow for contrast**.
@@ -47,14 +17,14 @@ drawTextWrapped :: proc(
 drawTextWithDropShadow :: proc(
 	position: gmath.Vector2,
 	text: string,
-	fontName: game.FontName,
+	fontName: generated.FontName,
 	fontSize: uint = 12,
 	rotation: f32 = 0.0, // in radians
 	dropShadowColor := colors.BLACK,
 	color := colors.WHITE,
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
-	drawLayer := game.DrawLayer.nil,
+	drawLayer := DrawLayer.nil,
 	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
 	shadowOffset := gmath.Vector2{1, -1} * f32(scale)
@@ -106,12 +76,12 @@ drawTextSimple :: proc(
 	color := colors.WHITE,
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
-	drawLayer := game.DrawLayer.nil,
+	drawLayer := DrawLayer.nil,
 	colorOverride := gmath.Color{},
 ) -> (
 	textBounds: gmath.Vector2,
 ) {
-	if drawLayer != game.DrawLayer.nil {
+	if drawLayer != DrawLayer.nil {
 		getDrawFrame().reset.activeDrawLayer = drawLayer
 	}
 
@@ -124,8 +94,8 @@ drawTextSimple :: proc(
 
 		stb_truetype.GetBakedQuad(
 			&font.characterData[0],
-			_BITMAP_WIDTH,
-			_BITMAP_HEIGHT,
+			BITMAP_WIDTH,
+			BITMAP_HEIGHT,
 			i32(char) - 32,
 			&advanceX,
 			&advanceY,
@@ -135,7 +105,7 @@ drawTextSimple :: proc(
 		// calculate char dimensions
 		// x0, y0 - top-left, x1, y1 - bottom-right in STB
 
-		charSize := gmath.Vector2{abs(quad.x0 - quad.x1), abs(quad.y0 - quad.y1)}
+		charSize := gmath.abs(gmath.Vector2{quad.x0 - quad.x1, quad.y0 - quad.y1})
 
 		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 		topRight := gmath.Vector2{quad.x1, -quad.y0}
@@ -169,8 +139,8 @@ drawTextSimple :: proc(
 		quad: stb_truetype.aligned_quad
 		stb_truetype.GetBakedQuad(
 			&font.characterData[0],
-			_BITMAP_WIDTH,
-			_BITMAP_HEIGHT,
+			BITMAP_WIDTH,
+			BITMAP_HEIGHT,
 			i32(char) - 32,
 			&advanceX,
 			&advanceY,

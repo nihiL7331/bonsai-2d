@@ -1,4 +1,4 @@
-package game_types
+package scene_types
 
 /// @ref
 // Represents a self-contained game state.

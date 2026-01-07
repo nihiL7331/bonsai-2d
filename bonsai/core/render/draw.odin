@@ -3,7 +3,7 @@ package render
 import "bonsai:core"
 import "bonsai:core/gmath"
 import "bonsai:core/gmath/colors"
-import "bonsai:types/game"
+import "bonsai:generated"
 
 // standard texture index reserved for a 1x1 white pixel
 @(private = "file")
@@ -14,7 +14,7 @@ WHITE_TEXTURE_INDEX: u8 : 255
 // **Supports rotation, animations, pivoting and camera culling.**
 drawSprite :: proc(
 	position: gmath.Vector2,
-	sprite: game.SpriteName,
+	sprite: generated.SpriteName,
 	rotation: f32 = 0.0, // in radians
 	pivot := gmath.Pivot.centerCenter,
 	isFlippedX := false,
@@ -23,8 +23,8 @@ drawSprite :: proc(
 	animationIndex := 0,
 	color := colors.WHITE,
 	colorOverride := gmath.Color{},
-	drawLayer := game.DrawLayer{},
-	flags := game.QuadFlags{},
+	drawLayer := DrawLayer{},
+	flags := QuadFlags{},
 	parameters := gmath.Vector4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
@@ -34,7 +34,7 @@ drawSprite :: proc(
 	isCullingEnabled := false,
 ) {
 	rectangleSize := getSpriteSize(sprite)
-	frameCount := game.getFrameCount(sprite)
+	frameCount := generated.getFrameCount(sprite)
 
 	// assuming horizontal strip animation layout
 	rectangleSize.x /= f32(frameCount)
@@ -42,7 +42,7 @@ drawSprite :: proc(
 	// camera culling
 	if isCullingEnabled {
 		coreContext := core.getCoreContext()
-		cameraRectangle := coreContext.gameState.world.cameraRectangle
+		cameraBounds := coreContext.camera.bounds
 
 		// uses max to handle rotation safely
 		maxDimension := max(rectangleSize.x, rectangleSize.y)
@@ -52,9 +52,9 @@ drawSprite :: proc(
 			gmath.Vector2{maxDimension, maxDimension},
 			pivot,
 		)
-		spriteRectangle = gmath.rectangleShift(spriteRectangle, -drawOffset)
+		spriteRectangle = gmath.shift(spriteRectangle, -drawOffset)
 
-		if !gmath.rectangleIntersects(spriteRectangle, cameraRectangle) do return
+		if !gmath.rectangleIntersects(spriteRectangle, cameraBounds) do return
 	}
 
 	// calculate local transform matrix
@@ -91,18 +91,125 @@ drawSprite :: proc(
 }
 
 // @ref
+// Draws a line between `start` and `end` with a specified `thickness`.
+// Uses `drawRectangleTransform` internally to stretch a white pixel.
+drawLine :: proc(
+	start: gmath.Vector2,
+	end: gmath.Vector2,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+) {
+	length := gmath.distance(start, end)
+	angle := gmath.vectorToAngle(end.y - start.y, end.x - start.x)
+
+	transform := gmath.matrixTranslate(start)
+	transform *= gmath.matrixRotate(angle)
+	transform *= gmath.matrixTranslate(gmath.Vector2{0, -0.5 * thickness})
+
+	drawRectangleTransform(
+		transform = transform,
+		size = gmath.Vector2{length, thickness},
+		color = color,
+	)
+}
+
+// @ref
+// Draws the outline of a circle using line segments.
+drawCircleLines :: proc(
+	center: gmath.Vector2,
+	radius: f32,
+	color: gmath.Color,
+	segments: int = 32,
+) {
+	angleStep := gmath.TAU / f32(segments)
+
+	previousAngle := f32(0)
+	previousPosition := center + gmath.angleToVector(previousAngle) * radius
+
+	for i in 1 ..= segments {
+		currentAngle := f32(i) * angleStep
+		nextPosition := center + gmath.angleToVector(currentAngle) * radius
+		drawLine(previousPosition, nextPosition, color)
+		previousPosition = nextPosition
+	}
+}
+
+// @ref
+// Draws the outline of a `Rectangle`.
+// The border grows **outwards** from the rectangle edges.
+drawRectangleLines :: proc(
+	rectangle: gmath.Rectangle,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	rotation: f32 = 0.0, // in radians
+	drawLayer := DrawLayer.nil,
+	drawLayerQueue := -1,
+	isCullingEnabled := false,
+) {
+	if isCullingEnabled {
+		coreContext := core.getCoreContext()
+		cameraBounds := coreContext.camera.bounds
+
+		if !gmath.rectangleIntersects(cameraBounds, rectangle) do return
+	}
+
+	transform := gmath.matrixTranslate(rectangle.xy)
+
+	if rotation != 0 {
+		transform *= gmath.matrixRotate(rotation)
+	}
+
+	size := gmath.getRectangleSize(rectangle)
+	fullWidth := size.x + (thickness * 2)
+
+	// top bar
+	drawRectangleTransform(
+		transform = transform * gmath.matrixTranslate(gmath.Vector2{-thickness, size.y}),
+		size = gmath.Vector2{fullWidth, thickness},
+		color = color,
+		drawLayer = drawLayer,
+		drawLayerQueue = drawLayerQueue,
+	)
+
+	// bottom bar
+	drawRectangleTransform(
+		transform = transform * gmath.matrixTranslate(gmath.Vector2{-thickness, -thickness}),
+		size = gmath.Vector2{fullWidth, thickness},
+		color = color,
+		drawLayer = drawLayer,
+		drawLayerQueue = drawLayerQueue,
+	)
+
+	// left bar
+	drawRectangleTransform(
+		transform = transform * gmath.matrixTranslate(gmath.Vector2{-thickness, 0}),
+		size = gmath.Vector2{thickness, size.y},
+		color = color,
+		drawLayer = drawLayer,
+		drawLayerQueue = drawLayerQueue,
+	)
+
+	// right bar
+	drawRectangleTransform(
+		transform = transform * gmath.matrixTranslate(gmath.Vector2{size.x, 0}),
+		size = gmath.Vector2{thickness, size.y},
+		color = color,
+		drawLayer = drawLayer,
+		drawLayerQueue = drawLayerQueue,
+	)
+}
+
+// @ref
 // Draws a simple **rectangle**. Useful for UI, debug shapes or non-sprite elements.
-// **Supports an optional 1px outline**.
 drawRectangle :: proc(
 	rectangle: gmath.Rectangle,
 	rotation: f32 = 0.0, // in radians
-	sprite := game.SpriteName.nil,
+	sprite := generated.SpriteName.nil,
 	uv := DEFAULT_UV,
-	outlineColor := gmath.Vector4{},
 	color := colors.WHITE,
-	colorOverride := gmath.Vector4{},
-	drawLayer := game.DrawLayer{},
-	flags := game.QuadFlags{},
+	colorOverride := gmath.Color{},
+	drawLayer := DrawLayer{},
+	flags := QuadFlags{},
 	parameters := gmath.Vector4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
@@ -113,9 +220,9 @@ drawRectangle :: proc(
 ) {
 	if isCullingEnabled {
 		coreContext := core.getCoreContext()
-		cameraRectangle := coreContext.gameState.world.cameraRectangle
+		cameraBounds := coreContext.camera.bounds
 
-		if !gmath.rectangleIntersects(cameraRectangle, rectangle) do return
+		if !gmath.rectangleIntersects(cameraBounds, rectangle) do return
 	}
 
 	transform := gmath.matrixTranslate(rectangle.xy)
@@ -123,22 +230,6 @@ drawRectangle :: proc(
 		transform *= gmath.matrixRotate(rotation)
 	}
 	size := gmath.getRectangleSize(rectangle)
-
-	if outlineColor != {} {
-		outlineSize := size + gmath.Vector2(2)
-		outlineTransform := transform * gmath.matrixTranslate(gmath.Vector2(-1))
-
-		drawRectangleTransform(
-			outlineTransform,
-			outlineSize,
-			color = outlineColor,
-			uv = uv,
-			colorOverride = colorOverride,
-			drawLayer = drawLayer,
-			flags = flags,
-			parameters = parameters,
-		)
-	}
 
 	drawRectangleTransform(
 		transform,
@@ -164,14 +255,14 @@ drawRectangle :: proc(
 // Helper to draw a sprite scaled to fit inside a target rectangle.
 // Maintains aspect ratio (letterboxing).
 drawSpriteInRectangle :: proc(
-	sprite: game.SpriteName,
+	sprite: generated.SpriteName,
 	position: gmath.Vector2,
 	size: gmath.Vector2,
 	transform := gmath.Matrix4(1),
 	color := colors.WHITE,
 	colorOverride := gmath.Color{},
-	drawLayer := game.DrawLayer.nil,
-	flags := game.QuadFlags(0),
+	drawLayer := DrawLayer.nil,
+	flags := QuadFlags(0),
 	paddingPercent: f32 = 0.1,
 ) {
 	imageSize := getSpriteSize(sprite)
@@ -179,17 +270,8 @@ drawSpriteInRectangle :: proc(
 	targetRectangle := gmath.rectangleMake(position, paddedSize)
 
 	{ 	//shrink rect if sprite is too small
-		rectangleSize := gmath.getRectangleSize(targetRectangle)
-		sizeDifferenceX := max(0.0, rectangleSize.x - imageSize.x)
-		sizeDifferenceY := max(0.0, rectangleSize.y - imageSize.y)
-
-		sizeDifference := gmath.Vector2{sizeDifferenceX, sizeDifferenceY}
-
-		offset := targetRectangle.xy
-		targetRectangle = gmath.rectangleShift(targetRectangle, -targetRectangle.xy)
-		targetRectangle.xy += sizeDifference * 0.5
-		targetRectangle.zw -= sizeDifference * 0.5
-		targetRectangle = gmath.rectangleShift(targetRectangle, offset)
+		sizeDifference := gmath.max(gmath.getRectangleSize(targetRectangle) - imageSize, 0)
+		targetRectangle = gmath.rectangleExpand(targetRectangle, -0.5 * sizeDifference)
 	}
 
 	if imageSize.x > imageSize.y {
@@ -197,7 +279,7 @@ drawSpriteInRectangle :: proc(
 		targetRectangle.w = targetRectangle.y + (rectangleSize.x * (imageSize.y / imageSize.x))
 
 		newHeight := targetRectangle.w - targetRectangle.y
-		targetRectangle = gmath.rectangleShift(
+		targetRectangle = gmath.shift(
 			targetRectangle,
 			gmath.Vector2{0, (rectangleSize.y - newHeight) * 0.5},
 		)
@@ -206,7 +288,7 @@ drawSpriteInRectangle :: proc(
 		targetRectangle.z = targetRectangle.x + (rectangleSize.y * (imageSize.x / imageSize.y))
 
 		newWidth := targetRectangle.z - targetRectangle.x
-		targetRectangle = gmath.rectangleShift(
+		targetRectangle = gmath.shift(
 			targetRectangle,
 			gmath.Vector2{0, (rectangleSize.x - newWidth) * 0.5},
 		)
@@ -227,14 +309,14 @@ drawSpriteInRectangle :: proc(
 drawRectangleTransform :: proc(
 	transform: gmath.Matrix4,
 	size: gmath.Vector2,
-	sprite := game.SpriteName.nil,
+	sprite := generated.SpriteName.nil,
 	uv := DEFAULT_UV,
 	textureIndex: u8 = 0,
 	animationIndex := 0,
 	color := colors.WHITE,
 	colorOverride := gmath.Color{},
-	drawLayer := game.DrawLayer.nil,
-	flags := game.QuadFlags{},
+	drawLayer := DrawLayer.nil,
+	flags := QuadFlags{},
 	parameters := gmath.Vector4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
@@ -249,15 +331,15 @@ drawRectangleTransform :: proc(
 	drawFrame := getDrawFrame()
 
 	if mutUv == DEFAULT_UV {
-		mutUv = atlasUvFromSprite(sprite)
+		mutUv = getAtlasUv(sprite)
 
-		frameCount := game.getFrameCount(sprite)
+		frameCount := generated.getFrameCount(sprite)
 		frameSize := mutSize
 		frameSize.x /= f32(frameCount)
 		uvSize := gmath.getRectangleSize(mutUv)
 		uvFrameSize := uvSize * gmath.Vector2{frameSize.x / mutSize.x, 1.0}
 		mutUv.zw = mutUv.xy + uvFrameSize
-		mutUv = gmath.rectangleShift(mutUv, gmath.Vector2{f32(animationIndex) * uvFrameSize.x, 0})
+		mutUv = gmath.shift(mutUv, gmath.Vector2{f32(animationIndex) * uvFrameSize.x, 0})
 	}
 
 	assert(drawFrame.reset.coordSpace != {}, "No coordinate space set.")
@@ -304,17 +386,17 @@ drawRectangleTransform :: proc(
 	bottomRight := gmath.Vector2{mutSize.x, 0}
 
 	//transform local -> world
-	p0 := (worldMatrix * gmath.Vector4{bottomLeft.x, bottomLeft.y, 0, 1}).xy
-	p1 := (worldMatrix * gmath.Vector4{topLeft.x, topLeft.y, 0, 1}).xy
-	p2 := (worldMatrix * gmath.Vector4{topRight.x, topRight.y, 0, 1}).xy
-	p3 := (worldMatrix * gmath.Vector4{bottomRight.x, bottomRight.y, 0, 1}).xy
+	worldBottomLeft := gmath.transformPoint(worldMatrix, bottomLeft)
+	worldTopLeft := gmath.transformPoint(worldMatrix, topLeft)
+	worldTopRight := gmath.transformPoint(worldMatrix, topRight)
+	worldBottomRight := gmath.transformPoint(worldMatrix, bottomRight)
 
 	if mutTextureIndex == 0 && sprite == .nil {
 		mutTextureIndex = WHITE_TEXTURE_INDEX
 	}
 
 	drawQuadProjected(
-		{p0, p1, p2, p3},
+		{worldBottomLeft, worldTopLeft, worldTopRight, worldBottomRight},
 		{color, color, color, color},
 		{mutUv.xy, mutUv.xw, mutUv.zw, mutUv.zy},
 		mutTextureIndex,
