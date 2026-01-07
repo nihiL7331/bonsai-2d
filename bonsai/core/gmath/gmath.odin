@@ -96,6 +96,24 @@ scaleFromPivot :: proc(pivot: Pivot) -> Vector2 {
 }
 
 // @ref
+// Returns the dot product between two vectors.
+//
+// **Example:**
+// ```Odin
+// directionA := gmath.Vector2{1, 1}
+// directionB := gmath.Vector2{-1, 1}
+// product := gmath.dot(directionA, directionB)
+// ```
+dot :: proc {
+	_dotVector2,
+	_dotVector3,
+	_dotVector4,
+	_dotVector2Int,
+	_dotVector3Int,
+	_dotVector4Int,
+}
+
+// @ref
 // Returns the length (**magnitude**) of the vector `input`.
 //
 // **Example:**
@@ -107,6 +125,9 @@ length :: proc {
 	_lengthVector2,
 	_lengthVector3,
 	_lengthVector4,
+	_lengthVector2Int,
+	_lengthVector3Int,
+	_lengthVector4Int,
 }
 
 // @ref
@@ -124,6 +145,9 @@ lengthSquared :: proc {
 	_lengthSquaredVector2,
 	_lengthSquaredVector3,
 	_lengthSquaredVector4,
+	_lengthSquaredVector2Int,
+	_lengthSquaredVector3Int,
+	_lengthSquaredVector4Int,
 }
 
 // @ref
@@ -155,6 +179,9 @@ distance :: proc {
 	_distanceVector2,
 	_distanceVector3,
 	_distanceVector4,
+	_distanceVector2Int,
+	_distanceVector3Int,
+	_distanceVector4Int,
 }
 
 // @ref
@@ -325,8 +352,16 @@ remap :: proc(input, inMin, inMax, outMin, outMax: $T) -> T {
 // - +1, if `input` is greater than zero.
 // - 0, if `input` is equal to zero.
 // - -1, if `input` is smaller than zero.
-sign :: proc(input: $T) -> T {
-	return math.sign(input)
+// **For vectors** returns a component-wise sign vector.
+sign :: proc {
+	_signScalarFloat,
+	_signScalarInt,
+	_signVector2,
+	_signVector3,
+	_signVector4,
+	_signVector2Int,
+	_signVector3Int,
+	_signVector4Int,
 }
 
 // @ref
@@ -410,7 +445,8 @@ abs :: proc {
 // result := gmath.sin(wave) // result is gmath.Vector2{ -1, 1 }
 // ```
 sin :: proc {
-	_sinScalar,
+	_sinScalarFloat,
+	_sinScalarInt,
 	_sinVector2,
 	_sinVector3,
 	_sinVector4,
@@ -427,7 +463,8 @@ sin :: proc {
 // result := gmath.cos(wave) // result is gmath.Vector2{ 1, 0 }
 // ```
 cos :: proc {
-	_cosScalar,
+	_cosScalarFloat,
+	_cosScalarInt,
 	_cosVector2,
 	_cosVector3,
 	_cosVector4,
@@ -444,7 +481,7 @@ atan2 :: proc(y, x: $T) -> T {
 }
 
 // @ref
-// An alias for the `atan2` function. Might be more descriptive to some.
+// An alias for the `atan2` function.
 vectorToAngle :: atan2
 
 // @ref
@@ -453,9 +490,45 @@ angleToVector :: proc(radians: f32) -> Vector2 {
 	return Vector2{math.cos(radians), math.sin(radians)}
 }
 
-// Scalar helper for the lerp function.
+// Vector2 helper for the dot function.
 @(private = "file")
-_lerpScalar :: proc(a, b: $T, t: f32) -> T {
+_dotVector2 :: proc(a, b: Vector2) -> f32 {
+	return a.x * b.x + a.y * b.y
+}
+
+// Vector3 helper for the dot function.
+@(private = "file")
+_dotVector3 :: proc(a, b: Vector3) -> f32 {
+	return a.x * b.x + a.y * b.y + a.z * b.z
+}
+
+// Vector4 helper for the dot function.
+@(private = "file")
+_dotVector4 :: proc(a, b: Vector4) -> f32 {
+	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
+}
+
+// Vector2Int helper for the dot function.
+@(private = "file")
+_dotVector2Int :: proc(a, b: Vector2Int) -> i32 {
+	return a.x * b.x + a.y * b.y
+}
+
+// Vector3Int helper for the dot function.
+@(private = "file")
+_dotVector3Int :: proc(a, b: Vector3Int) -> i32 {
+	return a.x * b.x + a.y * b.y + a.z * b.z
+}
+
+// Vector4Int helper for the dot function.
+@(private = "file")
+_dotVector4Int :: proc(a, b: Vector4Int) -> i32 {
+	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
+}
+
+// Scalar float helper for the lerp function.
+@(private = "file")
+_lerpScalar :: proc(a, b: $T, t: f32) -> T where intrinsics.type_is_numeric(T) {
 	return math.lerp(a, b, t)
 }
 
@@ -479,7 +552,7 @@ _lerpVector4 :: proc(a, b: Vector4, t: f32) -> Vector4 {
 
 // Scalar helper for the abs function.
 @(private = "file")
-_absScalar :: proc(input: $T) -> T {
+_absScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
 	return math.abs(input)
 }
 
@@ -519,16 +592,28 @@ _absVector4Int :: proc(input: Vector4Int) -> Vector4Int {
 	return Vector4Int{math.abs(input.x), math.abs(input.y), math.abs(input.z), math.abs(input.w)}
 }
 
-// Scalar helper for the sin function.
+// Scalar float helper for the sin function.
 @(private = "file")
-_sinScalar :: proc(radians: $T) -> T where intrinsics.type_is_float(T) {
+_sinScalarFloat :: proc(radians: $T) -> T where intrinsics.type_is_float(T) {
 	return math.sin(radians)
 }
 
-// Scalar helper for the cos function.
+// Scalar integer helper for the sin function.
 @(private = "file")
-_cosScalar :: proc(radians: $T) -> T where intrinsics.type_is_float(T) {
+_sinScalarInt :: proc(radians: $T) -> T where intrinsics.type_is_integer(T) {
+	return i32(math.sin(f32(radians)))
+}
+
+// Scalar float helper for the cos function.
+@(private = "file")
+_cosScalarFloat :: proc(radians: $T) -> T where intrinsics.type_is_float(T) {
 	return math.cos(radians)
+}
+
+// Scalar integer helper for the cos function.
+@(private = "file")
+_cosScalarInt :: proc(radians: $T) -> T where intrinsics.type_is_integer(T) {
+	return i32(math.cos(f32(radians)))
 }
 
 // Vector2 helper for the sin function.
@@ -595,6 +680,24 @@ _lengthSquaredVector4 :: proc(input: Vector4) -> f32 {
 	return input.x * input.x + input.y * input.y + input.z * input.z + input.w * input.w
 }
 
+// Vector2Int helper for the lengthSquared function.
+@(private = "file")
+_lengthSquaredVector2Int :: proc(input: Vector2Int) -> i32 {
+	return input.x * input.x + input.y * input.y
+}
+
+// Vector3Int helper for the lengthSquared function.
+@(private = "file")
+_lengthSquaredVector3Int :: proc(input: Vector3Int) -> i32 {
+	return input.x * input.x + input.y * input.y + input.z * input.z
+}
+
+// Vector4Int helper for the lengthSquared function.
+@(private = "file")
+_lengthSquaredVector4Int :: proc(input: Vector4Int) -> i32 {
+	return input.x * input.x + input.y * input.y + input.z * input.z + input.w * input.w
+}
+
 // Vector2 helper for the length function.
 @(private = "file")
 _lengthVector2 :: proc(input: Vector2) -> f32 {
@@ -611,6 +714,24 @@ _lengthVector3 :: proc(input: Vector3) -> f32 {
 @(private = "file")
 _lengthVector4 :: proc(input: Vector4) -> f32 {
 	return math.sqrt(_lengthSquaredVector4(input))
+}
+
+// Vector2Int helper for the length function.
+@(private = "file")
+_lengthVector2Int :: proc(input: Vector2Int) -> f32 {
+	return math.sqrt(f32(_lengthSquaredVector2Int(input)))
+}
+
+// Vector3Int helper for the length function.
+@(private = "file")
+_lengthVector3Int :: proc(input: Vector3Int) -> f32 {
+	return math.sqrt(f32(_lengthSquaredVector3Int(input)))
+}
+
+// Vector4Int helper for the length function.
+@(private = "file")
+_lengthVector4Int :: proc(input: Vector4Int) -> f32 {
+	return math.sqrt(f32(_lengthSquaredVector4Int(input)))
 }
 
 // Vector2 helper for the normalize function.
@@ -655,6 +776,24 @@ _distanceVector4 :: proc(a, b: Vector4) -> f32 {
 	return length(a - b)
 }
 
+// Vector2Int helper for the distance function.
+@(private = "file")
+_distanceVector2Int :: proc(a, b: Vector2Int) -> f32 {
+	return length(a - b)
+}
+
+// Vector3Int helper for the distance function.
+@(private = "file")
+_distanceVector3Int :: proc(a, b: Vector3Int) -> f32 {
+	return length(a - b)
+}
+
+// Vector4Int helper for the distance function.
+@(private = "file")
+_distanceVector4Int :: proc(a, b: Vector4Int) -> f32 {
+	return length(a - b)
+}
+
 // Vector2 helper for the direction function.
 @(private = "file")
 _directionVector2 :: proc(start, end: Vector2) -> Vector2 {
@@ -675,7 +814,7 @@ _directionVector4 :: proc(start, end: Vector4) -> Vector4 {
 
 // Scalar helper for the clamp function.
 @(private = "file")
-_clampScalar :: proc(input, min, max: $T) -> T {
+_clampScalar :: proc(input, min, max: $T) -> T where intrinsics.type_is_numeric(T) {
 	return math.clamp(input, min, max)
 }
 
@@ -754,6 +893,54 @@ _roundToIntVector4 :: proc(input: Vector4) -> Vector4Int {
 		i32(math.round(input.z)),
 		i32(math.round(input.w)),
 	}
+}
+
+// Scalar float helper for the sign function.
+@(private = "file")
+_signScalarFloat :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
+	return math.sign(input)
+}
+
+// Scalar integer helper for the sign function.
+@(private = "file")
+_signScalarInt :: proc(input: $T) -> T where intrinsics.type_is_integer(T) {
+	return i32(math.sign(f32(input)))
+}
+
+// Vector2 helper for the sign function.
+@(private = "file")
+_signVector2 :: proc(input: Vector2) -> Vector2 {
+	return Vector2{math.sign(input.x), math.sign(input.y)}
+}
+
+// Vector3 helper for the sign function.
+@(private = "file")
+_signVector3 :: proc(input: Vector3) -> Vector3 {
+	return Vector3{math.sign(input.x), math.sign(input.y), math.sign(input.z)}
+}
+
+// Vector4 helper for the sign function.
+@(private = "file")
+_signVector4 :: proc(input: Vector4) -> Vector4 {
+	return Vector4{math.sign(input.x), math.sign(input.y), math.sign(input.z), math.sign(input.w)}
+}
+
+// Vector2Int helper for the sign function.
+@(private = "file")
+_signVector2Int :: proc(input: Vector2Int) -> Vector2Int {
+	return Vector2Int{sign(input.x), sign(input.y)}
+}
+
+// Vector3Int helper for the sign function.
+@(private = "file")
+_signVector3Int :: proc(input: Vector3Int) -> Vector3Int {
+	return Vector3Int{sign(input.x), sign(input.y), sign(input.z)}
+}
+
+// Vector4Int helper for the sign function.
+@(private = "file")
+_signVector4Int :: proc(input: Vector4Int) -> Vector4Int {
+	return Vector4Int{sign(input.x), sign(input.y), sign(input.z), sign(input.w)}
 }
 
 // Scalar helper for the min function.
