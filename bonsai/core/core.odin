@@ -33,7 +33,14 @@ WINDOW_TITLE :: "bonsai"
 Camera :: struct {
 	position: gmath.Vector2,
 	zoom:     f32,
-	bounds:   gmath.Rectangle,
+	bounds:   gmath.Rectangle, // world space
+}
+
+// @ref
+// Returns **game window** bounds (in screen space).
+getWindowBounds :: proc() -> gmath.Rectangle {
+	size := gmath.getRectangleSize(_coreContext.camera.bounds)
+	return gmath.Rectangle{0, 0, size.x, size.y}
 }
 
 // @ref
