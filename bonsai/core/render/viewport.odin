@@ -87,7 +87,7 @@ setScissorRectangle :: proc(rect: gmath.Rectangle) {
 }
 
 // @ref
-// Calculates the **zoom** factor required to fit the fixed **GAME_HEIGHT** into the current window height.
+// Calculates the `zoom` factor required to fit the fixed `GAME_HEIGHT` into the current window height.
 getCameraZoom :: proc() -> f32 {
 	coreContext := core.getCoreContext()
 	return f32(core.GAME_HEIGHT) / f32(coreContext.windowHeight)
@@ -95,7 +95,7 @@ getCameraZoom :: proc() -> f32 {
 
 // @ref
 // Generates the projection matrix for the **UI**.
-// Handles aspect ratio scaling to ensure the UI fits within the design resolution (**GAME_WIDTH/HEIGHT**).
+// Handles aspect ratio scaling to ensure the UI fits within the design resolution (`GAME_WIDTH/HEIGHT`).
 getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
@@ -110,7 +110,7 @@ getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 }
 
 // @ref
-// Helper to get specific screen coordinates based on a **Pivot** (anchoring).
+// Helper to get specific screen coordinates based on a `Pivot` (anchoring).
 // Useful for positioning UI elements relative to screen edges.
 getScreenSpacePivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
 	coreContext := core.getCoreContext()
