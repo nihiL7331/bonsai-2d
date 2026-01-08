@@ -90,7 +90,12 @@ setScissorRectangle :: proc(rect: gmath.Rectangle) {
 // Calculates the `zoom` factor required to fit the fixed `GAME_HEIGHT` into the current window height.
 getCameraZoom :: proc() -> f32 {
 	coreContext := core.getCoreContext()
-	return f32(core.GAME_HEIGHT) / f32(coreContext.windowHeight)
+
+	when core.SCALE_MODE == core.ScaleMode.FixedWidth {
+		return f32(core.GAME_WIDTH) / f32(coreContext.windowWidth)
+	} else {
+		return f32(core.GAME_HEIGHT) / f32(coreContext.windowHeight)
+	}
 }
 
 // @ref
@@ -100,13 +105,23 @@ getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
-	viewHeight := f32(core.GAME_HEIGHT)
-	viewWidth := viewHeight * aspect
+	viewWidth, viewHeight: f32
+
+	when core.SCALE_MODE == core.ScaleMode.FixedWidth {
+		viewWidth = f32(core.GAME_WIDTH)
+		viewHeight = viewWidth / aspect
+	} else {
+		viewHeight = f32(core.GAME_HEIGHT)
+		viewWidth = viewHeight * aspect
+	}
 
 	viewLeft := (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
 	viewRight := viewLeft + viewWidth
 
-	return gmath.matrixOrtho3d(viewLeft, viewRight, 0, viewHeight, -1, 1)
+	viewBottom := (f32(core.GAME_HEIGHT) * 0.5) - (viewHeight * 0.5)
+	viewTop := viewBottom + viewHeight
+
+	return gmath.matrixOrtho3d(viewLeft, viewRight, viewBottom, viewTop, -1, 1)
 }
 
 // @ref
@@ -116,13 +131,20 @@ getScreenSpacePivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 
-	viewHeight := f32(core.GAME_HEIGHT)
-	viewWidth := viewHeight * aspect
+	viewWidth, viewHeight: f32
 
-	left: f32 = (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
-	right: f32 = left + viewWidth
-	top: f32 = viewHeight
-	bottom: f32 = 0.0
+	when core.SCALE_MODE == core.ScaleMode.FixedWidth {
+		viewWidth = f32(core.GAME_WIDTH)
+		viewHeight = viewWidth / aspect
+	} else {
+		viewHeight = f32(core.GAME_HEIGHT)
+		viewWidth = viewHeight * aspect
+	}
+
+	left := (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
+	right := left + viewWidth
+	bottom := (f32(core.GAME_HEIGHT) * 0.5) - (viewHeight * 0.5)
+	top := bottom + viewHeight
 
 	centerX: f32 = (left + right) * 0.5
 	centerY: f32 = (top + bottom) * 0.5

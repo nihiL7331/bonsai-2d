@@ -226,11 +226,20 @@ resetDrawFrame :: proc() {
 	// reset default camera to center of the game height
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
-	coreContext.camera.bounds = gmath.rectangleMake(
-		coreContext.camera.position,
-		gmath.Vector2{core.GAME_HEIGHT * aspect, core.GAME_HEIGHT},
-		gmath.Pivot.centerCenter,
-	)
+	when core.SCALE_MODE == core.ScaleMode.FixedHeight {
+		coreContext.camera.bounds = gmath.rectangleMake(
+			coreContext.camera.position,
+			gmath.Vector2{core.GAME_HEIGHT * aspect, core.GAME_HEIGHT},
+			gmath.Pivot.centerCenter,
+		)
+	}
+	when core.SCALE_MODE == core.ScaleMode.FixedWidth {
+		coreContext.camera.bounds = gmath.rectangleMake(
+			coreContext.camera.position,
+			gmath.Vector2{core.GAME_WIDTH, core.GAME_WIDTH / aspect},
+			gmath.Pivot.centerCenter,
+		)
+	}
 }
 
 // @ref
