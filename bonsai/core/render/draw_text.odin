@@ -13,7 +13,7 @@ drawText :: drawTextWithDropShadow
 
 // @ref
 // Draws text with a **hard-coded** drop shadow for contrast**.
-// Retrieves the font using the **automatically** generated font enum name.
+// Retrieves the font using the **automatically** generated `FontName` enum.
 drawTextWithDropShadow :: proc(
 	position: gmath.Vector2,
 	text: string,
@@ -37,7 +37,7 @@ drawTextWithDropShadow :: proc(
 	}
 
 	// draw shadow
-	drawTextSimple(
+	drawTextSimpleFont(
 		position + shadowOffset,
 		rotation,
 		text,
@@ -50,7 +50,7 @@ drawTextWithDropShadow :: proc(
 	)
 
 	// draw main text
-	textDimensions := drawTextSimple(
+	textDimensions := drawTextSimpleFont(
 		position,
 		rotation,
 		text,
@@ -66,9 +66,43 @@ drawTextWithDropShadow :: proc(
 }
 
 // @ref
+// Draws text without a drop shadow.
+// Retrieves the font using the **automatically** generated `FontName` enum.
+drawTextSimple :: proc(
+	position: gmath.Vector2,
+	rotation: f32 = 0.0, // in radians
+	text: string,
+	fontName: generated.FontName,
+	fontSize: uint = 12,
+	color := colors.WHITE,
+	scale := 1.0,
+	pivot := gmath.Pivot.bottomLeft,
+	drawLayer := DrawLayer.nil,
+	colorOverride := gmath.Color{},
+) -> gmath.Vector2 {
+	font, ok := getFont(fontName, fontSize)
+	if !ok {
+		log.errorf("Failed to draw font: %v (text: %v)", fontName, text)
+		return gmath.Vector2{0, 0}
+	}
+
+	return drawTextSimpleFont(
+		position,
+		rotation,
+		text,
+		&font,
+		color,
+		scale,
+		pivot,
+		drawLayer,
+		colorOverride,
+	)
+}
+
+// @ref
 // Internal primitive for drawing a single line of text.
 // Calculates layout, pivots, and batches the quads.
-drawTextSimple :: proc(
+drawTextSimpleFont :: proc(
 	position: gmath.Vector2,
 	rotation: f32, // in radians
 	text: string,
