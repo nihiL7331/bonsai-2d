@@ -21,7 +21,6 @@ import "bonsai:core/input"
 import "bonsai:core/logger"
 import "bonsai:core/platform/web"
 import "bonsai:core/render"
-import "bonsai:types/game"
 
 import sokol_app "bonsai:libs/sokol/app"
 import sokol_gfx "bonsai:libs/sokol/gfx"
@@ -39,10 +38,6 @@ ICON_DATA :: #load("../assets/icon.png")
 
 // required to restore the odin context inside c callbacks
 odinContext: runtime.Context
-
-// global storage for the game state
-@(private)
-_globalGameState: ^game.GameState
 
 main :: proc() {
 	when IS_WEB { 	// via karl zylinski's odin-sokol-web
@@ -75,7 +70,7 @@ main :: proc() {
 	description.width = coreContext.windowWidth
 	description.height = coreContext.windowHeight
 	description.sample_count = 4 //MSAA
-	description.window_title = game_app.WINDOW_TITLE
+	description.window_title = core.WINDOW_TITLE
 	description.high_dpi = true
 	description.html5_update_document_title = true
 	description.logger.func = sokol_log.func
@@ -90,11 +85,6 @@ init :: proc "c" () {
 	context = odinContext
 
 	coreContext := core.getCoreContext()
-
-	// allocate game state
-	_globalGameState = new(game.GameState)
-	_globalGameState.world = new(game.WorldState)
-	coreContext.gameState = _globalGameState
 
 	// sync core window size
 	// instantly update windowWidth and windowHeight to fix scale issues on web
@@ -127,7 +117,7 @@ frame :: proc "c" () {
 
 	// audio update
 	// sync audio listener to camera position for spatial audio
-	audio.setListenerPosition(coreContext.gameState.world.cameraPosition)
+	audio.setListenerPosition(coreContext.camera.position)
 
 	// clock data update
 	clock.tick()
@@ -166,9 +156,6 @@ cleanup :: proc "c" () {
 	game_app.shutdown()
 	sokol_gfx.shutdown()
 	audio.shutdown()
-
-	free(_globalGameState.world)
-	free(_globalGameState)
 
 	when IS_WEB {
 		runtime._cleanup_runtime()
