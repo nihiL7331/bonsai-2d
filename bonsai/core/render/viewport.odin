@@ -115,13 +115,15 @@ getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 		viewWidth = viewHeight * aspect
 	}
 
-	viewLeft := (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
-	viewRight := viewLeft + viewWidth
+	// viewLeft := (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
+	// viewRight := viewLeft + viewWidth
+	left: f32 = 0.0
+	right := viewWidth
+	bottom: f32 = 0.0
+	top := viewHeight
 
-	viewBottom := (f32(core.GAME_HEIGHT) * 0.5) - (viewHeight * 0.5)
-	viewTop := viewBottom + viewHeight
 
-	return gmath.matrixOrtho3d(viewLeft, viewRight, viewBottom, viewTop, -1, 1)
+	return gmath.matrixOrtho3d(left, right, bottom, top, -1, 1)
 }
 
 // @ref
@@ -141,10 +143,10 @@ getScreenSpacePivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
 		viewWidth = viewHeight * aspect
 	}
 
-	left := (f32(core.GAME_WIDTH) * 0.5) - (viewWidth * 0.5)
-	right := left + viewWidth
-	bottom := (f32(core.GAME_HEIGHT) * 0.5) - (viewHeight * 0.5)
-	top := bottom + viewHeight
+	left: f32 = 0.0
+	right := viewWidth
+	bottom: f32 = 0.0
+	top := viewHeight
 
 	centerX: f32 = (left + right) * 0.5
 	centerY: f32 = (top + bottom) * 0.5
