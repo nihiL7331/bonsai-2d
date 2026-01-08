@@ -14,10 +14,10 @@ import "core:sync"
 MIXER_VOICE_CAPACITY :: 64
 // @ref
 // Default distance at which the falloff for spatial audio reaches **1.0** (max volume).
-DEFAULT_MIN_DISTANCE :: core.GAME_WIDTH / 8
+DEFAULT_MIN_DISTANCE :: 40
 // @ref
 // Default distance at which the falloff for spatial audio reaches **0.0** (muted).
-DEFAULT_MAX_DISTANCE :: core.GAME_WIDTH / 2
+DEFAULT_MAX_DISTANCE :: 360
 
 // @ref
 // ID for a `Voice` object.
