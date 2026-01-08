@@ -127,10 +127,9 @@ event :: proc "c" (e: ^sokol_app.Event) {
 cleanup :: proc "c" () {
 	context = odinContext
 
-	// shutdown in reverse order of init
-	sokol_gfx.shutdown()
-	game_app.shutdown()
 	render.destroyFonts()
+	game_app.shutdown()
+	sokol_gfx.shutdown()
 	audio.shutdown()
 
 	when IS_WEB {
