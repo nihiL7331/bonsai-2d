@@ -232,7 +232,9 @@ matrixInverse :: proc(mat: Matrix4) -> Matrix4 {
 // Creates an orthographic projection matrix.
 // This defines the viewing volume as a rectangular box.
 // Objects inside this box are visible, objects outside are clipped.
-matrixOrtho3d :: proc(left, right, bottom, top, near, far: $T) -> Matrix4 {
+matrixOrtho3d :: proc(
+	left, right, bottom, top, near, far: $T,
+) -> Matrix4 where intrinsics.type_is_float(T) {
 	return linalg.matrix_ortho3d(left, right, bottom, top, near, far)
 }
 
