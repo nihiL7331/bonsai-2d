@@ -47,7 +47,7 @@ read_entire_file :: proc(
 	success: bool,
 ) {
 	if name == "" {
-		log.error("No file name provided.")
+		log.warn("No file name provided.")
 		return nil, false
 	}
 
@@ -55,7 +55,7 @@ read_entire_file :: proc(
 	file := fopen(strings.clone_to_cstring(name, context.temp_allocator), mode)
 
 	if file == nil {
-		log.errorf("Failed to open file %v.", name)
+		log.warnf("Failed to open file %v.", name)
 		return nil, false
 	}
 	defer fclose(file)
@@ -66,7 +66,7 @@ read_entire_file :: proc(
 	fseek(file, 0, .SET)
 
 	if size <= 0 {
-		log.errorf("Failed to read file %v (empty or invalid)", name)
+		log.warnf("Failed to read file %v (empty or invalid)", name)
 		return nil, false
 	}
 
@@ -74,14 +74,14 @@ read_entire_file :: proc(
 	data, data_err = make([]byte, size, allocator, loc)
 
 	if data_err != nil {
-		log.errorf("Failed to allocate memory for file %v: %v.", name, data_err)
+		log.warnf("Failed to allocate memory for file %v: %v.", name, data_err)
 		return nil, false
 	}
 
 	read_size := fread(raw_data(data), 1, c.size_t(size), file)
 
 	if read_size != c.size_t(size) {
-		log.errorf("Incomplete read for file %v. Expected %d, got %d.", name, size, read_size)
+		log.warnf("Incomplete read for file %v. Expected %d, got %d.", name, size, read_size)
 		return nil, false
 	}
 
