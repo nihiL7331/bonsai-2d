@@ -50,23 +50,23 @@ getWorldSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 getWorldSpaceCameraMatrix :: proc() -> gmath.Matrix4 {
 	coreContext := core.getCoreContext()
 
-	camera := gmath.Matrix4(1)
-	camera *= gmath.matrixTranslate(coreContext.camera.position)
-	camera *= gmath.matrixScale(getCameraZoom())
-	return camera
+	cameraMatrix := gmath.Matrix4(1)
+	cameraMatrix *= gmath.matrixTranslate(coreContext.camera.position)
+	cameraMatrix *= gmath.matrixScale(getCameraZoom())
+	return cameraMatrix
 }
 
 // @ref
 // Maps a **screen-space** rectangle to a screen-space scissor rectangle.
 // Used for clipping rendering to specific regions (masking).
-setScissorRectangle :: proc(rect: gmath.Rectangle) {
+setScissorRectangle :: proc(rectangle: gmath.Rectangle) {
 	drawFrame := getDrawFrame()
 	coreContext := core.getCoreContext()
 
 	projection := drawFrame.reset.coordSpace.projectionMatrix
 
-	bottomLeftWorld := gmath.Vector4{rect.x, rect.y, 0, 1}
-	topRightWorld := gmath.Vector4{rect.z, rect.w, 0, 1}
+	bottomLeftWorld := gmath.Vector4{rectangle.x, rectangle.y, 0, 1}
+	topRightWorld := gmath.Vector4{rectangle.z, rectangle.w, 0, 1}
 
 	bottomLeftClip := projection * bottomLeftWorld
 	topRightClip := projection * topRightWorld
