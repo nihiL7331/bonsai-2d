@@ -148,10 +148,9 @@ getTextSize :: proc(fontName: generated.FontName, fontSize: uint, text: string) 
 	return gmath.Vector2{maxLineWidth, totalHeight}
 }
 
-// @ref
 // Cleans up all GPU resources associated with loaded fonts.
 //
-// Is called on application shutdown from **main.odin**.
+// Is called on application shutdown from main.odin.
 destroyFonts :: proc() {
 	for key, font in _fontCache {
 		sokol_gfx.destroy_image(font.texture)

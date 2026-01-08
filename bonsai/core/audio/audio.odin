@@ -79,10 +79,9 @@ Mixer :: struct {
 @(private = "package")
 _mixer: Mixer
 
-// @ref
-// Initializes the audio subsystem, sets up the **Sokol audio** backend, and prepares the mixer state.
-//
-// Called in the **main.odin** file.
+// @r
+// Initializes the audio subsystem, sets up the Sokol audio backend, and prepares the mixer state.
+// Called in the main.odin file.
 init :: proc() {
 	_mixer.nextId = 1
 	//default volumes to full volume
@@ -100,8 +99,8 @@ init :: proc() {
 	sokol_audio.setup(description)
 }
 
-// @ref
 // Shuts down the audio subsystem and frees all loaded sound samples and mixer resources.
+// Called in main.odin.
 shutdown :: proc() {
 	sokol_audio.shutdown()
 	for _, sound in _mixer.sounds {

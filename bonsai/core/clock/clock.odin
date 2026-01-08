@@ -41,9 +41,8 @@ _SAFE_MAX_DURATION :: 99999999.0
 @(private = "file")
 _MAX_FRAME_DELTA_TIME :: 1.0 / 20.0
 
-// @ref
-// Called at the start of each frame in **main.odin**.
-// Updates the time data stored in the **clock** package.
+// Called at the start of each frame in main.odin.
+// Updates the time data stored in the clock package.
 tick :: proc() {
 	currentTime := getApplicationTime()
 

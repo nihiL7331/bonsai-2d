@@ -96,8 +96,8 @@ clearScissor :: proc() {
 	_scissorState.enabled = false
 }
 
-// @ref
-// Initializes the rendering subsystem (**Sokol**, buffers, pipelines).
+// Initializes the rendering subsystem (Sokol, buffers, pipelines).
+// Called in main.odin.
 init :: proc() {
 	sokol_gfx.setup(
 		{
@@ -180,8 +180,7 @@ init :: proc() {
 	_initDrawFrameLayers()
 }
 
-// @ref
-// Called at the start of every frame by the **Core loop** from **main.odin**.
+// Called at the start of every frame by the Core loop from main.odin.
 coreRenderFrameStart :: proc() {
 	resetDrawFrame()
 
@@ -203,9 +202,8 @@ coreRenderFrameStart :: proc() {
 	_clearedFrame = false
 }
 
-// @ref
 // Called at the end of every frame. Submits final batches to GPU.
-// Called from **main.odin**.
+// Called from main.odin.
 coreRenderFrameEnd :: proc() {
 	flushBatch()
 	sokol_gfx.end_pass()

@@ -19,11 +19,10 @@ foreign _ {
 	realloc :: proc(ptr: rawptr, size: c.size_t) -> rawptr ---
 }
 
-// @ref
-// Returns a **memory allocator** that wraps **Emscripten's malloc** and **free**.
+// Returns a memory allocator that wraps Emscripten's malloc and free.
 //
-// This handles manual memory alignment, which is required for certain **Odin** features
-// like **maps** and **SIMD** that standard **malloc** might not guarantee on **WASM**.
+// This handles manual memory alignment, which is required for certain Odin features
+// like maps and SIMD that standard malloc might not guarantee on WASM.
 allocator :: proc "contextless" () -> mem.Allocator {
 	return mem.Allocator{_allocatorProc, nil}
 }

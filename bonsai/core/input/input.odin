@@ -188,8 +188,8 @@ KeyCode :: enum {
 }
 
 
-// @ref
-// Initializes the **input** subsystem.
+// Initializes the input subsystem.
+// Called in main.odin
 init :: proc() {
 	// reset state on init
 	resetInputState(&_inputState)
@@ -201,11 +201,10 @@ getInputState :: proc() -> ^Input {
 	return &_inputState
 }
 
-// @ref
 // Returns the internal input event callback.
 //
 // This is used by the core application loop to route window events into the input system.
-// Called in **main.odin**.
+// Called in main.odin.
 getInputEventCallback :: proc() -> proc "c" (event: ^sokol_app.Event) {
 	return _inputEventCallback
 }
@@ -370,7 +369,7 @@ _getKeyFromAction :: proc(action: InputAction) -> KeyCode {
 }
 
 // resets per-frame flags.
-// called internally at the start of a frame.
+// called internally from main.odin at the start of a frame.
 resetInputState :: proc(input: ^Input) {
 	for &key in input.keys {
 		key -= ~{.down}

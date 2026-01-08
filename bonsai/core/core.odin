@@ -58,9 +58,8 @@ CoreContext :: struct {
 @(private = "file")
 _coreContext: CoreContext
 
-// @ref
-// Initializes the core context with **default** values.
-// Called by the **main.odin** file at the very start of initialization.
+// Initializes the core context with default values.
+// Called by the main.odin file at the very start of initialization.
 initCoreContext :: proc(windowWidth, windowHeight: i32) -> ^CoreContext {
 	_coreContext.windowWidth = windowWidth
 	_coreContext.windowHeight = windowHeight
