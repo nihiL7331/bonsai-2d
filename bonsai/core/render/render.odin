@@ -108,7 +108,7 @@ init :: proc() {
 	)
 
 	// load the atlas generated at build-time
-	loadAtlas()
+	loadAtlas(ATLAS_PATH)
 
 	// create dynamic vertex buffer
 	_renderState.bindings.vertex_buffers[0] = sokol_gfx.make_buffer(
@@ -463,11 +463,11 @@ drawQuadProjected :: proc(
 
 // image loading helpers
 
-loadAtlas :: proc() {
-	filepath :: "assets/images/atlas.png"
+loadAtlas :: proc(filepath: string) {
 	pngData, success := platform.read_entire_file(filepath)
 	if !success {
-		log.errorf("Failed to read atlas file at: %v", filepath)
+		log.warn("Failed to read atlas file at: %v. Defaulting to blank atlas.", filepath)
+		loadAtlas("bonsai/core/render/atlas/blank.png")
 		return
 	}
 	defer delete(pngData)

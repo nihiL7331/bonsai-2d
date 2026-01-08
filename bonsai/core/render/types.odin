@@ -7,6 +7,13 @@ import sokol_gfx "bonsai:libs/sokol/gfx"
 import stb_truetype "bonsai:libs/stb/truetype"
 
 // @ref
+// Path relative to project root pointing to the generated sprite atlas.
+//
+// **Note:** This isn't the only path where this variable exists.
+// Editing just this variable doesnt change where it lives.
+ATLAS_PATH :: "bonsai/core/render/atlas/atlas.png"
+
+// @ref
 // Maximum number of quads per batch flush.
 //
 // **Increase if you see "Quad buffer full" warnings, decrease to save memory.**
