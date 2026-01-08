@@ -7,7 +7,6 @@ import "base:intrinsics"
 import "core:fmt"
 import "core:hash"
 import "core:log"
-import "core:math"
 
 // @ref
 // Begins a new **Window** container.
@@ -249,7 +248,7 @@ slider :: proc(
 	)
 
 	if intrinsics.type_is_integer(T) {
-		value^ = T(math.round(newValueF32))
+		value^ = T(gmath.round(newValueF32))
 	} else {
 		value^ = T(newValueF32)
 	}

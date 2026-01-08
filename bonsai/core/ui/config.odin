@@ -25,7 +25,7 @@ GRUV_GREY :: gmath.Color{146.0 / 255.0, 131.0 / 255.0, 116.0 / 255.0, 1.0} // #9
 DEFAULT_WINDOW_CONFIG: WindowConfig = {
 	// LAYOUT
 	pivot                       = gmath.Pivot.centerCenter,
-	maximumHeight               = 50,
+	maximumHeight               = 20,
 	// WINDOW STYLE
 	backgroundColor             = GRUV_BG_HARD,
 	borderColor                 = GRUV_BG0,

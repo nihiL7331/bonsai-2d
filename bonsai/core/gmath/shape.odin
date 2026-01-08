@@ -23,7 +23,7 @@ rectangleIntersects :: proc(a: Rectangle, b: Rectangle) -> bool {
 }
 
 // @ref
-// Checks if a `point` lies inside the `Rectangle`.
+// Checks if a `point` lies inside the `rectangle`.
 // Returns `true` if it does.
 rectangleContains :: proc(rectangle: Rectangle, point: Vector2) -> bool {
 	return(

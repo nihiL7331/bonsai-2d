@@ -1,5 +1,6 @@
 package ui
 
+import "bonsai:core"
 import "bonsai:core/gmath"
 import "bonsai:core/input"
 import "bonsai:core/render"
@@ -183,8 +184,8 @@ _hoveredWindowId: u32
 // @ref
 // Starts a new UI frame.
 // Determines which window is currently hovered to handle Z-ordering and click masking.
-begin :: proc(mousePosition: gmath.Vector2) {
-	state.mousePosition = mousePosition
+begin :: proc() {
+	state.mousePosition = input.getMousePositionWorld()
 	state.frameIndex += 1
 
 	clear(&state.ids)
@@ -262,16 +263,25 @@ end :: proc() {
 			continue
 		}
 
-		// layout fixup for first frame
-		if !container.isInitialized {
-			container.rectangle = gmath.shift(
-				container.rectangle,
-				gmath.Vector2 {
-					0,
-					container.rectangle.w - container.rectangle.y - container.headerHeight,
-				},
-			)
-			container.isInitialized = true
+		if state.active != container.id {
+			screenBounds := core.getWindowBounds()
+			shift := gmath.Vector2{0, 0}
+
+			if container.rectangle.x < 0 {
+				shift.x = -container.rectangle.x
+			} else if container.rectangle.z > screenBounds.z {
+				shift.x = screenBounds.z - container.rectangle.z
+			}
+
+			if container.rectangle.y < 0 {
+				shift.y = -container.rectangle.y
+			} else if container.rectangle.w > screenBounds.w {
+				shift.y = screenBounds.w - container.rectangle.w
+			}
+
+			if shift.x != 0 || shift.y != 0 {
+				container.rectangle = gmath.shift(container.rectangle, shift)
+			}
 		}
 
 		// execute draw commands
