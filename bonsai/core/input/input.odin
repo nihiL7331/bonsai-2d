@@ -35,9 +35,10 @@ import sokol_app "bonsai:libs/sokol/app"
 @(private = "file")
 _KEY_CODE_CAPACITY :: 512
 
-// configuration constant for mobile support
-@(private = "file")
-_TOUCH_EMULATE_MOUSE :: true
+// @ref
+// Configuration constant for touch support. If set to `true`,
+// makes each touch (0-index) emulate a mouse click.
+TOUCH_EMULATE_MOUSE :: true
 
 @(private = "file")
 _inputState: Input
@@ -63,13 +64,11 @@ InputFlag :: enum u8 {
 // Default mapping of **abstract game actions** to **physical** keys.
 // This can be modified at runtime to support **key re-binding**.
 actionMap: [InputAction]KeyCode = {
-	.left     = .A,
-	.right    = .D,
-	.up       = .W,
-	.down     = .S,
-	.click    = .LEFT_MOUSE,
-	.use      = .RIGHT_MOUSE,
-	.interact = .E,
+	.left  = .A,
+	.right = .D,
+	.up    = .W,
+	.down  = .S,
+	// add more if needed
 }
 
 // @ref
@@ -79,9 +78,7 @@ InputAction :: enum u8 {
 	right,
 	up,
 	down,
-	click,
-	use,
-	interact,
+	// add more if needed
 }
 
 // @ref
@@ -362,7 +359,7 @@ getInputVector :: proc() -> gmath.Vector2 {
 // @ref
 // Converts the raw screen mouse coordinates into World/UI space coordinates
 // by un-projecting them using the current renderer's projection matrix.
-getMousePositionWorld :: proc() -> gmath.Vector2 {
+getMousePosition :: proc() -> gmath.Vector2 {
 	drawFrame := render.getDrawFrame()
 	coreContext := core.getCoreContext()
 	projectionMatrix := drawFrame.reset.coordSpace.projectionMatrix
@@ -442,7 +439,7 @@ _inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
 		}
 
 	case .TOUCHES_BEGAN:
-		when !_TOUCH_EMULATE_MOUSE do break
+		when !TOUCH_EMULATE_MOUSE do break
 
 		if event.num_touches > 0 {
 			touch := event.touches[0]
@@ -456,7 +453,7 @@ _inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
 		}
 
 	case .TOUCHES_MOVED:
-		when !_TOUCH_EMULATE_MOUSE do break
+		when !TOUCH_EMULATE_MOUSE do break
 
 		if event.num_touches > 0 {
 			touch := event.touches[0]
@@ -465,7 +462,7 @@ _inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
 		}
 
 	case .TOUCHES_ENDED, .TOUCHES_CANCELLED:
-		when !_TOUCH_EMULATE_MOUSE do break
+		when !TOUCH_EMULATE_MOUSE do break
 
 		if event.num_touches > 0 {
 			touch := event.touches[0]
