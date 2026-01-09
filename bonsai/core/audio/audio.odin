@@ -115,7 +115,21 @@ Mixer :: struct {
 @(private = "package")
 _mixer: Mixer
 
-// @r
+// @ref
+// Returns a pointer to the mixer state.
+//
+// **Example:**
+// ```Odin
+// onVolumeSet :: proc(bus: audio.Bus, volume: f32) {
+//   mixer := audio.getMixer()
+//   mixer.busVolumes[bus] = volume
+// }
+// ```
+getMixer :: proc() -> ^Mixer {
+	return &_mixer
+}
+
+// @ref
 // Initializes the audio subsystem, sets up the Sokol audio backend, and prepares the mixer state.
 // Called in the main.odin file.
 init :: proc() {
