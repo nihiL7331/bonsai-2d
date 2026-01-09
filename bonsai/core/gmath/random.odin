@@ -45,6 +45,12 @@ randomRangeInt :: proc(min: int, max: int) -> int {
 }
 
 // @ref
+// Returns a random `Vector2` point in a circle of radius 1.
+randomCircleNormalized :: proc() -> Vector2 {
+	return Vector2{randomFloatNormalized(), randomFloatNormalized()}
+}
+
+// @ref
 // Returns a **random** element from a slice.
 // Returns `false` if the slice is empty.
 randomElement :: proc(list: []$T) -> (T, bool) {
