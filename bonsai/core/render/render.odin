@@ -80,7 +80,7 @@ _actualQuadData: [MAX_QUADS]Quad
 _scissorState: ScissorState
 
 // @ref
-// Sets the background clear color for the next frame.
+// Sets the background clear color.
 setClearColor :: proc(col: gmath.Vector4) {
 	_renderState.passAction = {
 		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sokol_gfx.Color)(col)}},
@@ -96,7 +96,9 @@ getDrawFrame :: proc() -> ^DrawFrame {
 // @ref
 // Sets the coordinate space (projection/camera matrices).
 //
-// **Overload:** Can take a full struct or reset to default identity matrices.
+// **Arguments:**
+// - **CoordSpace struct:** Sets the `drawFrame.reset.coordSpace` to given `CoordSpace`.
+// - **nil:** Sets the `drawFrame.reset.coordSpace` to default.
 setCoordSpace :: proc {
 	_setCoordSpaceValue,
 	_setCoordSpaceDefault,
