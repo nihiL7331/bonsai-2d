@@ -39,9 +39,9 @@ drawTextWithDropShadow :: proc(
 	// draw shadow
 	drawTextSimpleFont(
 		position + shadowOffset,
-		rotation,
 		text,
 		font = &font,
+		rotation = rotation,
 		color = dropShadowColor * color, // tint the shadow by the main color
 		scale = scale,
 		pivot = pivot,
@@ -52,9 +52,9 @@ drawTextWithDropShadow :: proc(
 	// draw main text
 	textDimensions := drawTextSimpleFont(
 		position,
-		rotation,
 		text,
 		font = &font,
+		rotation = rotation,
 		color = color,
 		scale = scale,
 		pivot = pivot,
@@ -70,10 +70,10 @@ drawTextWithDropShadow :: proc(
 // Retrieves the font using the **automatically** generated `FontName` enum.
 drawTextSimple :: proc(
 	position: gmath.Vector2,
-	rotation: f32 = 0.0, // in radians
 	text: string,
 	fontName: generated.FontName,
 	fontSize: uint = 12,
+	rotation: f32 = 0.0, // in radians
 	color := colors.WHITE,
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
@@ -88,14 +88,14 @@ drawTextSimple :: proc(
 
 	return drawTextSimpleFont(
 		position,
-		rotation,
 		text,
 		&font,
-		color,
-		scale,
-		pivot,
-		drawLayer,
-		colorOverride,
+		rotation,
+		color = color,
+		scale = scale,
+		pivot = pivot,
+		drawLayer = drawLayer,
+		colorOverride = colorOverride,
 	)
 }
 
@@ -104,9 +104,9 @@ drawTextSimple :: proc(
 // Calculates layout, pivots, and batches the quads.
 drawTextSimpleFont :: proc(
 	position: gmath.Vector2,
-	rotation: f32, // in radians
 	text: string,
 	font: ^Font,
+	rotation: f32, // in radians
 	color := colors.WHITE,
 	scale := 1.0,
 	pivot := gmath.Pivot.bottomLeft,
