@@ -54,12 +54,11 @@ After initialization, it already contains basic runtime functions: `init`, `draw
 Let's use them to write your first 'Hello, World!' code in **bonsai**. Rather than to the world, you'll
 be saying hello to **Pot**, the framework's mascot and hero of every code example and tutorial.
 
-We will use the `bonsai:core/render` and `bonsai:core/gmath` packages to do that.
-Simply import them at the top of the file:
+We will use the `bonsai:core/render` package to do that.
+Simply import it at the top of the file:
 
 ```odin
 import "bonsai:core/render"
-import "bonsai:core/gmath"
 ```
 
 Then, in your draw functions you can use the imported functions:
@@ -68,7 +67,7 @@ Then, in your draw functions you can use the imported functions:
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := gmath.getScreenSpacePivot(.centerCenter)
+  centerPosition := render.getScreenSpacePivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
 }
 ```
@@ -81,7 +80,6 @@ Finally, your code should look like this:
 package game
 
 import "bonsai:core/render"
-import "bonsai:core/gmath"
 
 init :: proc() {
 }
@@ -92,7 +90,7 @@ update :: proc() {
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := gmath.getScreenSpacePivot(.centerCenter)
+  centerPosition := render.getScreenSpacePivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
 }
 
