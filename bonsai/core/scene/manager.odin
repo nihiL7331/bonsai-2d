@@ -80,9 +80,8 @@ init :: proc(sceneName: generated.SceneName) {
 	}
 }
 
-// @ref
 // Registers a scene implementation to the internal registry.
-// Called by the auto-generated code in **generated_registry.odin**.
+// Called by the auto-generated code in generated_registry.odin.
 register :: proc(sceneName: generated.SceneName, scene: type.Scene) {
 	_scenes[sceneName] = scene
 }

@@ -42,7 +42,7 @@ Whence :: enum c.int {
 }
 
 // @ref
-// Reads a file from **Emscripten's Virtual File System (MEMFS/IDBFS)**.
+// Reads a file from **Emscripten's Virtual File System (MEMFS)**.
 // **Note:** This does not read from the user's hard drive, but from the sandboxed browser memory.
 read_entire_file :: proc(
 	name: string,

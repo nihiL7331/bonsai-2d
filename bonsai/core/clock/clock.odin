@@ -127,6 +127,7 @@ getTicks :: proc() -> u64 {
 
 // @ref
 // Setter for pausing the game (equivalent to `_timeScale = 0.0`).
+// Stops getDeltaTime, but not getUnscaledDeltaTime.
 setPaused :: proc(paused: bool) {
 	_paused = paused
 }

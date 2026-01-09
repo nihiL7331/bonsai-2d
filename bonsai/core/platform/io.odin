@@ -26,7 +26,6 @@ package platform
 // }
 // ```
 
-// determine if we are compiling for the web
 IS_WEB :: ODIN_ARCH == .wasm64p32 || ODIN_ARCH == .wasm32
 
 import "desktop"
