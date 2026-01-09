@@ -1,11 +1,15 @@
 # [![bonsai logo](readme/logo.png)](https://bonsai-framework.dev)
 
 **A lightweight cross-platform 2D game framework written in Odin.**
+
 Built on top of [Sokol](https://github.com/flooh/sokol-odin).
+
 Uses [Emscripten](https://emscripten.org/) to compile to WebAssembly.
 
 > **Note:** Looking for the CLI source code? Check out the **[CLI repository](https://github.com/nihiL7331/bonsai)**.
+>
 > For framework documentation, examples and tutorials, visit **[bonsai-framework.dev](https://bonsai-framework.dev)**.
+>
 > Found a bug or want to request a feature? Open an issue!
 
 ---
