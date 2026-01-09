@@ -10,7 +10,7 @@ import "core:log"
 
 // @ref
 // Begins a new **Window** container.
-// Returns true if the window is open and expanded.
+// Returns `true` if the window is open and expanded.
 // Objects inside the window should be within the **if-block**.
 //
 // **Example:**
@@ -103,7 +103,7 @@ window :: proc(
 }
 
 // @ref
-// Renders a clickable button. Returns **true** if clicked this frame.
+// Renders a clickable button. Returns `true` if clicked this frame.
 //
 // Must be used within a **Window if-block**.
 button :: proc(
@@ -164,7 +164,7 @@ text :: proc(text: string, isInline: bool = false, config: TextConfig = DEFAULT_
 
 // @ref
 // Renders a boolean checkbox toggle.
-// Modifies the **value** pointer directly. Returns **true** if the state has changed this frame.
+// Modifies the `value` pointer directly. Returns `true` if the state has changed this frame.
 //
 // Must be used within a **Window if-block**.
 checkbox :: proc(
@@ -214,8 +214,8 @@ checkbox :: proc(
 }
 
 // @ref
-// Renders a **draggable slider** for numeric types (**int**, **float**, etc.).
-// Returns **true** if the value changed this frame.
+// Renders a **draggable slider** for numeric types (`i32`, `f32`, etc.).
+// Returns `true` if the value changed this frame.
 //
 // Must be used within a **Window if-block**.
 slider :: proc(

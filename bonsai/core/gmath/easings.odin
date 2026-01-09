@@ -39,7 +39,7 @@ Easing :: enum {
 }
 
 // @ref
-// Applies the specified easing curve to a normalized value **(0.0 to +1.0)**.
+// Applies the specified easing curve to a normalized value (`0.0` to `1.0`).
 ease :: proc(name: Easing, t: f32) -> f32 {
 	switch name {
 	case .Linear:

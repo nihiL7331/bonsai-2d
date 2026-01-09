@@ -28,7 +28,7 @@ _ :: mem
 // @ref
 // Reads an entire file into memory.
 //
-// Wraps **core:os.read_entire_file** to provide a consistent **cross-platform API**.
+// Wraps `core:os.read_entire_file` to provide a consistent **cross-platform API**.
 // The caller owns the returned memory and **must** delete it.
 read_entire_file :: proc(
 	name: string,
@@ -44,7 +44,7 @@ read_entire_file :: proc(
 // @ref
 // Writes a **byte slice** to a file, creating it if it doesn't exist.
 //
-// Wraps **core:os.write_entire_file**.
+// Wraps `core:os.write_entire_file`.
 write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (success: bool) {
 	return os.write_entire_file(name, data, truncate)
 }
@@ -56,7 +56,7 @@ write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (succ
 // @ref
 // Saves raw bytes to a persistent file **identified by a key**.
 // Automatically handles creating the save directory if missing.
-// Returns **success=false** if **data** is **nil**.
+// Returns `false` if `data` is `nil` or [`write_entire_file`](#write_entire_file) fails.
 //
 // Example:
 // ```Odin
@@ -74,6 +74,7 @@ saveBytes :: proc(key: string, data: []byte) -> (success: bool) {
 
 	if !success {
 		log.errorf("Failed to save bytes: %v", path)
+		return false
 	}
 
 	return success
@@ -81,7 +82,7 @@ saveBytes :: proc(key: string, data: []byte) -> (success: bool) {
 
 // @ref
 // Loads raw bytes from a persistent file.
-// Returns **success=false** if the file does not exist.
+// Returns `nil, false` if [`read_entire_file`](#read_entire_file) fails.
 loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte, success: bool) {
 	path := strings.concatenate({_SAVE_DIRECTORY, key, _SAVE_EXTENSION}, context.temp_allocator)
 

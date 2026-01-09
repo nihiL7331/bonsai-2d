@@ -7,7 +7,7 @@ package ui
 // - **Pointer-based widgets:** Buttons, checkboxes, sliders that edit variables via pointers,
 // - **Layout system:** Inline inserts to create an imitation of a simple grid layout,
 // - **Automated IDs:** Automatic element id assignment,
-// - **Toggle:** Configurable toggle for the entire UI overlay (default: **F1**).
+// - **Toggle:** Configurable [`UI_VISIBLE_KEYCODE`](#ui_visible_keycode) for the entire UI overlay (default: **F1**).
 //
 // **Note:** This package is currently experimental, since such package is a project of its own.
 // The API is unstable, expect bugs when using it.
@@ -74,7 +74,7 @@ Command :: union {
 }
 
 // @ref
-// Represents a persistent **Window**.
+// Represents a persistent [`window`](#window).
 Container :: struct {
 	id:             u32,
 	lastFrameIndex: u32,
@@ -131,7 +131,7 @@ state: UiState
 
 // @ref
 // Generates a unique UI ID based on a string label and the current ID stack.
-// Uses FNV-1a hashing.
+// Uses [`FNV-1a`](https://en.wikipedia.org/Fowler-Noll-Vo_hash_function) hashing.
 getId :: proc(title: string) -> u32 {
 	seed: u32 = FNV_OFFSET_BASIS
 

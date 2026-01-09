@@ -9,7 +9,7 @@ package scene_manager
 //   is generated automatically based on directories found in **source/game/scenes**.
 // - **Lifecycle management:** Standardized hooks for `init`, `update`, `draw` and `exit`.
 // - **State persistence:** Data is passed between procedures via a `rawptr` to a state array.
-// - **Simple navigation:** Specific `change` function to handle transitions, changing on the
+// - **Simple navigation:** Specific [`change`](#change) function to handle transitions, changing on the
 //   next frame to allow cleanup within the `exit` function.
 //
 // **Usage:**
@@ -66,6 +66,7 @@ _scenes: [generated.SceneName]type.Scene
 // @ref
 // Bootstraps the **Scene Manager** with the starting scene.
 // Immediately initializes and **sets the current scene**.
+// Accepts a [`SceneName`](https://bonsai-framework.dev/reference/generated/#scenename) enum as an argument.
 init :: proc(sceneName: generated.SceneName) {
 	if sceneName == generated.SceneName.nil {
 		log.error("Initializing with an empty/nil scene is not supported.")

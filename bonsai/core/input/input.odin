@@ -2,15 +2,15 @@ package input
 
 // @overview
 // This package manages user input across keyboard and mouse devices (gamepad WIP).
-// It supports both raw key polling and an abstract `Action` system for remappable key controls.
+// It supports both raw key polling and an abstract [`InputAction`](#inputaction) system for remappable key controls.
 //
 // **Features:**
-// - **Action system:** Maps physical keys to logical `InputAction` enums, allowing for
+// - **Action system:** Maps physical keys to logical [`InputAction`](#inputaction) enums, allowing for
 //   easy control remapping and clean game logic code.
-// - **Input consumption:** `consume` functions (e.g. `consumeKeyPressed`) that make single-frame events easy.
-// - **Mouse utilities:** Helpers for easy usage of the mouse inputs (`getMousePosition`, `getScrollY`)
-// - **Key reading:** Direct access to key states via `isKeyDown`, `isKeyPressed` and `isKeyReleased`.
-// - **Cursor control:** Functions to lock or hide the system cursor (`setCursorLocked`, `setCursorVisible`) **(Desktop only)**
+// - **Input consumption:** `consume` functions (e.g. [`consumeKeyPressed`](#consumekeypressed)) that make single-frame events easy.
+// - **Mouse utilities:** Helpers for easy usage of the mouse inputs ([`getMousePosition`](#getmouseposition), [`getScrollY`](#getscrolly))
+// - **Key reading:** Direct access to key states via [`isKeyDown`](#iskeydown), [`isKeyPressed`](#iskeypressed) and [`isKeyReleased`](#iskeyreleased).
+// - **Cursor control:** Functions to lock or hide the system cursor ([`setCursorLocked`](#setcursorlocked), [`setCursorVisible`](#setcursorvisible)) **(Desktop only)**
 //
 // **Usage:**
 // ```Odin
@@ -290,7 +290,7 @@ consumeAnyKeyPress :: proc() -> bool {
 }
 
 // @ref
-// Checks if a mapped action (e.g. **.use**, **.interact**) was **pressed** this frame.
+// Checks if a mapped action (e.g. [`.left`](#inputaction), [`.right`](#inputaction)) was **pressed** this frame.
 isActionPressed :: proc(action: InputAction) -> bool {
 	key := _getKeyFromAction(action)
 	return isKeyPressed(key)

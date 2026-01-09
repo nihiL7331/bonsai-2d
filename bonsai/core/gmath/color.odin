@@ -3,7 +3,7 @@ package gmath
 import "core:strconv"
 
 // @ref
-// Converts a packed 32-bit integer (**0xRRGGBBAA**) into a normalized `Color`.
+// Converts a packed 32-bit integer (**0xRRGGBBAA**) into a normalized [`Color`](#color).
 // Extracts bytes and divides by 255.0 to map to the 0.0-1.0 range.
 hexToColor :: proc(value: u32) -> Color {
 	return Color {
@@ -15,7 +15,7 @@ hexToColor :: proc(value: u32) -> Color {
 }
 
 // @ref
-// Parses a hex string (e.g. **"#FF0000"** or **"FF0000FF"**) into a normalized `Color`.
+// Parses a hex string (e.g. **"#FF0000"** or **"FF0000FF"**) into a normalized [`Color`](#color).
 // Supports both 6-digit (assumes **alpha = 1.0**) and 8-digit formats.
 // Handles optional leading '#'.
 stringHexToColor :: proc(hexString: string) -> Color {

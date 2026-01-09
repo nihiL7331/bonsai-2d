@@ -7,15 +7,15 @@ package render
 //
 // **Features:**
 // - **Automated asset pipeline:** Utilizes a build-time generated texture atlas and
-//   auto-generated sprite and font enums (`SpriteName` and `FontName` in `bonsai:generated` package)
+//   auto-generated sprite and font enums ([`SpriteName`](https://bonsai-framework.dev/reference/generated/#spritename) and [`FontName`](https://bonsai-framework.dev/reference/generated/#fontname) in [`bonsai:generated`](https://bonsai-framework.dev/reference/generated) package)
 //   for type-safe, optimized asset access.
-// - **Batched rendering:** Automatically batches draw calls (up to `MAX_QUADS`) to minimize GPU overhead,
-//   with manual control via `flushBatch`.
-// - **Coordinate systems:** Easy switching between `WorldSpace` (gameplay) and `ScreenSpace` (UI) using
-//   helper functions: `setWorldSpace` and `setScreenSpace`.
-// - **Text drawing:** Integrated TTF font support with utilities like `drawTextWithDropShadow` and
-//   `drawTextSimple`.
-// - **Scissoring:** Built-in support for clipping regions via `ScissorState`.
+// - **Batched rendering:** Automatically batches draw calls (up to [`MAX_QUADS`](#max_quads)) to minimize GPU overhead,
+//   with manual control via [`flushBatch`](#flushbatch).
+// - **Coordinate systems:** Easy switching between **world space** (gameplay) and **screen space** (UI) using
+//   helper functions: [`setWorldSpace`](#setworldspace) and [`setScreenSpace`](#setscreenspace).
+// - **Text drawing:** Integrated **TTF** font support with utilities like [`drawTextWithDropShadow`](#drawtextwithdropshadow) and
+//   [`drawTextSimple`](#drawtextsimple).
+// - **Scissoring:** Built-in support for clipping regions via [`ScissorState`](#scissorstate).
 //
 // **Usage:**
 // ```Odin
@@ -97,16 +97,16 @@ getDrawFrame :: proc() -> ^DrawFrame {
 // Sets the coordinate space (projection/camera matrices).
 //
 // **Arguments:**
-// - **CoordSpace struct:** Sets the `drawFrame.reset.coordSpace` to given `CoordSpace`.
-// - **nil:** Sets the `drawFrame.reset.coordSpace` to default.
+// - **[`CoordSpace`](#coordspace) struct:** Sets the [`drawFrame.reset.coordSpace`](#drawframe) to given [`CoordSpace`](#coordspace).
+// - **`nil`:** Sets the [`drawFrame.reset.coordSpace`](#drawframe) to default.
 setCoordSpace :: proc {
 	_setCoordSpaceValue,
 	_setCoordSpaceDefault,
 }
 
 // @ref
-// Flushses the current batch and switches coordinate space to **World Space (Gameplay)**.
-// Sets the active draw layer to `DrawLayer.background`.
+// Flushses the current batch and switches coordinate space to **world space (gameplay)**.
+// Sets the active draw layer to [`DrawLayer.background`](#drawlayer).
 setWorldSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getWorldSpace())
@@ -114,8 +114,8 @@ setWorldSpace :: proc() {
 }
 
 // @ref
-// Flushes the current batch and switches coordinate space to **Screen Space (UI)**.
-// Sets the active draw layer to `DrawLayer.ui`.
+// Flushes the current batch and switches coordinate space to **screen space (UI)**.
+// Sets the active draw layer to [`DrawLayer.ui`](#drawlayer).
 setScreenSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getScreenSpace())
@@ -259,7 +259,7 @@ coreRenderFrameEnd :: proc() {
 }
 
 // @ref
-// Resets the **draw frame data** (clears quads, resets camera).
+// Resets the [`DrawFrame`](#drawframe) (clears quads, resets camera).
 resetDrawFrame :: proc() {
 	drawFrame := getDrawFrame()
 	drawFrame.reset.coordSpace = {}
@@ -290,7 +290,7 @@ resetDrawFrame :: proc() {
 
 // @ref
 // Flushes all queued quads to the GPU.
-// Sorts layers if necessary and handles batch splitting if `MAX_QUADS` is exceeded.
+// Sorts layers if necessary and handles batch splitting if [`MAX_QUADS`](#max_quads) is exceeded.
 flushBatch :: proc() {
 	drawFrame := getDrawFrame()
 
@@ -400,7 +400,7 @@ getAtlasUv :: proc(sprite: generated.SpriteName) -> gmath.Vector4 {
 }
 
 // @ref
-// Helper to retrieve **size** from `SpriteName`.
+// Helper to retrieve **size** from [`SpriteName`](https://bonsai-framework.dev/reference/generated/#spritename).
 getSpriteSize :: proc(sprite: generated.SpriteName) -> gmath.Vector2 {
 	return generated.getSpriteData(sprite).size
 }

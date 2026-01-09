@@ -6,7 +6,6 @@ import "bonsai:generated"
 DEFAULT_FONT_SIZE :: 12
 DEFAULT_FONT :: generated.FontName.PixelCode
 
-// --- GRUVBOX MATERIAL PALETTE (Dark Hard) ---
 GRUV_BG_HARD :: gmath.Color{40.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0, 1.0} // #282828
 GRUV_BG_SOFT :: gmath.Color{50.0 / 255.0, 48.0 / 255.0, 47.0 / 255.0, 1.0} // #32302f
 GRUV_BG0 :: gmath.Color{60.0 / 255.0, 56.0 / 255.0, 54.0 / 255.0, 1.0} // #3c3836

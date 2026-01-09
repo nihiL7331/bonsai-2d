@@ -6,15 +6,15 @@ package audio
 //
 // **Features:**
 // - **Automated asset pipeline:** Similarly to sprites, it utilizes auto-generated audio enums
-//   (`AudioName` from `bonsai:generated` package) for fast access to all sound files.
-// - **Spatial audio:** Built-in support for 2D positional audio via `playSpatial`.
+//   ([`AudioName`](https://bonsai-framework.dev/reference/generated/#audioname) from [`bonsai:generated`](https://bonsai-framework.dev/reference/generated) package) for fast access to all sound files.
+// - **Spatial audio:** Built-in support for 2D positional audio via [`playSpatial`](#playspatial).
 //   It automatically calculates volume and panning based on the distance and relative position
 //   between the source and the listener.
-// - **Voice management:** Uses a fixed-size voice pool (`MIXER_VOICE_CAPACITY`) to recycle audio
+// - **Voice management:** Uses a fixed-size voice pool ([`MIXER_VOICE_CAPACITY`](#mixer_voice_capacity)) to recycle audio
 //   channels.
-// - **Playback control:** Control over active sounds using functions like `pause`, `resume`, `stop`,
-//   `rewind` and `seek`.
-// - **Bus system:** Grouping voices via `Bus` to control volumes for distinct categories.
+// - **Playback control:** Control over active sounds using functions like [`pause`](#pause), [`resume`](#resume), [`stop`](#stop),
+//   [`rewind`](#rewind) and [`seek`](#seek).
+// - **Bus system:** Grouping voices via [`Bus`](#bus) to control volumes for distinct categories.
 //
 // **Usage:**
 // ```Odin
@@ -33,7 +33,7 @@ package audio
 // }
 // ```
 //
-// **Note:** Currently supports only the WAV file format. For enums to generate, the audio files need to
+// **Note:** Currently supports only the **WAV** file format. For enums to generate, the audio files need to
 // be stored inside the **assets/audio** directory.
 
 import "bonsai:core"
@@ -49,17 +49,17 @@ import "core:sync"
 // Amount of voices. Describes how many audio clips can play **at once**.
 MIXER_VOICE_CAPACITY :: 64
 // @ref
-// Default distance at which the falloff for spatial audio reaches **1.0** (max volume).
+// Default distance at which the falloff for spatial audio reaches `1.0` (max volume).
 DEFAULT_MIN_DISTANCE :: 40
 // @ref
-// Default distance at which the falloff for spatial audio reaches **0.0** (muted).
+// Default distance at which the falloff for spatial audio reaches `0.0` (muted).
 DEFAULT_MAX_DISTANCE :: 360
 
 // @ref
-// ID for a `Voice` object.
+// ID for a [`Voice`](#voice) object.
 VoiceHandle :: distinct u64
 // @ref
-// ID for a `Sound` object.
+// ID for a [`Sound`](#sound) object.
 SoundHandle :: distinct u64
 
 // @ref
@@ -83,7 +83,7 @@ Sound :: struct {
 // @ref
 // Structure definition for the "voice", which is essentialy the entity equivalent of the audio system.
 //
-// It defines all active state variables needed to output a specific instance of `Sound`.
+// It defines all active state variables needed to output a specific instance of [`Sound`](#sound).
 Voice :: struct {
 	id:          SoundHandle,
 	cursor:      int,
@@ -102,7 +102,7 @@ Voice :: struct {
 // @ref
 // Internal state container for the audio mixer.
 //
-// Holds the thread lock, the pool of `Voice`, loaded `Sound` data, and listener configuration.
+// Holds the thread lock, the pool of [`Voice`](#voice), loaded [`Sound`](#sound) data, and listener configuration.
 Mixer :: struct {
 	lock:             sync.Mutex,
 	voices:           [MIXER_VOICE_CAPACITY]Voice,
@@ -129,9 +129,8 @@ getMixer :: proc() -> ^Mixer {
 	return &_mixer
 }
 
-// @ref
-// Initializes the audio subsystem, sets up the Sokol audio backend, and prepares the mixer state.
-// Called in the main.odin file.
+// Initializes the audio subsystem, sets up the Sokol audio backend, and prepares the Mixer state.
+// Called in main.odin.
 init :: proc() {
 	_mixer.nextId = 1
 	//default volumes to full volume
@@ -163,7 +162,7 @@ shutdown :: proc() {
 // @ref
 // Main entry point for playing sounds.
 //
-// Use `playGlobal` for UI/Music and `playSpatial` for in-world sound effects.
+// Use [`playGlobal`](#playglobal) for UI/Music and [`playSpatial`](#playspatial) for in-world sound effects.
 play :: proc {
 	playGlobal,
 	playSpatial,
@@ -273,7 +272,7 @@ isPlaying :: proc(id: VoiceHandle) -> bool {
 }
 
 // @ref
-// Immediately stops a specific voice from playing.
+// Immediately stops a specific [`Voice`](#voice) from playing.
 stop :: proc(id: VoiceHandle) {
 	sync.lock(&_mixer.lock)
 	defer sync.unlock(&_mixer.lock)
@@ -286,7 +285,7 @@ stop :: proc(id: VoiceHandle) {
 }
 
 // @ref
-// Resets the playback position of `Voice` to the beginning.
+// Resets the playback position of [`Voice`](#voice) to the beginning.
 rewind :: proc(id: VoiceHandle) {
 	seek(id, 0.0)
 }
@@ -306,7 +305,7 @@ getListenerPosition :: proc() -> gmath.Vector2 {
 }
 
 // @ref
-// Sets the playback position of `Voice` to a specific time **in seconds**.
+// Sets the playback position of [`Voice`](#voice) to a specific time **in seconds**.
 // If the time is out of bounds, it will be clamped.
 seek :: proc(id: VoiceHandle, timeSeconds: f32) {
 	sync.lock(&_mixer.lock)

@@ -10,7 +10,7 @@ Circle :: struct {
 }
 
 // @ref
-// An Axis-Aligned Bounding Box (AABB) stored as a 4D vector.
+// An Axis-Aligned Bounding Box (AABB) stored as a [`Vector4`](#vector4).
 // **Format:** `{ minX, minY, maxX, maxY }`
 // This corresponds to **(Left, Bottom, Right, Top)**.
 Rectangle :: Vector4
@@ -23,7 +23,7 @@ rectangleIntersects :: proc(a: Rectangle, b: Rectangle) -> bool {
 }
 
 // @ref
-// Checks if a `point` lies inside the `rectangle`.
+// Checks if a `point` lies inside the [`Rectangle`](#rectangle).
 // Returns `true` if it does.
 rectangleContains :: proc(rectangle: Rectangle, point: Vector2) -> bool {
 	return(
@@ -35,7 +35,7 @@ rectangleContains :: proc(rectangle: Rectangle, point: Vector2) -> bool {
 }
 
 // @ref
-// Returns the **center point** of the `Rectangle`.
+// Returns the **center point** of the [`Rectangle`](#rectangle).
 getRectangleCenter :: proc(rectangle: Rectangle) -> Vector2 {
 	minPoint := rectangle.xy
 	maxPoint := rectangle.zw
@@ -46,18 +46,18 @@ getRectangleCenter :: proc(rectangle: Rectangle) -> Vector2 {
 }
 
 // @ref
-// Returns the **width** and **height** of the `Rectangle` as a `Vector2`.
+// Returns the **width** and **height** of the [`Rectangle`](#rectangle) as a [`Vector2`](#vector2).
 getRectangleSize :: proc(rectangle: Rectangle) -> Vector2 {
 	return {rectangle.z - rectangle.x, rectangle.w - rectangle.y}
 }
 
 
 // @ref
-// Overload group for creating a `Rectangle`.
+// Overload group for creating a [`Rectangle`](#rectangle).
 // Accepts arguments:
-// - `position` as `Vector2` (optional, default: gmath.Vector2{0, 0}).
-// - `size` as `Vector2`.
-// - `pivot` as `Pivot` (optional, default: gmath.Pivot.bottomLeft).
+// - `position` as [`Vector2`](#vector2) (optional, default: `gmath.Vector2{0, 0}`).
+// - `size` as [`Vector2`](#vector2).
+// - `pivot` as [`Pivot`](#pivot) (optional, default: `gmath.Pivot.bottomLeft`).
 rectangleMake :: proc {
 	_rectangleFromPositionSize,
 	_rectangleFromSize,
@@ -65,19 +65,19 @@ rectangleMake :: proc {
 
 
 // @ref
-// Scales a `Rectangle` around its own center point.
+// Scales a [`Rectangle`](#rectangle) around its own center point.
 //
-// Accepts a scalar or `Vector2` as a `scale`.
+// Accepts a scalar or [`Vector2`](#vector2) as a `scale`.
 rectangleScale :: proc {
 	_rectangleScaleScalar,
 	_rectangleScaleVector2,
 }
 
 // @ref
-// Expands the `Rectangle` boundaries outwards by `amount` on all sides.
-// A negative amount **shrinks** the `Rectangle`.
+// Expands the [`Rectangle`](#rectangle) boundaries outwards by `amount` on all sides.
+// A negative amount **shrinks** the [`Rectangle`](#rectangle).
 //
-// Accepts a scalar or `Vector2` as an `amount` by which the rectangle is expanded.
+// Accepts a scalar or [`Vector2`](#vector2) as an `amount` by which the rectangle is expanded.
 //
 // **Example:**
 // ```Odin
@@ -91,7 +91,7 @@ rectangleExpand :: proc {
 
 
 // @ref
-// Moves `Circle` or `Rectangle` by the `delta` vector.
+// Moves [`Circle`](#circle) or [`Rectangle`](#rectangle) by the `delta` vector.
 //
 // **Example:**
 // ```Odin

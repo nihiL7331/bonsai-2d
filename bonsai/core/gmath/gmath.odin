@@ -6,14 +6,14 @@ package gmath
 // Contains linear algebra, geometry and random number generation.
 //
 // **Features:**
-// - **Linear algebra:** Robust support for vectors (`Vector2/Int` -> `Vector4/Int`) and matrices (`Matrix4`)
-//   including the most important operations like `dot`, `normalize`, `direction`.
-// - **Geometry:** Contains tools for manipulating shapes, including `Rectangle` and `Circle`. Allows to position,
+// - **Linear algebra:** Robust support for vectors ([`Vector2/Int`](#vector2) -> [`Vector4/Int`](#vector4)) and matrices ([`Matrix4`](#matrix4))
+//   including the most important operations like [`dot`](#dot), [`normalize`](#normalize), [`direction`](#direction).
+// - **Geometry:** Contains tools for manipulating shapes, including [`Rectangle`](#rectangle) and [`Circle`](#circle). Allows to position,
 //   scale, pivot, and check collision between shapes.
-// - **Randomness:** Utilities for generating random numbers (`randomRange`), normalized floats (`randomFloatNormalized`)
-//   and picking random array elements via `randomElement`.
-// - **Math utilities:** Essential game math functions including `lerp`, `ease`, `remap` and `clamp`.
-// - **Color handling:** Helpers to convert hex strings or values into `Color` structs (`hexToColor`). Contains generic
+// - **Randomness:** Utilities for generating random numbers ([`randomRange`](#randomrange)), normalized floats ([`randomFloatNormalized`](#randomfloatnormalized))
+//   and picking random array elements via [`randomElement`](#randomelement).
+// - **Math utilities:** Essential game math functions including [`lerp`](#lerp), [`ease`](#ease), [`remap`](#remap) and [`clamp`](#clamp).
+// - **Color handling:** Helpers to convert hex strings or values into [`Color`](#color) structs ([`hexToColor`](#hextocolor)). Contains generic
 //   color constants in `bonsai:core/gmath/colors`.
 //
 // **Usage:**
@@ -48,7 +48,7 @@ Vector3Int :: [3]i32
 Vector4Int :: [4]i32
 
 // @ref
-// Standard 2D Float Vector (compatible with Odin's **core:math/linalg** package)
+// Standard 2D Float Vector (compatible with Odin's `core:math/linalg` package)
 Vector2 :: linalg.Vector2f32
 
 // @ref
@@ -91,7 +91,7 @@ Pivot :: enum {
 }
 
 // @ref
-// Returns a normalized `Vector2` (0.0 -> +1.0) corresponding to the `Pivot` enum.
+// Returns a normalized [`Vector2`](#vector2) (0.0 -> +1.0) corresponding to the [`Pivot`](#pivot) enum.
 //
 // **Example:**
 // ```Odin
@@ -159,7 +159,7 @@ length :: proc {
 
 // @ref
 // Returns the squared length of the vector `input`.
-// **Faster** than `length()` because it doesn't use the square root operation.
+// **Faster** than [`length`](#length) because it doesn't use the square root operation.
 // Useful for distance comparisons.
 //
 // **Example**:
@@ -348,7 +348,7 @@ ceil :: proc {
 // @ref
 // Linearly interpolates between `a` and `b` by the fraction `t`.
 // Useful for smooth transitions, animations, or mixing colors.
-// Accepts scalar arguments, as well as `Vector2`, `Vector3`, `Vector4` and `Color`.
+// Accepts scalar arguments, as well as [`Vector2`](#vector2), [`Vector3`](#vector3), [`Vector4`](#vector4) and [`Color`](#color).
 //
 // **Note:** The value of `t` is **not clamped** to the 0-1 range.
 //
@@ -510,7 +510,7 @@ atan2 :: proc(y, x: $T) -> T {
 }
 
 // @ref
-// An alias for the `atan2` function.
+// An alias for the [`atan2`](#atan2) function.
 vectorToAngle :: atan2
 
 // @ref

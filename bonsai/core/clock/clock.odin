@@ -6,11 +6,11 @@ package clock
 // time manipulation and global pause states.
 //
 // **Features:**
-// - **Frame independence:** Access to `getDeltaTime` for consistent movement,
+// - **Frame independence:** Access to [`getDeltaTime`](#getdeltatime) for consistent movement,
 //   regardless of framerate.
-// - **Time scaling:** Global control over game speed via `setTimeScale`.
-// - **Pause system:** Built-in `setPaused` functionality useful for pause screens.
-// - **Timers:** Functions like `hasTimestampPassed` and `getSecondsSince` to easily
+// - **Time scaling:** Global control over game speed via [`setTimeScale`](#settimescale).
+// - **Pause system:** Built-in [`setPaused`](#setpaused) functionality useful for pause screens.
+// - **Timers:** Functions like [`hasTimestampPassed`](#hastimestamppassed) and [`getSecondsSince`](#getsecondssince) to easily
 //   handle cooldowns, delays and timers without ugly timer variables.
 //
 // **Usage:**
@@ -126,8 +126,8 @@ getTicks :: proc() -> u64 {
 }
 
 // @ref
-// Setter for pausing the game (equivalent to `_timeScale = 0.0`).
-// Stops getDeltaTime, but not getUnscaledDeltaTime.
+// Setter for pausing the game (equivalent to [`setTimeScale(0.0)`](#settimescale)).
+// Stops [`getDeltaTime`](#getdeltatime), but not [`getUnscaledDeltaTime`](#getunscaleddeltatime).
 setPaused :: proc(paused: bool) {
 	_paused = paused
 }
@@ -140,7 +140,7 @@ isPaused :: proc() -> bool {
 
 // @ref
 // Sets the speed multiplier of game time.
-// **Default = 1.0**.
+// (default: `1.0`).
 setTimeScale :: proc(scale: f32) {
 	if scale < 0 {
 		log.warn("Negative time scale is not supported. Clamping to 0.")

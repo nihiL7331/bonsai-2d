@@ -13,7 +13,7 @@ drawText :: drawTextWithDropShadow
 
 // @ref
 // Draws text with a **hard-coded** drop shadow for contrast**.
-// Retrieves the font using the **automatically** generated `FontName` enum.
+// Retrieves the font using the **automatically** generated [`FontName`](https://bonsai-framework.dev/reference/generated/#fontname) enum.
 drawTextWithDropShadow :: proc(
 	position: gmath.Vector2,
 	text: string,
@@ -67,7 +67,7 @@ drawTextWithDropShadow :: proc(
 
 // @ref
 // Draws text without a drop shadow.
-// Retrieves the font using the **automatically** generated `FontName` enum.
+// Retrieves the font using the **automatically** generated [`FontName`](https://bonsai-framework.dev/reference/generated/#fontname) enum.
 drawTextSimple :: proc(
 	position: gmath.Vector2,
 	text: string,

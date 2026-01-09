@@ -83,7 +83,7 @@ QuadFlags :: enum u8 {
 
 // @ref
 // Defines the rendering order **(Z-sorting)**.
-// Layers are **drawn from top to bottom** (nil first, top last).
+// Layers are **drawn from top to bottom** (`nil` first, `top` last).
 DrawLayer :: enum u8 {
 	nil,
 	background,

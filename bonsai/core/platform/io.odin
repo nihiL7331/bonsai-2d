@@ -5,10 +5,10 @@ package platform
 // It exposes a single, agnostic API that handles the differences between desktop and web environments.
 //
 // **Features:**
-// - **Agnostic file I/O:** Wrappers `read_entire_file` and `write_entire_file` match the `core:os` signature
+// - **Agnostic file I/O:** Wrappers [`read_entire_file`](#read_entire_file) and [`write_entire_file`](#write_entire_file) match the `core:os` signature
 //   but work across all build targets.
-// - **Serialization helpers:** High-level functions `loadStruct` and `saveStruct` for generic data persistence,
-//   along side low-level `loadBytes` and `saveBytes`.
+// - **Serialization helpers:** High-level functions [`loadStruct`](#loadstruct) and [`saveStruct`](#savestruct) for generic data persistence,
+//   along side low-level [`loadBytes`](#loadbytes) and [`saveBytes`](#savebytes).
 //
 // **Usage:**
 // ```Odin
@@ -75,7 +75,7 @@ write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (succ
 
 // @ref
 // Loads a **struct** from persistent storage.
-// Returns **false** if the key doesn't exist or data is corrupted.
+// Returns `false` if the key doesn't exist or data is corrupted.
 @(require_results)
 loadStruct :: proc(key: string, value: ^$T) -> (success: bool) {
 	when IS_WEB {
@@ -87,7 +87,7 @@ loadStruct :: proc(key: string, value: ^$T) -> (success: bool) {
 
 // @ref
 // Serializes and saves a **struct** to persistent storage.
-// - **Desktop**: Saves to **"saves/"** directory as a binary file. **(default)**
+// - **Desktop**: Saves to **saves** directory as a binary file. **(by default)**
 // - **Web**: Saves to **LocalStorage** (Base64 encoded string).
 saveStruct :: proc(key: string, value: ^$T) -> (success: bool) {
 	when IS_WEB {

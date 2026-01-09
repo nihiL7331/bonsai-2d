@@ -4,9 +4,9 @@ package web
 // @overview
 // This package compiles only on **web** builds.
 //
-// it uses **Emscripten Virtual File System** for `read_entire_file` and `write_entire_file`.
+// it uses **Emscripten Virtual File System** for [`read_entire_file`](#read_entire_file) and [`write_entire_file`](#write_entire_file).
 //
-// It uses the browsers **LocalStorage** for `loadBytes`, `loadStruct`, `saveBytes` and `saveStruct`.
+// It uses the browsers **LocalStorage** for [`loadBytes`](#loadbytes), [`loadStruct`](#loadstruct), [`saveBytes`](#savebytes) and [`saveStruct`](#savestruct).
 //
 // It's a symmetric representation of functions decalred in the `bonsai:core/platform/desktop` package, but it additionally
 // contains an Emscripten allocator implementation.

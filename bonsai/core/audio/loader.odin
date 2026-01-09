@@ -25,7 +25,7 @@ _registerSound :: proc(pcmData: []f32, channels, rate: int) -> SoundHandle {
 }
 
 // @ref
-// Loads an audio asset from the disk based on the provided `AudioName` enum.
+// Loads an audio asset from the disk based on the provided [`AudioName`](https://bonsai-framework.dev/reference/generated/#audioname) enum.
 //
 // This function handles reading the file, parsing the audio data (WAV file format),
 // and registering it with the mixer.

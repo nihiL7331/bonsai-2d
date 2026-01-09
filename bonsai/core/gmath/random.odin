@@ -26,7 +26,7 @@ getRandomSeed :: proc() -> u64 {
 }
 
 // @ref
-// Returns a random float **between 0.0 and 1.0**.
+// Returns a random float between `0.0` and `1.0`.
 randomFloatNormalized :: proc() -> f32 {
 	return rand.float32(_globalRandom)
 }
@@ -45,7 +45,7 @@ randomRangeInt :: proc(min: int, max: int) -> int {
 }
 
 // @ref
-// Returns a random `Vector2` point in a circle of radius 1.
+// Returns a random [`Vector2`](#vector2) point in a circle of radius 1.
 randomCircleNormalized :: proc() -> Vector2 {
 	return Vector2{randomFloatNormalized(), randomFloatNormalized()}
 }

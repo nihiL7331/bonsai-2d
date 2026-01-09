@@ -9,7 +9,7 @@ import "core:log"
 import "core:mem"
 import "core:slice"
 
-// this header follows the structure of an actual WAV file. use #packed to ensure the memory is placed
+// this header follows the structure of an actual WAV file. use `#packed` to ensure the memory is placed
 // exactly as expected.
 @(private = "file")
 _WavHeader :: struct #packed {

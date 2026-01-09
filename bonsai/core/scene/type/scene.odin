@@ -1,5 +1,5 @@
 // @overview
-// This package contains the definitions for the `bonsai:core/scene` package.
+// This package contains the definitions for the [`bonsai:core/scene`](https://bonsai-framework.dev/reference/core/scene) package.
 // It's separated to avoid a circular dependency issue.
 
 package scene_types

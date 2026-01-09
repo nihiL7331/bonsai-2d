@@ -2,15 +2,15 @@ package core
 
 // @overview
 // This package acts as the central hub of the engine.
-// Manages global state and configuration. Holds the primary `CoreContext`.
+// Manages global state and configuration. Holds the primary [`CoreContext`](#corecontext).
 //
 // **Features:**
-// - **Global context:** Global engine state shared across all packages via `getCoreContext`.
+// - **Global context:** Global engine state shared across all packages via [`getCoreContext`](#getcorecontext).
 //   Contains window information, camera and scene data.
 // - **Window definition:** Contains the core definitions related to the applications windows,
-//   like `GAME_WIDTH`, `GAME_HEIGHT`, `windowWidth`, `windowHeight` and `WINDOW_TITLE`.
-// - **Camera definition:** Contains the `Camera` struct definition used to track `position`,
-//   `zoom` and `bounds` of the camera.
+//   like [`GAME_WIDTH`](#game_width), [`GAME_HEIGHT`](#game_height), [`windowWidth`](#corecontext), [`windowHeight`](#corecontext) and [`WINDOW_TITLE`](#window_title).
+// - **Camera definition:** Contains the [`Camera`](#camera) struct definition used to track [`position`](#camera),
+//   [`zoom`](#camera) and [`bounds`](#camera) of the camera.
 //
 // **Usage:**
 // ```Odin
@@ -54,6 +54,10 @@ GAME_WIDTH :: 480
 // The internal design resolution height **in pixels**.
 GAME_HEIGHT :: 270
 
+// @ref
+// **On desktop:** Assigns the window name
+//
+// **On web:** Assings the tab name
 WINDOW_TITLE :: "bonsai"
 
 // @ref
@@ -109,7 +113,7 @@ setCoreContext :: proc(coreContext: CoreContext) {
 }
 
 // @ref
-// Returns a **pointer** to the global `CoreContext`.
+// Returns a **pointer** to the global [`CoreContext`](#corecontext).
 // This is the primary way systems access shared state (Window size, GameState, Input).
 getCoreContext :: proc() -> ^CoreContext {
 	return &_coreContext
