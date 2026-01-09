@@ -4,8 +4,10 @@ package logger
 // This package implements a custom logging setup for `core:log`.
 // It enforces a bonsai CLI style format with ANSI coloring.
 //
+// :::note
 // This package **does not** provide logging functions itself.
 // Continue to use `core:log` for log calls.
+// :::
 
 import "base:runtime"
 import "core:fmt"
@@ -15,8 +17,9 @@ import "core:strings"
 // @ref
 // Global filter for logging. Messages below this level are ignored.
 // **Defaults to** `.Debug` **(all messages)**.
-//
+// :::tip
 // Change this at runtime to toggle **verbosity** (e.g. `logger.globalLogLevel = .Info`).
+// :::
 globalLogLevel := log.Level.Debug
 
 // prefix added to every log message to match the cli output

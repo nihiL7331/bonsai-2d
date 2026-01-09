@@ -102,8 +102,9 @@ getFont :: proc(fontName: generated.FontName, size: uint) -> (Font, bool) {
 
 // @ref
 // Calculates the total dimension **(width, height)** of a string if it were rendered.
-//
+// :::tip
 // Useful for centering text.
+// :::
 getTextSize :: proc(fontName: generated.FontName, fontSize: uint, text: string) -> gmath.Vector2 {
 	font, found := getFont(fontName, fontSize)
 	if !found {

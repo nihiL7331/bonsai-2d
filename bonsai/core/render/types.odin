@@ -8,15 +8,17 @@ import stb_truetype "bonsai:libs/stb/truetype"
 
 // @ref
 // Path relative to project root pointing to the generated sprite atlas.
-//
-// **Note:** This isn't the only place where this variable exists.
+// :::caution
+// This isn't the only place where this variable exists.
 // Editing just this variable doesnt change where the atlas is generated.
+// :::
 ATLAS_PATH :: "bonsai/core/render/atlas/atlas.png"
 
 // @ref
 // Maximum number of quads per batch flush.
-//
-// **Increase if you see "Quad buffer full" warnings, decrease to save memory.**
+// :::tip
+// Increase if you see "Quad buffer full" warnings, decrease to save memory.
+// :::
 MAX_QUADS :: 8192
 
 // @ref
@@ -66,16 +68,18 @@ Font :: struct {
 
 // @ref
 // Uniform block data uploaded to the GPU for the global shader state.
-//
-// **Must align to 16 bytes (via std140 Layout Rules)**
+// :::note
+// Must align to 16 bytes (via std140 Layout Rules).
+// :::
 ShaderGlobals :: struct #align (16) {
 	uViewProjectionMatrix: gmath.Matrix4,
 }
 
 // @ref
 // Bit flags for special rendering behaviors in the shader.
-//
-// **Currently unused by the core**.
+// :::note
+// Currently unused by the core.
+// :::
 QuadFlags :: enum u8 {
 	flag1 = (1 << 0),
 	flag2 = (1 << 1),
@@ -83,7 +87,9 @@ QuadFlags :: enum u8 {
 
 // @ref
 // Defines the rendering order **(Z-sorting)**.
+// :::note
 // Layers are **drawn from top to bottom** (`nil` first, `top` last).
+// :::
 DrawLayer :: enum u8 {
 	nil,
 	background,

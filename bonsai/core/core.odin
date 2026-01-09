@@ -12,7 +12,7 @@ package core
 // - **Camera definition:** Contains the [`Camera`](#camera) struct definition used to track [`position`](#camera),
 //   [`zoom`](#camera) and [`bounds`](#camera) of the camera.
 //
-// **Usage:**
+// :::note[Usage]
 // ```Odin
 // update :: proc() {
 //   coreContext := core.getCoreContext()
@@ -27,6 +27,7 @@ package core
 //   }
 // }
 // ```
+// :::
 
 import "bonsai:core/gmath"
 import "bonsai:core/scene/type"

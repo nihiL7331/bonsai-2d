@@ -5,8 +5,9 @@ package desktop
 // This package compiles only on **desktop** builds.
 //
 // it is a symmetric representation of functions declared in the `bonsai:core/platform/web` package.
-//
+// :::note
 // If you wish to use these functions, it's recommended to import the `bonsai:core/platform` package.
+// :::
 
 import "core:log"
 import "core:mem"
@@ -29,7 +30,9 @@ _ :: mem
 // Reads an entire file into memory.
 //
 // Wraps `core:os.read_entire_file` to provide a consistent **cross-platform API**.
+// :::caution
 // The caller owns the returned memory and **must** delete it.
+// :::
 read_entire_file :: proc(
 	name: string,
 	allocator := context.allocator,
@@ -58,10 +61,11 @@ write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (succ
 // Automatically handles creating the save directory if missing.
 // Returns `false` if `data` is `nil` or [`write_entire_file`](#write_entire_file) fails.
 //
-// Example:
+// :::note[Example]
 // ```Odin
 // io.saveBytes("player_data", bytes) // writes to "saves/player_data.bin"
 // ```
+// :::
 saveBytes :: proc(key: string, data: []byte) -> (success: bool) {
 	if data == nil do return false
 	if !os.exists(_SAVE_DIRECTORY) {
@@ -93,9 +97,10 @@ loadBytes :: proc(key: string, allocator := context.allocator) -> (data: []byte,
 // @ref
 // Serializes and saves a struct **to disk**.
 // This is a **high-level** helper for easy save states.
-//
-// **Warning:** This does a direct memory dump of the struct. It is not version-safe
+// :::danger
+// This does a direct memory dump of the struct. It is not version-safe
 // if the struct layout changes (reordering fields, adding pointers, etc.).
+// :::
 saveStruct :: proc(key: string, data: ^$T) -> (success: bool) {
 	if data == nil do return false
 

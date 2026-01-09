@@ -58,6 +58,14 @@ getRectangleSize :: proc(rectangle: Rectangle) -> Vector2 {
 // - `position` as [`Vector2`](#vector2) (optional, default: `gmath.Vector2{0, 0}`).
 // - `size` as [`Vector2`](#vector2).
 // - `pivot` as [`Pivot`](#pivot) (optional, default: `gmath.Pivot.bottomLeft`).
+//
+// :::note[Example]
+// ```Odin
+// sizeRectangle := gmath.rectangleMake(gmath.Vector2{10, 15}) // returns gmath.Rectangle{0, 0, 10, 15}
+// sizeAndPositionRectangle := gmath.rectangleMake(gmath.Vector2{5, 5}, gmath.Vector2{5, 7}) // returns gmath.Rectangle{5, 5, 10, 12}
+// pivotedRectangle := gmath.rectangleMake(gmath.Vector2{3, 3}, gmath.Vector2{2, 2}, .centerCenter) // returns gmath.Rectangle{2, 2, 4, 4}
+// ```
+// :::
 rectangleMake :: proc {
 	_rectangleFromPositionSize,
 	_rectangleFromSize,
@@ -79,11 +87,12 @@ rectangleScale :: proc {
 //
 // Accepts a scalar or [`Vector2`](#vector2) as an `amount` by which the rectangle is expanded.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // rectangle := gmath.rectangleMake(gmath.Vector2{10, 10}) // size is gmath.Vector2{10, 10}
 // rectangle = gmath.rectangleExpand(rectangle, gmath.Vector2{5, 5}) // size is gmath.Vector2{20, 20}
 // ```
+// :::
 rectangleExpand :: proc {
 	_rectangleExpandScalar,
 	_rectangleExpandVector2,
@@ -93,11 +102,12 @@ rectangleExpand :: proc {
 // @ref
 // Moves [`Circle`](#circle) or [`Rectangle`](#rectangle) by the `delta` vector.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // rectangle := gmath.rectangleMake(gmath.Vector2{5, 5}, gmath.Vector2{10, 10}) // position is gmath.Vector2{5, 5}
 // rectangle = gmath.shift(rectangle, gmath.Vector2{10, 10}) // position is gmath.Vector2{15, 15}
 // ```
+// :::
 shift :: proc {
 	_circleShift,
 	_rectangleShift,

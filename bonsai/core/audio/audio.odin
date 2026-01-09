@@ -32,9 +32,10 @@ package audio
 //   }
 // }
 // ```
-//
-// **Note:** Currently supports only the **WAV** file format. For enums to generate, the audio files need to
+// :::caution
+// Currently supports only the **WAV** file format. For enums to generate, the audio files need to
 // be stored inside the **assets/audio** directory.
+// :::
 
 import "bonsai:core"
 import "bonsai:core/gmath"
@@ -292,8 +293,9 @@ rewind :: proc(id: VoiceHandle) {
 
 // @ref
 // Updates the position of the "listener" (usually the camera or player) for spatial audio calculations.
-//
+// :::note
 // It **defaults to the camera position**. This should be called every frame to override that default behavior.
+// :::
 setListenerPosition :: proc(position: gmath.Vector2) {
 	_mixer.listenerPosition = position
 }

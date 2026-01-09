@@ -128,7 +128,9 @@ getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 
 // @ref
 // Helper to get specific screen coordinates based on a [`Pivot`](https://bonsai-framework.dev/reference/core/gmath/#pivot) (anchoring).
+// :::tip
 // Useful for positioning UI elements relative to screen edges.
+// :::
 getScreenSpacePivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)

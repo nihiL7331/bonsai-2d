@@ -13,12 +13,13 @@ import "core:log"
 // Returns `true` if the window is open and expanded.
 // Objects inside the window should be within the **if-block**.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // if ui.window("Debug") {
 //   ui.button("Reset")
 // }
 // ```
+// :::
 window :: proc(
 	title: string,
 	position: gmath.Vector2 = {0, 0},
@@ -104,8 +105,9 @@ window :: proc(
 
 // @ref
 // Renders a clickable button. Returns `true` if clicked this frame.
-//
+// :::caution
 // Must be used within a **Window if-block**.
+// :::
 button :: proc(
 	label: string,
 	isInline: bool = false,
@@ -138,8 +140,9 @@ button :: proc(
 
 // @ref
 // Renders a **static text label**.
-//
+// :::caution
 // Must be used within a **Window if-block**.
+// :::
 text :: proc(text: string, isInline: bool = false, config: TextConfig = DEFAULT_TEXT_CONFIG) {
 	parent := state.currentContainer
 	if parent == nil {
@@ -165,8 +168,9 @@ text :: proc(text: string, isInline: bool = false, config: TextConfig = DEFAULT_
 // @ref
 // Renders a boolean checkbox toggle.
 // Modifies the `value` pointer directly. Returns `true` if the state has changed this frame.
-//
+// :::caution
 // Must be used within a **Window if-block**.
+// :::
 checkbox :: proc(
 	value: ^bool,
 	isInline: bool = false,
@@ -216,8 +220,9 @@ checkbox :: proc(
 // @ref
 // Renders a **draggable slider** for numeric types (`i32`, `f32`, etc.).
 // Returns `true` if the value changed this frame.
-//
+// :::caution
 // Must be used within a **Window if-block**.
+// :::
 slider :: proc(
 	value: ^$T,
 	minimumValue: T,

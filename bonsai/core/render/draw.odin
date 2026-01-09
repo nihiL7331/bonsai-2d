@@ -92,7 +92,9 @@ drawSprite :: proc(
 
 // @ref
 // Draws a line between `start` and `end` with a specified `thickness`.
+// :::note
 // Uses [`drawRectangleTransform`](#drawrectangletransform) internally to stretch a white pixel.
+// :::
 drawLine :: proc(
 	start: gmath.Vector2,
 	end: gmath.Vector2,
@@ -200,7 +202,10 @@ drawRectangleLines :: proc(
 }
 
 // @ref
-// Draws a simple [`Rectangle`](https://bonsai-framework.dev/reference/core/gmath/rectangle). Useful for UI, debug shapes or non-sprite elements.
+// Draws a simple [`Rectangle`](https://bonsai-framework.dev/reference/core/gmath/rectangle).
+// :::tip
+// Useful for UI, debug shapes or non-sprite elements.
+// :::
 drawRectangle :: proc(
 	rectangle: gmath.Rectangle,
 	rotation: f32 = 0.0, // in radians

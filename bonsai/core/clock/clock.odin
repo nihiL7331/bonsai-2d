@@ -99,7 +99,9 @@ tick :: proc() {
 // @ref
 // Returns the scaled time since the last frame in **seconds**.
 // Returns `0.0` if the game is paused.
-// Use this for game logic (movement, physics).
+// :::tip
+// Use this for movement, physics.
+// :::
 getDeltaTime :: proc() -> f32 {
 	return _deltaTime
 }
@@ -107,7 +109,9 @@ getDeltaTime :: proc() -> f32 {
 // @ref
 // Returns the actual time since the last frame in **seconds**.
 // Unaffected by pause or time scaling.
+// :::tip
 // Use this for UI animations or camera movement.
+// :::
 getUnscaledDeltaTime :: proc() -> f32 {
 	return _unscaledDeltaTime
 }
@@ -158,7 +162,9 @@ getTimeScale :: proc() -> f32 {
 
 // @ref
 // Returns average frame time (delta time) in seconds **over last 60 frames**.
+// :::tip
 // Useful for smoothing out jitter when displaying performance.
+// :::
 getAverageFrameTime :: proc() -> f32 {
 	sum: f32 = 0
 	for t in _frameTimes do sum += t
@@ -187,7 +193,9 @@ getApplicationTime :: proc() -> f64 {
 
 // @ref
 // Returns time when the application was initialized **in UNIX nanoseconds**.
+// :::tip
 // Useful for setting **seed** for pseudo-random values.
+// :::
 getApplicationInitTime :: proc() -> i64 {
 	return _applicationStartTime._nsec
 }

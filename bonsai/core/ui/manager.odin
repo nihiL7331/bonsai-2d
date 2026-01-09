@@ -8,11 +8,11 @@ package ui
 // - **Layout system:** Inline inserts to create an imitation of a simple grid layout,
 // - **Automated IDs:** Automatic element id assignment,
 // - **Toggle:** Configurable [`UI_VISIBLE_KEYCODE`](#ui_visible_keycode) for the entire UI overlay (default: **F1**).
-//
-// **Note:** This package is currently experimental, since such package is a project of its own.
+// :::caution
+// This package is currently experimental, since such package is a project of its own.
 // The API is unstable, expect bugs when using it.
-//
-// **Usage:**
+// :::
+// :::note[Usage]
 // ```Odin
 // draw :: proc() {
 //   render.setScreenSpace()
@@ -28,6 +28,7 @@ package ui
 //   ui.end()
 // }
 // ```
+// :::
 
 import "bonsai:core"
 import "bonsai:core/gmath"
@@ -131,7 +132,9 @@ state: UiState
 
 // @ref
 // Generates a unique UI ID based on a string label and the current ID stack.
+// :::note
 // Uses [`FNV-1a`](https://en.wikipedia.org/Fowler-Noll-Vo_hash_function) hashing.
+// :::
 getId :: proc(title: string) -> u32 {
 	seed: u32 = FNV_OFFSET_BASIS
 

@@ -17,7 +17,7 @@ package render
 //   [`drawTextSimple`](#drawtextsimple).
 // - **Scissoring:** Built-in support for clipping regions via [`ScissorState`](#scissorstate).
 //
-// **Usage:**
+// :::note[Usage]
 // ```Odin
 // draw :: proc() {
 //   render.setWorldSpace()
@@ -31,9 +31,9 @@ package render
 //   render.drawTextSimple(fmt.tprintf("Health: %d", potHealth), textPosition, .PixelCode)
 // }
 // ```
+// :::
 //
-// **Notes:**
-//
+// :::note[Notes]
 // Currently it only supports **PNG** files for images and **TTF** files for fonts.
 //
 // The CLI generates enums from images located in **assets/images**. For animated sprite sheets, they **have to**
@@ -45,6 +45,7 @@ package render
 // the tileset file name like so: **tileset_name_{w}x{h}.png**, where w is width of one tile in pixels, and h is height
 // of one tile in pixels. Each tile gets saved to the atlas with its edges extruded by one pixel, to ensure there's no
 // edge bleeding issue. When no suffix is provided, the default size for a tile is **16x16 pixels**.
+// :::
 
 import "bonsai:core"
 import "bonsai:core/gmath"

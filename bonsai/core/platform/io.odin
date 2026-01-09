@@ -10,7 +10,7 @@ package platform
 // - **Serialization helpers:** High-level functions [`loadStruct`](#loadstruct) and [`saveStruct`](#savestruct) for generic data persistence,
 //   along side low-level [`loadBytes`](#loadbytes) and [`saveBytes`](#savebytes).
 //
-// **Usage:**
+// :::note[Usage]
 // ```Odin
 // init :: proc() {
 //   // Load a config file from LocalStorage or a disk file
@@ -25,6 +25,7 @@ package platform
 //   platform.saveStruct("save01", &potState)
 // }
 // ```
+// :::
 
 IS_WEB :: ODIN_ARCH == .wasm64p32 || ODIN_ARCH == .wasm32
 
@@ -41,8 +42,9 @@ _ :: web
 // Platform-agnostic wrapper.
 // - **Web**: Reads from the **Emscripten Virtual File System**.
 // - **Desktop**: Reads directly **from the disk**.
-//
-// **Note:** Naming follows **core:os** convention rather than camelCase to indicate **standard library behavior**.
+// :::note
+// Naming follows **core:os** convention rather than camelCase to indicate **standard library behavior**.
+// :::
 @(require_results)
 read_entire_file :: proc(
 	name: string,

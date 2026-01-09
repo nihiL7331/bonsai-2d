@@ -12,7 +12,7 @@ package scene_manager
 // - **Simple navigation:** Specific [`change`](#change) function to handle transitions, changing on the
 //   next frame to allow cleanup within the `exit` function.
 //
-// **Usage:**
+// :::note[Usage]
 // To create a new scene, create a directory in **source/game/sources** and include the following code:
 //
 // ```Odin
@@ -51,6 +51,7 @@ package scene_manager
 //   scene.draw()
 // }
 // ```
+// :::
 
 import "bonsai:core"
 import "bonsai:core/scene/type"

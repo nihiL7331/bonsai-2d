@@ -12,7 +12,7 @@ package input
 // - **Key reading:** Direct access to key states via [`isKeyDown`](#iskeydown), [`isKeyPressed`](#iskeypressed) and [`isKeyReleased`](#iskeyreleased).
 // - **Cursor control:** Functions to lock or hide the system cursor ([`setCursorLocked`](#setcursorlocked), [`setCursorVisible`](#setcursorvisible)) **(Desktop only)**
 //
-// **Usage:**
+// :::note[Usage]
 // ```Odin
 // update :: proc() {
 //   // ...
@@ -25,6 +25,7 @@ package input
 //   }
 // }
 // ```
+// :::
 
 import "bonsai:core"
 import "bonsai:core/gmath"
@@ -62,7 +63,9 @@ InputFlag :: enum u8 {
 
 // @ref
 // Default mapping of **abstract game actions** to **physical** keys.
+// :::tip
 // This can be modified at runtime to support **key re-binding**.
+// :::
 actionMap: [InputAction]KeyCode = {
 	.left  = .A,
 	.right = .D,
@@ -255,14 +258,18 @@ isKeyDown :: proc(code: KeyCode) -> bool {
 
 // @ref
 // Checks if a physical key is sending **repeat** events **(OS specific)**.
+// :::tip
 // Useful for text input fields.
+// :::
 isKeyRepeating :: proc(code: KeyCode) -> bool {
 	return .repeat in _inputState.keys[code]
 }
 
 // @ref
 // Manually consumes a **pressed** event for a key.
+// :::tip
 // Useful if an event should only trigger one game action per frame.
+// :::
 consumeKeyPressed :: proc(code: KeyCode) {
 	_inputState.keys[code] -= {.pressed}
 }
@@ -276,7 +283,9 @@ consumeKeyReleased :: proc(code: KeyCode) {
 // @ref
 // Checks if **any** key is pressed this frame.
 // If found, it **consumes** that press and returns **true**.
+// :::tip
 // Useful for "Press any key" interactions.
+// :::
 consumeAnyKeyPress :: proc() -> bool {
 	for &flag, key in _inputState.keys {
 		if key >= int(KeyCode.LEFT_MOUSE) do continue

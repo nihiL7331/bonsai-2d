@@ -45,7 +45,7 @@ randomRangeInt :: proc(min: int, max: int) -> int {
 }
 
 // @ref
-// Returns a random [`Vector2`](#vector2) point in a circle of radius 1.
+// Returns a random [`Vector2`](#vector2) point in a circle of radius `1.0`.
 randomCircleNormalized :: proc() -> Vector2 {
 	return Vector2{randomFloatNormalized(), randomFloatNormalized()}
 }

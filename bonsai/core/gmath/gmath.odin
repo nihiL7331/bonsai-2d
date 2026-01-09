@@ -16,7 +16,7 @@ package gmath
 // - **Color handling:** Helpers to convert hex strings or values into [`Color`](#color) structs ([`hexToColor`](#hextocolor)). Contains generic
 //   color constants in `bonsai:core/gmath/colors`.
 //
-// **Usage:**
+// :::note[Usage]
 // ```Odin
 // update :: proc() {
 //   direction := gmath.direction(enemy.position, pot.position)
@@ -30,13 +30,17 @@ package gmath
 //   // ...
 // }
 // ```
+// :::
 
 import "base:intrinsics"
 import "core:math"
 import "core:math/linalg"
 
 // @ref
-// 2D Integer Vector (32-bit). **Useful for grid coordinates.**
+// 2D Integer Vector (32-bit).
+// :::tip
+// Useful for grid coordinates.
+// :::
 Vector2Int :: [2]i32
 
 // @ref
@@ -77,7 +81,9 @@ TAU :: math.TAU
 
 // @ref
 // Enum representing the 9 cardinal points of a rectangle.
+// :::note
 // Used for anchoring UI and aligning sprites.
+// :::
 Pivot :: enum {
 	bottomLeft,
 	bottomCenter,
@@ -93,11 +99,12 @@ Pivot :: enum {
 // @ref
 // Returns a normalized [`Vector2`](#vector2) (0.0 -> +1.0) corresponding to the [`Pivot`](#pivot) enum.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // // pivotOffset is equal to gmath.Vector2{0.5, 0.5}
 // pivotOffset := gmath.scaleFromPivot(gmath.Pivot.centerCenter)
 // ```
+// :::
 scaleFromPivot :: proc(pivot: Pivot) -> Vector2 {
 	switch pivot {
 	case .bottomLeft:
@@ -125,12 +132,13 @@ scaleFromPivot :: proc(pivot: Pivot) -> Vector2 {
 // @ref
 // Returns the dot product between two vectors.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // directionA := gmath.Vector2{1, 1}
 // directionB := gmath.Vector2{-1, 1}
 // product := gmath.dot(directionA, directionB)
 // ```
+// :::
 dot :: proc {
 	_dotVector2,
 	_dotVector3,
@@ -143,11 +151,12 @@ dot :: proc {
 // @ref
 // Returns the length (**magnitude**) of the vector `input`.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // point := gmath.Vector2{2, 2}
 // pointLength := gmath.length(point) // Returns distance from {0, 0} = 4√2
 // ```
+// :::
 length :: proc {
 	_lengthVector2,
 	_lengthVector3,
@@ -160,14 +169,18 @@ length :: proc {
 // @ref
 // Returns the squared length of the vector `input`.
 // **Faster** than [`length`](#length) because it doesn't use the square root operation.
-// Useful for distance comparisons.
 //
-// **Example**:
+// :::tip
+// Useful for distance comparisons.
+// :::
+//
+// :::note[Example]
 // ```Odin
 // pointA := gmath.Vector2{100, 100}
 // pointB := gmath.Vector2{5, 5}
 // result := gmath.lengthSquared(pointA) > gmath.lengthSquared(pointB) // result is true
 // ```
+// :::
 lengthSquared :: proc {
 	_lengthSquaredVector2,
 	_lengthSquaredVector3,
@@ -182,11 +195,12 @@ lengthSquared :: proc {
 //
 // Returns `{0, 0}` if the `input` vector is zero to prevent `nil` errors.
 //
-// **Example**:
+// :::note[Example]
 // ```Odin
 // direction := gmath.Vector2{100, 0}
 // directionNormalized := gmath.normalize(direction) // directionNormalized is gmath.Vector2{1, 0}
 // ```
+// :::
 normalize :: proc {
 	_normalizeVector2,
 	_normalizeVector3,
@@ -196,12 +210,13 @@ normalize :: proc {
 // @ref
 // Returns the distance between points `a` and `b`.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // pointA := gmath.Vector2{3, 0}
 // pointB := gmath.Vector2{3, 4}
 // dist := gmath.distance(pointA, pointB) // dist is 4
 // ```
+// :::
 distance :: proc {
 	_distanceVector2,
 	_distanceVector3,
@@ -214,12 +229,13 @@ distance :: proc {
 // @ref
 // Returns a normalized direction vector pointing from `start` to `end`.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // start := gmath.Vector2{4, 0}
 // end := gmath.Vector2{4, -9}
 // dir := gmath.direction(start, end) // dir is gmath.Vector2{0, -1}
 // ```
+// :::
 direction :: proc {
 	_directionVector2,
 	_directionVector3,
@@ -249,8 +265,9 @@ transformPoint :: proc(mat: Matrix4, point: Vector2) -> Vector2 {
 // @ref
 // Returns the inverse of the 4x4 matrix.
 // Useful for creating view matrices and converting world space to screen space.
-//
-// **Note:** Matrix inversion is computationally expensive.
+// :::note
+// Matrix inversion is computationally expensive.
+// :::
 matrixInverse :: proc(mat: Matrix4) -> Matrix4 {
 	return linalg.matrix4_inverse(mat)
 }
@@ -304,11 +321,12 @@ clamp :: proc {
 // @ref
 // Rounds the float `input` vector to the nearest integer **vector**, changing its type.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // value := gmath.Vector3{5.1, 7.6, 6.9}
 // roundedValue := gmath.roundToInt(value) // roundedValue is gmath.Vector3Int{5, 8, 7}
 // ```
+// :::
 roundToInt :: proc {
 	_roundToIntVector2,
 	_roundToIntVector3,
@@ -350,14 +368,17 @@ ceil :: proc {
 // Useful for smooth transitions, animations, or mixing colors.
 // Accepts scalar arguments, as well as [`Vector2`](#vector2), [`Vector3`](#vector3), [`Vector4`](#vector4) and [`Color`](#color).
 //
-// **Note:** The value of `t` is **not clamped** to the 0-1 range.
+// :::note
+// The value of `t` is **not clamped** to the 0-1 range.
+// :::
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // start := gmath.Vector2{4, 4}
 // finish := gmath.Vector2{16, 16}
 // result := gmath.lerp(start, finish, 0.5) // result is gmath.Vector2{10, 10}
 // ```
+// :::
 lerp :: proc {
 	_lerpScalar,
 	_lerpVector2,
@@ -368,10 +389,11 @@ lerp :: proc {
 // @ref
 // Remaps `input` from the `[inMin, inMax]` range to the `[outMin, outMax]` range.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // remapped := gmath.remap(50, 0, 100, 0, 1.0) // remapped is 0.5
 // ```
+// :::
 remap :: proc(input, inMin, inMax, outMin, outMax: $T) -> T {
 	return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin)
 }
@@ -405,11 +427,12 @@ sqrt :: proc(input: $T) -> T {
 // Accepts any number of arguments (minimum 1).
 // If no arguments are provided, returns `0`.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // minimum := gmath.min(10, 5, 20) // minimum is 5
 // vectorMinimum := gmath.min(vectorA, vectorB) // vectorMinimum is a component-wise minimum vector
 // ```
+// :::
 min :: proc {
 	_minScalarVariadic,
 	_minScalarBinary,
@@ -427,11 +450,12 @@ min :: proc {
 // Accepts any number of arguments (minimum 1).
 // If no arguments are provided, returns `0`.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // maximum := gmath.max(10, 30, 20) // maximum is 30
 // vectorMaximum := gmath.max(vectorA, vectorB) // vectorMaximum is a component-wise maximum vector
 // ```
+// :::
 max :: proc {
 	_maxScalarVariadic,
 	_maxScalarBinary,
@@ -448,11 +472,12 @@ max :: proc {
 // - For **scalars**: Returns the non-negative value.
 // - For **vectors**: Returns a new vector where every component is positive.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // direction := gmath.Vector2{-1, -1}
 // result := gmath.abs(direction) // result is gmath.Vector2{1, 1}
 // ```
+// :::
 abs :: proc {
 	_absScalar,
 	_absVector2,
@@ -468,11 +493,12 @@ abs :: proc {
 // - For **scalars**: Standard trigonometric sin function.
 // - For **vectors**: Component-wise sine.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // wave := gmath.Vector2{ -gmath.PI / 2, gmath.PI / 2 }
 // result := gmath.sin(wave) // result is gmath.Vector2{ -1, 1 }
 // ```
+// :::
 sin :: proc {
 	_sinScalarFloat,
 	_sinScalarInt,
@@ -486,11 +512,12 @@ sin :: proc {
 // - For **scalars**: Standard trigonometric cos function.
 // - For **vectors**: Component-wise cosine.
 //
-// **Example:**
+// :::note[Example]
 // ```Odin
 // wave := gmath.Vector2{ 0, gmath.PI / 2 }
 // result := gmath.cos(wave) // result is gmath.Vector2{ 1, 0 }
 // ```
+// :::
 cos :: proc {
 	_cosScalarFloat,
 	_cosScalarInt,
@@ -500,11 +527,12 @@ cos :: proc {
 }
 
 // @ref
-// Returns the angle in radians between the x-axis and the ray from (0,0) to (y,x).
-//
+// Returns the angle in radians between the x-axis and the ray from `{0,0}` to `{y,x}`.
+// :::tip
 // **Crucial for rotation**: To make an object at `position` look at `target`, use:
 //
 // `angle := gmath.atan2(target.y - position.y, target.x - position.x)`
+// :::
 atan2 :: proc(y, x: $T) -> T {
 	return math.atan2(y, x)
 }

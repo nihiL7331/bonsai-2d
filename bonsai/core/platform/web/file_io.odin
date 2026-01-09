@@ -10,8 +10,9 @@ package web
 //
 // It's a symmetric representation of functions decalred in the `bonsai:core/platform/desktop` package, but it additionally
 // contains an Emscripten allocator implementation.
-//
+// :::note
 // If you wish to use these functions, it's recommended to import the `bonsai:core/platform` package.
+// :::
 
 import "base:runtime"
 import "core:c"
@@ -43,7 +44,9 @@ Whence :: enum c.int {
 
 // @ref
 // Reads a file from **Emscripten's Virtual File System (MEMFS)**.
-// **Note:** This does not read from the user's hard drive, but from the sandboxed browser memory.
+// :::note
+// This does not read from the user's hard drive, but from the sandboxed browser memory.
+// :::
 read_entire_file :: proc(
 	name: string,
 	allocator := context.allocator,
