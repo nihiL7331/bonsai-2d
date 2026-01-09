@@ -1,8 +1,5 @@
 package render
 
-// @overview
-// test
-
 import "bonsai:core/gmath"
 import "bonsai:core/platform"
 import "bonsai:generated"

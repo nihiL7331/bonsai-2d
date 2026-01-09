@@ -1,8 +1,34 @@
 package clock
 
+// @overview
+// This package manages the application's timing.
+// It provides all essential utilities for frame-rate independent movement,
+// time manipulation and global pause states.
 //
-// This file contains helper functions related to game and app time.
+// **Features:**
+// - **Frame independence:** Access to `getDeltaTime` for consistent movement,
+//   regardless of framerate.
+// - **Time scaling:** Global control over game speed via `setTimeScale`.
+// - **Pause system:** Built-in `setPaused` functionality useful for pause screens.
+// - **Timers:** Functions like `hasTimestampPassed` and `getSecondsSince` to easily
+//   handle cooldowns, delays and timers without ugly timer variables.
 //
+// **Usage:**
+// ```Odin
+// update :: proc() {
+//   // Standard movement, stops when paused
+//   pot.position += velocity * clock.getDeltaTime()
+//
+//   // Continues when paused
+//   ui.rotation += speed * clock.getUnscaledDeltaTime()
+//
+//   // Simple cooldown check
+//   if clock.hasTimestampPassed(nextAttackTime) {
+//     potAttack()
+//     nextAttackTime = clock.getGameTime() + 0.5
+//   }
+// }
+// ```
 
 import "core:log"
 import "core:time"

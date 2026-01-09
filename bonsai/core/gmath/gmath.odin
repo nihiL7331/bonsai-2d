@@ -1,8 +1,35 @@
 package gmath
 
+// @overview
+// This package contains all of the most important math functions used for game development purposes.
+// It provides a comprehensive library of mathematical primitives and utilities.
+// Contains linear algebra, geometry and random number generation.
 //
-// This file contains all of the most important math functions used for game development purposes.
+// **Features:**
+// - **Linear algebra:** Robust support for vectors (`Vector2/Int` -> `Vector4/Int`) and matrices (`Matrix4`)
+//   including the most important operations like `dot`, `normalize`, `direction`.
+// - **Geometry:** Contains tools for manipulating shapes, including `Rectangle` and `Circle`. Allows to position,
+//   scale, pivot, and check collision between shapes.
+// - **Randomness:** Utilities for generating random numbers (`randomRange`), normalized floats (`randomFloatNormalized`)
+//   and picking random array elements via `randomElement`.
+// - **Math utilities:** Essential game math functions including `lerp`, `ease`, `remap` and `clamp`.
+// - **Color handling:** Helpers to convert hex strings or values into `Color` structs (`hexToColor`). Contains generic
+//   color constants in `bonsai:core/gmath/colors`.
 //
+// **Usage:**
+// ```Odin
+// update :: proc() {
+//   direction := gmath.direction(enemy.position, pot.position)
+//   enemy.position += direction * enemy.speed * deltaTime
+//
+//   if gmath.rectangleIntersects(pot.collider, enemy.collider) {
+//     potDead()
+//   }
+//
+//   spawnPosition := gmath.randomCircleNormalized() * spawnRange
+//   // ...
+// }
+// ```
 
 import "base:intrinsics"
 import "core:math"

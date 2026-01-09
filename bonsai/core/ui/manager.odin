@@ -1,5 +1,34 @@
 package ui
 
+// @overview
+// This package is a simple IMGUI implementation.
+// It allows plenty of customization, and currently comes with these features:
+// - **Window management:** Basic togglable windows with scroll support,
+// - **Pointer-based widgets:** Buttons, checkboxes, sliders that edit variables via pointers,
+// - **Layout system:** Inline inserts to create an imitation of a simple grid layout,
+// - **Automated IDs:** Automatic element id assignment,
+// - **Toggle:** Configurable toggle for the entire UI overlay (default: **F1**).
+//
+// **Note:** This package is currently experimental, since such package is a project of its own.
+// The API is unstable, expect bugs when using it.
+//
+// **Usage:**
+// ```Odin
+// draw :: proc() {
+//   render.setScreenSpace()
+//
+//   ui.begin()
+//   if ui.window("Debug") {
+//     ui.slider(&pot.speed, 0, 100)
+//     ui.text("Speed", true)
+//     if ui.button("Reset") {
+//       pot.speed = 20
+//     }
+//   }
+//   ui.end()
+// }
+// ```
+
 import "bonsai:core"
 import "bonsai:core/gmath"
 import "bonsai:core/input"

@@ -1,5 +1,12 @@
 package logger
 
+// @overview
+// This package implements a custom logging setup for `core:log`.
+// It enforces a bonsai CLI style format with ANSI coloring.
+//
+// This package **does not** provide logging functions itself.
+// Continue to use `core:log` for log calls.
+
 import "base:runtime"
 import "core:fmt"
 import "core:log"

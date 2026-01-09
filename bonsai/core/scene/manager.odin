@@ -1,5 +1,57 @@
 package scene_manager
 
+// @overview
+// This package implements a lightweight scene manager.
+// It streamlines the game loop by mapping directory names to scene enums.
+//
+// **Features:**
+// - **Auto-generated enums:** The `SceneName` enum from the `bonsai:generated` package
+//   is generated automatically based on directories found in **source/game/scenes**.
+// - **Lifecycle management:** Standardized hooks for `init`, `update`, `draw` and `exit`.
+// - **State persistence:** Data is passed between procedures via a `rawptr` to a state array.
+// - **Simple navigation:** Specific `change` function to handle transitions, changing on the
+//   next frame to allow cleanup within the `exit` function.
+//
+// **Usage:**
+// To create a new scene, create a directory in **source/game/sources** and include the following code:
+//
+// ```Odin
+// package scene_name // Name the package accordingly
+//
+// // Cast the rawptr to your specific Data state struct
+// init :: proc(data: rawptr) {
+//   // state := (^Data)(data)
+// }
+//
+// update :: proc(data: rawptr) {
+//   // state := (^Data)(data)
+// }
+//
+// draw :: proc(data: rawptr) {
+//   // state := (^Data)(data)
+// }
+//
+// exit :: proc(data: rawptr) {
+//   // state := (^Data)(data)
+// }
+// ```
+//
+// Then, in your main **game.odin** file:
+// ```Odin
+// init :: proc() {
+//   // Initialize with the starting scene enum
+//   scene.init(.mainmenu)
+// }
+//
+// update :: proc() {
+//   scene.update()
+// }
+//
+// draw :: proc() {
+//   scene.draw()
+// }
+// ```
+
 import "bonsai:core"
 import "bonsai:core/scene/type"
 import "bonsai:generated"

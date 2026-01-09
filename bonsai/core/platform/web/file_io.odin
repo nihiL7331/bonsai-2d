@@ -1,11 +1,17 @@
 #+build wasm32, wasm64p32
 package web
 
+// @overview
+// This package compiles only on **web** builds.
 //
-// This file compiles only on web builds.
-// it uses emscriptens virtual file system for read/write_entire_file,
-// and the browsers LocalStorage for persistent save data.
+// it uses **Emscripten Virtual File System** for `read_entire_file` and `write_entire_file`.
 //
+// It uses the browsers **LocalStorage** for `loadBytes`, `loadStruct`, `saveBytes` and `saveStruct`.
+//
+// It's a symmetric representation of functions decalred in the `bonsai:core/platform/desktop` package, but it additionally
+// contains an Emscripten allocator implementation.
+//
+// If you wish to use these functions, it's recommended to import the `bonsai:core/platform` package.
 
 import "base:runtime"
 import "core:c"

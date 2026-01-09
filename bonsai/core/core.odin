@@ -1,5 +1,33 @@
 package core
 
+// @overview
+// This package acts as the central hub of the engine.
+// Manages global state and configuration. Holds the primary `CoreContext`.
+//
+// **Features:**
+// - **Global context:** Global engine state shared across all packages via `getCoreContext`.
+//   Contains window information, camera and scene data.
+// - **Window definition:** Contains the core definitions related to the applications windows,
+//   like `GAME_WIDTH`, `GAME_HEIGHT`, `windowWidth`, `windowHeight` and `WINDOW_TITLE`.
+// - **Camera definition:** Contains the `Camera` struct definition used to track `position`,
+//   `zoom` and `bounds` of the camera.
+//
+// **Usage:**
+// ```Odin
+// update :: proc() {
+//   coreContext := core.getCoreContext()
+//
+//   // The camera follows Pot
+//	 t := 1.0 - math.exp_f32(-10 * deltaTime)
+//	 coreContext.camera.position = gmath.lerp(coreContext.camera.position, pot.position, t)
+//
+//   // If pot goes far enough, change the level
+//   if pot.position.x > core.GAME_WIDTH {
+//      scene.change(.Level2)
+//   }
+// }
+// ```
+
 import "bonsai:core/gmath"
 import "bonsai:core/scene/type"
 

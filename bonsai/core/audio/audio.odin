@@ -1,5 +1,41 @@
 package audio
 
+// @overview
+// This package implements a real-time audio system.
+// It manages voice pooling, resource loading, and spatial audio calculations.
+//
+// **Features:**
+// - **Automated asset pipeline:** Similarly to sprites, it utilizes auto-generated audio enums
+//   (`AudioName` from `bonsai:generated` package) for fast access to all sound files.
+// - **Spatial audio:** Built-in support for 2D positional audio via `playSpatial`.
+//   It automatically calculates volume and panning based on the distance and relative position
+//   between the source and the listener.
+// - **Voice management:** Uses a fixed-size voice pool (`MIXER_VOICE_CAPACITY`) to recycle audio
+//   channels.
+// - **Playback control:** Control over active sounds using functions like `pause`, `resume`, `stop`,
+//   `rewind` and `seek`.
+// - **Bus system:** Grouping voices via `Bus` to control volumes for distinct categories.
+//
+// **Usage:**
+// ```Odin
+// init :: proc() {
+//   audio.playGlobal(.musicTheme, volume = 0.5, isLooped = true)
+// }
+//
+// update :: proc() {
+//   if potWalking {
+//     handle := audio.playSpatial(.potWalkSfx, potPosition)
+//   }
+//
+//   if potDead {
+//     audio.stop(handle)
+//   }
+// }
+// ```
+//
+// **Note:** Currently supports only the WAV file format. For enums to generate, the audio files need to
+// be stored inside the **assets/audio** directory.
+
 import "bonsai:core"
 import "bonsai:core/gmath"
 import sokol_audio "bonsai:libs/sokol/audio"

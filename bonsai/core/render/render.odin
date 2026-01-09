@@ -1,5 +1,51 @@
 package render
 
+// @overview
+// This package implements a batched 2D rendering pipeline.
+// It serves as the primary interface for drawing sprites, text and geometric primitives,
+// automatically handling coordinate space transformations and draw call batching.
+//
+// **Features:**
+// - **Automated asset pipeline:** Utilizes a build-time generated texture atlas and
+//   auto-generated sprite and font enums (`SpriteName` and `FontName` in `bonsai:generated` package)
+//   for type-safe, optimized asset access.
+// - **Batched rendering:** Automatically batches draw calls (up to `MAX_QUADS`) to minimize GPU overhead,
+//   with manual control via `flushBatch`.
+// - **Coordinate systems:** Easy switching between `WorldSpace` (gameplay) and `ScreenSpace` (UI) using
+//   helper functions: `setWorldSpace` and `setScreenSpace`.
+// - **Text drawing:** Integrated TTF font support with utilities like `drawTextWithDropShadow` and
+//   `drawTextSimple`.
+// - **Scissoring:** Built-in support for clipping regions via `ScissorState`.
+//
+// **Usage:**
+// ```Odin
+// draw :: proc() {
+//   render.setWorldSpace()
+//
+//   // Draw game objects using auto-generated sprite enums
+//   render.drawSprite(.potShadow, potPosition, drawLayer = .shadow)
+//   render.drawSprite(.potIdle, potPosition)
+//
+//   // Draw ui with auto-generated font enum
+//   render.setScreenSpace()
+//   render.drawTextSimple(fmt.tprintf("Health: %d", potHealth), textPosition, .PixelCode)
+// }
+// ```
+//
+// **Notes:**
+//
+// Currently it only supports **PNG** files for images and **TTF** files for fonts.
+//
+// The CLI generates enums from images located in **assets/images**. For animated sprite sheets, they **have to**
+// be a horizontal stripe. You can declare the amount of animation frames by naming the file **file_name_{x}x1.png**,
+// where x is the amount of frames. The animation frames suffix gets removed from the enum name.
+//
+// The CLI also allows for **tileset loading**, with each tile being a separate sprite. Simply create a **tilesets**
+// directory in **assets/images**, and save the tileset here. Similarly to animation frame declaration, you can suffix
+// the tileset file name like so: **tileset_name_{w}x{h}.png**, where w is width of one tile in pixels, and h is height
+// of one tile in pixels. Each tile gets saved to the atlas with its edges extruded by one pixel, to ensure there's no
+// edge bleeding issue. When no suffix is provided, the default size for a tile is **16x16 pixels**.
+
 import "bonsai:core"
 import "bonsai:core/gmath"
 import "bonsai:core/platform"

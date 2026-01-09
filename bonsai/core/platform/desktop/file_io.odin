@@ -1,10 +1,12 @@
 #+build !wasm32, !wasm64p32
 package desktop
 
+// @overview
+// This package compiles only on **desktop** builds.
 //
-// this file compiles only on desktop builds.
-// it is a symmetric representation of functions declared in the web/file_io.odin file.
+// it is a symmetric representation of functions declared in the `bonsai:core/platform/web` package.
 //
+// If you wish to use these functions, it's recommended to import the `bonsai:core/platform` package.
 
 import "core:log"
 import "core:mem"

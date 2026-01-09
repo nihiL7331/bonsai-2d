@@ -1,8 +1,30 @@
 package platform
 
+// @overview
+// This package provides a unified abstraction layer for platform-specific functions.
+// It exposes a single, agnostic API that handles the differences between desktop and web environments.
 //
-// this file acts as a router to appropriate implementation based off the build target.
+// **Features:**
+// - **Agnostic file I/O:** Wrappers `read_entire_file` and `write_entire_file` match the `core:os` signature
+//   but work across all build targets.
+// - **Serialization helpers:** High-level functions `loadStruct` and `saveStruct` for generic data persistence,
+//   along side low-level `loadBytes` and `saveBytes`.
 //
+// **Usage:**
+// ```Odin
+// init :: proc() {
+//   // Load a config file from LocalStorage or a disk file
+//   data, success := platform.loadBytes("config")
+//   if success {
+//     // ...
+//   }
+// }
+//
+// exit :: proc() {
+//   // Saves to LocalStorage or a specified save file dependent on the build target
+//   platform.saveStruct("save01", &potState)
+// }
+// ```
 
 // determine if we are compiling for the web
 IS_WEB :: ODIN_ARCH == .wasm64p32 || ODIN_ARCH == .wasm32

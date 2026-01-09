@@ -1,5 +1,31 @@
 package input
 
+// @overview
+// This package manages user input across keyboard and mouse devices (gamepad WIP).
+// It supports both raw key polling and an abstract `Action` system for remappable key controls.
+//
+// **Features:**
+// - **Action system:** Maps physical keys to logical `InputAction` enums, allowing for
+//   easy control remapping and clean game logic code.
+// - **Input consumption:** `consume` functions (e.g. `consumeKeyPressed`) that make single-frame events easy.
+// - **Mouse utilities:** Helpers for easy usage of the mouse inputs (`getMousePosition`, `getScrollY`)
+// - **Key reading:** Direct access to key states via `isKeyDown`, `isKeyPressed` and `isKeyReleased`.
+// - **Cursor control:** Functions to lock or hide the system cursor (`setCursorLocked`, `setCursorVisible`) **(Desktop only)**
+//
+// **Usage:**
+// ```Odin
+// update :: proc() {
+//   // ...
+//   pot.position += input.getInputVector() * speed * deltaTime
+//
+//   if input.isKeyPressed(.LEFT_MOUSE) {
+//     mousePosition := input.getMousePosition()
+//     potTeleport(mousePosition)
+//     input.consumeKeyPressed(.LEFT_MOUSE)
+//   }
+// }
+// ```
+
 import "bonsai:core"
 import "bonsai:core/gmath"
 import "bonsai:core/render"
