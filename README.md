@@ -73,6 +73,33 @@ draw :: proc() {
 }
 ```
 
+Finally, your code should look like this:
+
+```odin
+// This file is the entry point for all gameplay code.
+
+package game
+
+import "bonsai:core/render"
+import "bonsai:core/gmath"
+
+init :: proc() {
+}
+
+update :: proc() {
+}
+
+draw :: proc() {
+  render.setScreenSpace()
+
+  centerPosition := gmath.getScreenSpacePivot(.centerCenter)
+  render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
+}
+
+shutdown :: proc() {
+}
+```
+
 Run it, and you should see beautifully pixelated text saying **"Hello, Pot!"**.
 And you're done!
 
