@@ -1,5 +1,10 @@
 package main
 
+// This file is a bridge between the bonsai framework
+// and the project. It loads and runs all essential functions.
+// Most of the time it doesn't have to be edited.
+// The true entry point for your project is game.odin.
+
 import "base:runtime"
 import "core:log"
 
