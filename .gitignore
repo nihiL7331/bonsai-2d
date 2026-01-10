@@ -6,3 +6,4 @@ bonsai/generated/*.odin
 bonsai/core/render/atlas/atlas.png
 source/game/scenes/generated_registry.odin
 TODO.md
+.bonsai/cache/shaders

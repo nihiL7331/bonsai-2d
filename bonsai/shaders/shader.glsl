@@ -1,94 +1,30 @@
-// for shaders we use the same naming convention, with the difference being 
-// "a" vertex in (attributes)
-// "v" vertex out/fragment in (varyings)
-// "o" fragment out (outputs)
-// "u" for cpu called (uniforms)
 @header package shaders
-@header import sg "bonsai:libs/sokol/gfx"
-@header import "bonsai:core/gmath"
-
-@ctype vec4 gmath.Vector4
-@ctype mat4 gmath.Matrix4
+@include shader_header.glsl
 
 // NOTE: VERTEX SHADER
 @vs vs
-
-layout(binding=0) uniform ShaderData {
-  mat4 uViewProjectionMatrix;
-};
-
-in vec2 aPosition;
-in vec4 aColor;
-in vec2 aUv;
-in vec2 aLocalUv;
-in vec2 aSize;
-in vec4 aBytes;
-in vec4 aColorOverride;
-in vec4 aParams;
-
-out vec2 vPosition;
-out vec4 vColor;
-out vec2 vUv;
-out vec2 vLocalUv;
-out vec2 vSize;
-out vec4 vBytes;
-out vec4 vColorOverride;
-out vec4 vParams;
+@include shader_vs_core.glsl
 
 void main() {
-  gl_Position = uViewProjectionMatrix * vec4(aPosition, 0, 1);
+  gl_Position = getProjectedPosition(aPosition);
 
-  vPosition = aPosition;
-  vColor = aColor;
-  vUv = aUv;
-  vLocalUv = aLocalUv;
-  vBytes = aBytes;
-  vColorOverride = aColorOverride;
-  vSize = aSize;
-  vParams = aParams;
+  passVertexData();
 }
 @end
 
 // NOTE: FRAGMENT SHADER
 @fs fs
-
-@include shader_utils.glsl
-
-layout(binding=0) uniform texture2D uTex;
-layout(binding=1) uniform texture2D uFontTex;
-layout(binding=0) uniform sampler uDefaultSampler;
-
-in vec2 vPosition;
-in vec4 vColor;
-in vec2 vUv;
-in vec2 vLocalUv;
-in vec2 vSize;
-in vec4 vBytes;
-in vec4 vColorOverride;
-in vec4 vParams;
+@include shader_fs_core.glsl
 
 out vec4 oColor;
 
-// shared with QuadFlags definition
-#define FLAG_backgroundPixels (1<<0)
-#define FLAG_2 (1<<1)
-#define FLAG_3 (1<<2)
-bool hasFlag(int flags, int flag) { return (flags & flag) != 0; }
-
 void main() {
-  int texIndex = int(vBytes.x * 255.0 + 0.5);
-  vec4 texColor = vec4(1.0);
-
-  if (texIndex == 0) {
-    texColor = texture(sampler2D(uTex, uDefaultSampler), vUv);
-  } else if (texIndex == 1) {
-    texColor.a = texture(sampler2D(uFontTex, uDefaultSampler), vUv).r;
-  }
+  vec4 texColor = getTexColor(vBytes, vUv);
 
   oColor = texColor * vColor;
+
   oColor.rgb = mix(oColor.rgb, vColorOverride.rgb, vColorOverride.a);
 }
-
-@end 
+@end
 
 @program quad vs fs

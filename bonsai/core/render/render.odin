@@ -63,7 +63,7 @@ import "core:mem"
 import "core:slice"
 
 @(private = "file")
-_renderState: RenderState
+_renderContext: RenderContext
 
 @(private = "file")
 _atlas: Atlas
@@ -83,7 +83,7 @@ _scissorState: ScissorState
 // @ref
 // Sets the background clear color.
 setClearColor :: proc(col: gmath.Vector4) {
-	_renderState.passAction = {
+	_renderContext.passAction = {
 		colors = {0 = {load_action = .CLEAR, clear_value = transmute(sokol_gfx.Color)(col)}},
 	}
 }
@@ -160,7 +160,7 @@ init :: proc() {
 	loadAtlas(ATLAS_PATH)
 
 	// create dynamic vertex buffer
-	_renderState.bindings.vertex_buffers[0] = sokol_gfx.make_buffer(
+	_renderContext.bindings.vertex_buffers[0] = sokol_gfx.make_buffer(
 		{usage = {stream_update = true}, size = size_of(_actualQuadData)},
 	)
 
@@ -180,48 +180,15 @@ init :: proc() {
 		indices[i + 5] = baseIndex + 3
 	}
 
-	_renderState.bindings.index_buffer = sokol_gfx.make_buffer(
+	_renderContext.bindings.index_buffer = sokol_gfx.make_buffer(
 		{
 			usage = {index_buffer = true},
 			data = {ptr = raw_data(indices), size = size_of(u16) * indexBufferCount},
 		},
 	)
 
-	_renderState.bindings.samplers[shaders.SMP_uDefaultSampler] = sokol_gfx.make_sampler({})
-
-	// setup pipeline
-	pipelineDesc: sokol_gfx.Pipeline_Desc = {
-		shader = sokol_gfx.make_shader(shaders.quad_shader_desc(sokol_gfx.query_backend())),
-		index_type = .UINT16,
-		layout = {
-			attrs = {
-				shaders.ATTR_quad_aPosition = {format = .FLOAT2},
-				shaders.ATTR_quad_aColor = {format = .FLOAT4},
-				shaders.ATTR_quad_aUv = {format = .FLOAT2},
-				shaders.ATTR_quad_aLocalUv = {format = .FLOAT2},
-				shaders.ATTR_quad_aSize = {format = .FLOAT2},
-				shaders.ATTR_quad_aBytes = {format = .UBYTE4N},
-				shaders.ATTR_quad_aColorOverride = {format = .FLOAT4},
-				shaders.ATTR_quad_aParams = {format = .FLOAT4},
-			},
-		},
-	}
-
-	// setup blending (alpha blend)
-	blendState: sokol_gfx.Blend_State = {
-		enabled          = true,
-		src_factor_rgb   = .SRC_ALPHA,
-		dst_factor_rgb   = .ONE_MINUS_SRC_ALPHA,
-		op_rgb           = .ADD,
-		src_factor_alpha = .ONE,
-		dst_factor_alpha = .ONE_MINUS_SRC_ALPHA,
-		op_alpha         = .ADD,
-	}
-	pipelineDesc.colors[0] = {
-		blend = blendState,
-	}
-	_renderState.pipeline = sokol_gfx.make_pipeline(pipelineDesc)
-
+	_renderContext.bindings.samplers[shaders.SMP_uDefaultSampler] = sokol_gfx.make_sampler({})
+	_renderContext.defaultShaderId = loadShader(shaders.quad_shader_desc)
 
 	// set the initial clear color
 	setClearColor(CLEAR_COLOR)
@@ -234,17 +201,15 @@ coreRenderFrameStart :: proc() {
 	resetDrawFrame()
 
 	if _atlas.view.id != sokol_gfx.INVALID_ID {
-		_renderState.bindings.views[shaders.VIEW_uTex] = _atlas.view
-		_renderState.bindings.views[shaders.VIEW_uFontTex] = _atlas.view //HACK: do that to avoid crash when font isnt loaded
+		_renderContext.bindings.views[shaders.VIEW_uTex] = _atlas.view
+		_renderContext.bindings.views[shaders.VIEW_uFontTex] = _atlas.view //HACK: do that to avoid crash when font isnt loaded
 	}
 
-	_renderState.passAction.colors[0].load_action = .CLEAR
+	_renderContext.passAction.colors[0].load_action = .CLEAR
 
 	_scissorState.enabled = false
 
-	sokol_gfx.begin_pass({action = _renderState.passAction, swapchain = sokol_glue.swapchain()})
-
-	sokol_gfx.apply_pipeline(_renderState.pipeline)
+	sokol_gfx.begin_pass({action = _renderContext.passAction, swapchain = sokol_glue.swapchain()})
 
 	setWorldSpace()
 
@@ -260,7 +225,7 @@ coreRenderFrameEnd :: proc() {
 }
 
 // @ref
-// Resets the [`DrawFrame`](#drawframe) (clears quads, resets camera).
+// Resets the [`DrawFrame`](#drawframe) (clears quads, resets camera) and sets the shader to default.
 resetDrawFrame :: proc() {
 	drawFrame := getDrawFrame()
 	drawFrame.reset.coordSpace = {}
@@ -287,13 +252,17 @@ resetDrawFrame :: proc() {
 			gmath.Pivot.centerCenter,
 		)
 	}
+	setShader(_renderContext.defaultShaderId)
 }
 
 // @ref
 // Flushes all queued quads to the GPU.
-// Sorts layers if necessary and handles batch splitting if [`MAX_QUADS`](#max_quads) is exceeded.
+// Sorts layers if necessary. Warns when [`MAX_QUADS`](#max_quads) is exceeded.
 flushBatch :: proc() {
 	drawFrame := getDrawFrame()
+
+	activeShader := _renderContext.shaders[_renderContext.activeShaderId]
+	sokol_gfx.apply_pipeline(activeShader.pipeline)
 
 	quadIndex := 0
 
@@ -328,14 +297,14 @@ flushBatch :: proc() {
 
 	// upload to gpu
 	offset := sokol_gfx.append_buffer(
-		_renderState.bindings.vertex_buffers[0],
+		_renderContext.bindings.vertex_buffers[0],
 		{ptr = raw_data(_actualQuadData[:]), size = uint(quadIndex) * size_of(Quad)},
 	)
 
-	_renderState.bindings.vertex_buffer_offsets[0] = offset
-	sokol_gfx.apply_bindings(_renderState.bindings)
+	_renderContext.bindings.vertex_buffer_offsets[0] = offset
+	sokol_gfx.apply_bindings(_renderContext.bindings)
 
-	// appply scissor
+	// apply scissor
 	if _scissorState.enabled {
 		sokol_gfx.apply_scissor_rectf(
 			_scissorState.coordinates.x,
@@ -360,7 +329,7 @@ flushBatch :: proc() {
 	drawFrame.reset.shaderData.uViewProjectionMatrix =
 		drawFrame.reset.coordSpace.viewProjectionMatrix
 	sokol_gfx.apply_uniforms(
-		shaders.UB_ShaderData,
+		BINDING_GLOBAL_UNIFORMS,
 		{ptr = &drawFrame.reset.shaderData, size = size_of(shaders.Shaderdata)},
 	)
 
@@ -373,24 +342,127 @@ flushBatch :: proc() {
 }
 
 // @ref
+// Creates a new [`ShaderId`](#shaderid) from a `sokol-shdc` generated description function.
+// This function enforces the framework's standard vertex layout to ensure compatibility with batching.
+//
+// :::note
+// This doesn't change the current shader, just loads it into memory.
+// :::
+//
+// :::note[Example]
+// ```Odin
+// import "shaders"
+//
+// potShader := render.loadShader(shaders.pot_shader_desc)
+// ```
+// :::
+loadShader :: proc(descriptionFunction: ShaderDescriptionFunction) -> ShaderId {
+	backend := sokol_gfx.query_backend()
+	description := descriptionFunction(backend)
+
+	shader := sokol_gfx.make_shader(description)
+
+	pipelineDescription: sokol_gfx.Pipeline_Desc = {
+		shader = shader,
+		index_type = .UINT16,
+		layout = {
+			attrs = {
+				LOCATION_POSITION = {format = .FLOAT2},
+				LOCATION_COLOR = {format = .FLOAT4},
+				LOCATION_UV = {format = .FLOAT2},
+				LOCATION_LOCAL_UV = {format = .FLOAT2},
+				LOCATION_SIZE = {format = .FLOAT2},
+				LOCATION_BYTES = {format = .UBYTE4N},
+				LOCATION_COLOR_OVERRIDE = {format = .FLOAT4},
+				LOCATION_PARAMETERS = {format = .FLOAT4},
+			},
+		},
+	}
+	blendState: sokol_gfx.Blend_State = {
+		enabled          = true,
+		src_factor_rgb   = .SRC_ALPHA,
+		dst_factor_rgb   = .ONE_MINUS_SRC_ALPHA,
+		op_rgb           = .ADD,
+		src_factor_alpha = .ONE,
+		dst_factor_alpha = .ONE_MINUS_SRC_ALPHA,
+		op_alpha         = .ADD,
+	}
+	pipelineDescription.colors[0] = {
+		blend = blendState,
+	}
+
+	pipeline := sokol_gfx.make_pipeline(pipelineDescription)
+	id := ShaderId(len(_renderContext.shaders))
+
+	append(&_renderContext.shaders, Shader{pipeline = pipeline, id = id})
+	return id
+}
+
+// @ref
+// Sets the active shader pipeline for subsequent draw calls.
+// Flushes the current batch if the shader changes.
+//
+// **Arguments:**
+// - **`id`**: Expects the [`ShaderId`](#shaderid) returned by [`loadShader`](#loadshader).
+// - **`nil`**: Sets the shader to default.
+setShader :: proc {
+	_setShaderValue,
+	_setShaderDefault,
+}
+
+@(private = "file")
+_setShaderDefault :: proc() {
+	if _renderContext.activeShaderId == _renderContext.defaultShaderId do return
+
+	flushBatch()
+	_renderContext.activeShaderId = _renderContext.defaultShaderId
+}
+
+@(private = "file")
+_setShaderValue :: proc(id: ShaderId) {
+	if _renderContext.activeShaderId == id do return
+
+	flushBatch()
+	_renderContext.activeShaderId = id
+}
+
+// @ref
+// Uploads custom uniform data to the currently active shader.
+// This triggers a batch flush to ensure previous sprites are drawn with old uniforms.
+// :::note
+// The data is bound to `layout(binding=1)` in **GLSL**.
+// :::
+// :::note[Example]
+// parameters := PotParameters{ time = 1.0, power = 10.0 }
+// render.setCustomUniforms(&params, size_of(params))
+// :::
+setCustomUniforms :: proc(data: rawptr, size: uint) {
+	flushBatch()
+
+	activeShader := _renderContext.shaders[_renderContext.activeShaderId]
+	sokol_gfx.apply_pipeline(activeShader.pipeline)
+	sokol_gfx.apply_uniforms(1, {ptr = data, size = size})
+}
+
+// @ref
 // Changes the active **main texture view**.
 setTexture :: proc(view: sokol_gfx.View) {
-	currentId := _renderState.bindings.views[shaders.VIEW_uTex].id
+	currentId := _renderContext.bindings.views[shaders.VIEW_uTex].id
 
 	if currentId != view.id {
 		flushBatch()
-		_renderState.bindings.views[shaders.VIEW_uTex] = view
+		_renderContext.bindings.views[shaders.VIEW_uTex] = view
 	}
 }
 
 // @ref
 // Changes the active **font texture view**.
 setFontTexture :: proc(view: sokol_gfx.View) {
-	currentId := _renderState.bindings.views[shaders.VIEW_uFontTex].id
+	currentId := _renderContext.bindings.views[shaders.VIEW_uFontTex].id
 
 	if currentId != view.id {
 		flushBatch()
-		_renderState.bindings.views[shaders.VIEW_uFontTex] = view
+		_renderContext.bindings.views[shaders.VIEW_uFontTex] = view
 	}
 }
 

@@ -30,11 +30,50 @@ DEFAULT_UV :: gmath.Vector4{0, 0, 1, 1}
 CLEAR_COLOR :: colors.BLACK
 
 // @ref
-// Internal render state wrapping **Sokol** pipelines and bindings.
-RenderState :: struct {
-	passAction: sokol_gfx.Pass_Action,
-	pipeline:   sokol_gfx.Pipeline,
-	bindings:   sokol_gfx.Bindings,
+// Constants prefixed with `LOCATION` define the memory layout relation between the CPU [`Vertex`](#vertex) struct
+// and the GPU shader attributes (`layout(location = X)`).
+// :::caution
+// Do not change these unless you update `shader_vs_core.glsl` to match.
+// :::
+LOCATION_POSITION :: 0
+LOCATION_COLOR :: 1
+LOCATION_UV :: 2
+LOCATION_LOCAL_UV :: 3
+LOCATION_SIZE :: 4
+LOCATION_BYTES :: 5
+LOCATION_COLOR_OVERRIDE :: 6
+LOCATION_PARAMETERS :: 7
+
+// @ref
+// Constants prefixed with `BINDING` define the binding index used for uniform data. By default `0` is occupied by
+// [`ShaderGlobals`](#shaderglobals) and `1` is left for custom shader uniform data.
+BINDING_GLOBAL_UNIFORMS :: 0
+BINDING_CUSTOM_UNIFORMS :: 1
+
+// @ref
+// A handle used to identify a loaded [`Shader`](#shader)
+ShaderId :: distinct i32
+
+// @ref
+// Wraps a compiled **Sokol** pipeline and its ID.
+Shader :: struct {
+	pipeline: sokol_gfx.Pipeline,
+	id:       ShaderId,
+}
+
+// @ref
+// Function signature for the auto-generated shader descriptors created by `sokol-shdc`.
+ShaderDescriptionFunction :: proc(backend: sokol_gfx.Backend) -> sokol_gfx.Shader_Desc
+
+// @ref
+// Internal context holding the global **Sokol** GFX state.
+// Manages active bindings (atlas/font) and stores the list of loaded [`Shaders`](#shader)
+RenderContext :: struct {
+	passAction:      sokol_gfx.Pass_Action,
+	bindings:        sokol_gfx.Bindings,
+	shaders:         [dynamic]Shader,
+	defaultShaderId: ShaderId,
+	activeShaderId:  ShaderId,
 }
 
 // @ref
