@@ -63,7 +63,7 @@ Shader :: struct {
 
 // @ref
 // Function signature for the auto-generated shader descriptors created by `sokol-shdc`.
-ShaderDescriptionFunction :: proc(backend: sokol_gfx.Backend) -> sokol_gfx.Shader_Desc
+ShaderDescriptionFunction :: proc(backend: sokol_gfx.Backend) -> sokol_gfx.Shader_Desc // {}
 
 // @ref
 // Internal context holding the global **Sokol** GFX state.
