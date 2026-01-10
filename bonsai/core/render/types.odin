@@ -69,11 +69,13 @@ ShaderDescriptionFunction :: proc(backend: sokol_gfx.Backend) -> sokol_gfx.Shade
 // Internal context holding the global **Sokol** GFX state.
 // Manages active bindings (atlas/font) and stores the list of loaded [`Shaders`](#shader)
 RenderContext :: struct {
-	passAction:      sokol_gfx.Pass_Action,
-	bindings:        sokol_gfx.Bindings,
-	shaders:         [dynamic]Shader,
-	defaultShaderId: ShaderId,
-	activeShaderId:  ShaderId,
+	passAction:         sokol_gfx.Pass_Action,
+	bindings:           sokol_gfx.Bindings,
+	shaders:            [dynamic]Shader,
+	defaultShaderId:    ShaderId,
+	activeShaderId:     ShaderId,
+	customUniformsData: [1024]byte,
+	customUniformsSize: uint,
 }
 
 // @ref

@@ -252,7 +252,7 @@ resetDrawFrame :: proc() {
 			gmath.Pivot.centerCenter,
 		)
 	}
-	setShader(_renderContext.defaultShaderId)
+	_setShaderDefault()
 }
 
 // @ref
@@ -332,6 +332,16 @@ flushBatch :: proc() {
 		BINDING_GLOBAL_UNIFORMS,
 		{ptr = &drawFrame.reset.shaderData, size = size_of(shaders.Shaderdata)},
 	)
+
+	if _renderContext.customUniformsSize > 0 {
+		sokol_gfx.apply_uniforms(
+			BINDING_CUSTOM_UNIFORMS,
+			{
+				ptr = &_renderContext.customUniformsData[0],
+				size = _renderContext.customUniformsSize,
+			},
+		)
+	}
 
 	// draw
 	sokol_gfx.draw(0, 6 * i32(quadIndex), 1)
@@ -416,6 +426,7 @@ _setShaderDefault :: proc() {
 
 	flushBatch()
 	_renderContext.activeShaderId = _renderContext.defaultShaderId
+	_renderContext.customUniformsSize = 0
 }
 
 @(private = "file")
@@ -439,9 +450,12 @@ _setShaderValue :: proc(id: ShaderId) {
 setCustomUniforms :: proc(data: rawptr, size: uint) {
 	flushBatch()
 
-	activeShader := _renderContext.shaders[_renderContext.activeShaderId]
-	sokol_gfx.apply_pipeline(activeShader.pipeline)
-	sokol_gfx.apply_uniforms(1, {ptr = data, size = size})
+	if size > len(_renderContext.customUniformsData) {
+		log.errorf("Custom uniforms too large.")
+		return
+	}
+	mem.copy(&_renderContext.customUniformsData[0], data, int(size))
+	_renderContext.customUniformsSize = size
 }
 
 // @ref
