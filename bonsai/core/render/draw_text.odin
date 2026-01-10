@@ -14,6 +14,10 @@ drawText :: drawTextWithDropShadow
 // @ref
 // Draws text with a **hard-coded** drop shadow for contrast**.
 // Retrieves the font using the **automatically** generated [`FontName`](https://bonsai-framework.dev/reference/generated/#fontname) enum.
+// :::caution
+// Fonts are currently rendered as bitmaps. For the sharpest results, you may want to find a native font size (e.g. 12 for `PixelCode`)
+// and use the `scale` argument to control the size of the text. When fonts will be rendered via SDF, this issue will be fixed.
+// :::
 drawTextWithDropShadow :: proc(
 	position: gmath.Vector2,
 	text: string,
@@ -68,6 +72,10 @@ drawTextWithDropShadow :: proc(
 // @ref
 // Draws text without a drop shadow.
 // Retrieves the font using the **automatically** generated [`FontName`](https://bonsai-framework.dev/reference/generated/#fontname) enum.
+// :::caution
+// Fonts are currently rendered as bitmaps. For the sharpest results, you may want to find a native font size (e.g. 12 for `PixelCode`)
+// and use the `scale` argument to control the size of the text. When fonts will be rendered via SDF, this issue will be fixed.
+// :::
 drawTextSimple :: proc(
 	position: gmath.Vector2,
 	text: string,
