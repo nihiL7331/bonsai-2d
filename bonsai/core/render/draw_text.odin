@@ -17,7 +17,7 @@ drawText :: drawTextWithDropShadow
 drawTextWithDropShadow :: proc(
 	position: gmath.Vector2,
 	text: string,
-	fontName: generated.FontName,
+	fontName: generated.FontName = generated.FontName.PixelCode,
 	fontSize: uint = 12,
 	rotation: f32 = 0.0, // in radians
 	dropShadowColor := colors.BLACK,
@@ -71,7 +71,7 @@ drawTextWithDropShadow :: proc(
 drawTextSimple :: proc(
 	position: gmath.Vector2,
 	text: string,
-	fontName: generated.FontName,
+	fontName: generated.FontName = generated.FontName.PixelCode,
 	fontSize: uint = 12,
 	rotation: f32 = 0.0, // in radians
 	color := colors.WHITE,
