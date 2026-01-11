@@ -37,14 +37,14 @@ package render
 // Currently it only supports **PNG** files for images and **TTF** files for fonts.
 //
 // The CLI generates enums from images located in **assets/images**. For animated sprite sheets, they **have to**
-// be a horizontal stripe. You can declare the amount of animation frames by naming the file **file_name_{x}x1.png**,
-// where x is the amount of frames. The animation frames suffix gets removed from the enum name.
+// be a horizontal stripe. You can declare the amount of animation frames by naming the file **fileName_{**X**}x1.png**,
+// where **X** is the amount of frames. The animation frames suffix gets removed from the enum name.
 //
 // The CLI also allows for **tileset loading**, with each tile being a separate sprite. Simply create a **tilesets**
 // directory in **assets/images**, and save the tileset here. Similarly to animation frame declaration, you can suffix
-// the tileset file name like so: **tileset_name_{w}x{h}.png**, where w is width of one tile in pixels, and h is height
+// the tileset file name like so: **tilesetName_{**W**}x{**H**}.png**, where **W** is width of one tile in pixels, and **H** is height
 // of one tile in pixels. Each tile gets saved to the atlas with its edges extruded by one pixel, to ensure there's no
-// edge bleeding issue. When no suffix is provided, the default size for a tile is **16x16 pixels**.
+// edge bleeding issue. When no suffix is provided, the default size for a tile in a tileset is **16x16 pixels**.
 // :::
 
 import "bonsai:core"
