@@ -55,6 +55,7 @@ Let's use them to write your first 'Hello, World!' code in **bonsai**. Rather th
 be saying hello to **Pot**, the framework's mascot and hero of every code example and tutorial.
 
 We will use the `bonsai:core/render` package to do that.
+We also need `bonsai:core` to get a position anchor on the screen.
 Simply import it at the top of the file:
 
 ```odin
