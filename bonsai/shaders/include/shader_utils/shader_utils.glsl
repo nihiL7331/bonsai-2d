@@ -99,11 +99,11 @@ float luminance(vec3 color) {
 // Shader equivalent of the [`remap`](https://bonsai-framework.dev/reference/core/gmath/#remap) function.
 //
 // **Arguments:**
-// - `input`: Incoming value.
+// - `value`: Incoming value.
 // - `inMin`, `inMax`: The range of the input.
 // - `outMin`, `outMax`: The range of the output.
-float remap(float input, float inMin, float inMax, float outMin, float outMax) {
-  return outMin + (input - inMin) * (outMax - outMin) / (inMax - inMin);
+float remap(float value, float inMin, float inMax, float outMin, float outMax) {
+  return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
 }
 
 // @ref
