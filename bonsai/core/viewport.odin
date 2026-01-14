@@ -78,13 +78,13 @@ getScreenSpaceProjectionMatrix :: proc() -> gmath.Matrix4 {
 
 
 // @ref
-// Helper to get specific screen coordinates based on a [`Pivot`](https://bonsai-framework.dev/reference/core/gmath/#pivot) (anchoring).
+// Helper to get specific screen/viewport coordinates based on a [`Pivot`](https://bonsai-framework.dev/reference/core/gmath/#pivot) (anchoring).
 //
 // Returns a [`Vector2`](https://bonsai-framework.dev/reference/core/gmath/#vector2) position.
 // :::tip
 // Useful for positioning UI elements relative to screen edges.
 // :::
-getScreenSpacePivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
+getViewportPivot :: proc(pivot: gmath.Pivot) -> gmath.Vector2 {
 	rectangle := getViewportRectangle()
 
 	return gmath.getRectanglePivot(rectangle, pivot)
