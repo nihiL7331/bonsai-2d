@@ -67,7 +67,7 @@ Then, in your draw functions you can use the imported functions:
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := render.getScreenSpacePivot(.centerCenter)
+  centerPosition := render.getViewportPivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
 }
 ```
@@ -90,7 +90,7 @@ update :: proc() {
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := render.getScreenSpacePivot(.centerCenter)
+  centerPosition := render.getViewportPivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
 }
 
