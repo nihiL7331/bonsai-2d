@@ -82,3 +82,55 @@ vec2 localUvToAtlasUv(vec2 localUv, vec4 atlasRect) {
 
   return atlasRect.xy + (size * wrapped);
 }
+
+// @ref
+// Converts a color to grayscale using standard luminance weights.
+//
+// **Arguments:**
+// - `color`: The **RGB** color to desaturate.
+//
+// Returns the luminance float (brightness).
+float luminance(vec3 color) {
+  return dot(color, vec3(0.299, 0.587, 0.114));
+}
+
+// @ref 
+// Remaps a value from one range to another.
+// Shader equivalent of the [`remap`](https://bonsai-framework.dev/reference/core/gmath/#remap) function.
+//
+// **Arguments:**
+// - `input`: Incoming value.
+// - `inMin`, `inMax`: The range of the input.
+// - `outMin`, `outMax`: The range of the output.
+float remap(float input, float inMin, float inMax, float outMin, float outMax) {
+  return outMin + (input - inMin) * (outMax - outMin) / (inMax - inMin);
+}
+
+// @ref
+// Generates a pseudo random float in the `0.0` - `1.0` range.
+//
+// **Arguments:**
+// - `uv`: A `seed` vector (e.g. UV coordinates).
+// 
+// :::tip
+// Useful for static noise, dissolve patterns, dithering.
+// :::
+//
+// **Source:** [this](https://stackoverflow.com/questions/12964279/whats-the-origin-of-this-glsl-rand-one-liner) stackoverflow question.
+float random(vec2 seed) {
+  return fract(sin(dot(seed, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+// @ref
+// Rotates a 2D vector around a pivot point.
+//
+// **Counter-clockwise rotation**
+//
+// **Arguments:**
+// - `vector`: The vector to rotate.
+// - `pivot`: The center of rotation.
+// - `angle`: Rotation angle in **radians**.
+vec2 rotate(vec2 uv, vec2 pivot, float angle) {
+  mat2 rotation = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+  return (rotation * (uv - pivot)) + pivot;
+}

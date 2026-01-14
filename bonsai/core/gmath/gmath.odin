@@ -278,8 +278,15 @@ matrixInverse :: proc(mat: Matrix4) -> Matrix4 {
 // Objects inside this box are visible, objects outside are clipped.
 matrixOrtho3d :: proc(
 	left, right, bottom, top, near, far: $T,
-) -> Matrix4 where intrinsics.type_is_float(T) {
-	return linalg.matrix_ortho3d(left, right, bottom, top, near, far)
+) -> Matrix4 where intrinsics.type_is_numeric(T) {
+	return linalg.matrix_ortho3d_f32(
+		f32(left),
+		f32(right),
+		f32(bottom),
+		f32(top),
+		f32(near),
+		f32(far),
+	)
 }
 
 // @ref
