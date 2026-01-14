@@ -58,6 +58,7 @@ We will use the `bonsai:core/render` package to do that.
 Simply import it at the top of the file:
 
 ```odin
+import "bonsai:core"
 import "bonsai:core/render"
 ```
 
@@ -67,7 +68,7 @@ Then, in your draw functions you can use the imported functions:
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := render.getViewportPivot(.centerCenter)
+  centerPosition := core.getViewportPivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
 }
 ```
@@ -79,6 +80,7 @@ Finally, your code should look like this:
 
 package game
 
+import "bonsai:core"
 import "bonsai:core/render"
 
 init :: proc() {
@@ -90,7 +92,7 @@ update :: proc() {
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := render.getViewportPivot(.centerCenter)
+  centerPosition := core.getViewportPivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
 }
 
