@@ -5,7 +5,7 @@ package scene_manager
 // It streamlines the game loop by mapping directory names to scene enums.
 //
 // **Features:**
-// - **Auto-generated enums:** The `SceneName` enum from the `bonsai:generated` package
+// - **Auto-generated enums:** The [`SceneName`](https://bonsai-framework.dev/reference/generated/#scenename) enum from the [`bonsai:generated`](https://bonsai-framework.dev/reference/generated) package
 //   is generated automatically based on directories found in **source/game/scenes**.
 // - **Lifecycle management:** Standardized hooks for `init`, `update`, `draw` and `exit`.
 // - **State persistence:** Data is passed between procedures via a `rawptr` to a state array.
