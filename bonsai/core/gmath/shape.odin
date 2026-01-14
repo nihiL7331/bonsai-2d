@@ -46,6 +46,45 @@ getRectangleCenter :: proc(rectangle: Rectangle) -> Vector2 {
 }
 
 // @ref
+// Helper to get a position within a [`Rectangle`](#rectangle)
+// using a [`Pivot`](#pivot) enum.
+// :::tip
+// Especially useful when working with collisions and UI elements.
+// :::
+getRectanglePivot :: proc(rectangle: Rectangle, pivot: Pivot) -> Vector2 {
+	left := rectangle.x
+	right := rectangle.z
+	bottom := rectangle.y
+	top := rectangle.w
+
+	centerX := (rectangle.x + rectangle.z) / 2
+	centerY := (rectangle.y + rectangle.w) / 2
+
+	switch pivot {
+	case Pivot.topLeft:
+		return Vector2{left, top}
+	case Pivot.topCenter:
+		return Vector2{centerX, top}
+	case Pivot.topRight:
+		return Vector2{right, top}
+	case Pivot.centerLeft:
+		return Vector2{left, centerY}
+	case Pivot.centerCenter:
+		return Vector2{centerX, centerY}
+	case Pivot.centerRight:
+		return Vector2{right, centerY}
+	case Pivot.bottomLeft:
+		return Vector2{left, bottom}
+	case Pivot.bottomCenter:
+		return Vector2{centerX, bottom}
+	case Pivot.bottomRight:
+		return Vector2{right, bottom}
+	}
+
+	return Vector2{0, 0}
+}
+
+// @ref
 // Returns the **width** and **height** of the [`Rectangle`](#rectangle) as a [`Vector2`](#vector2).
 getRectangleSize :: proc(rectangle: Rectangle) -> Vector2 {
 	return {rectangle.z - rectangle.x, rectangle.w - rectangle.y}
