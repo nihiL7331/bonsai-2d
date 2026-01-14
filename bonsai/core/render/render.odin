@@ -124,6 +124,36 @@ setScreenSpace :: proc() {
 }
 
 // @ref
+// Calculates the coordinate space for the main gameplay world.
+// Creates a **View-Projection matrix** based on the **camera's position** and **zoom**.
+getWorldSpace :: proc() -> CoordSpace {
+	projectionMatrix := core.getWorldSpaceProjectionMatrix()
+	// model matrix
+	cameraMatrix := core.getWorldSpaceCameraMatrix()
+	// view matrix
+	viewMatrix := gmath.matrixInverse(cameraMatrix)
+
+	return {
+		projectionMatrix = projectionMatrix,
+		cameraMatrix = cameraMatrix,
+		viewProjectionMatrix = projectionMatrix * viewMatrix,
+	}
+}
+
+// @ref
+// Calculates the coordinate space for **UI/Screen elements**.
+getScreenSpace :: proc() -> CoordSpace {
+	projectionMatrix := core.getScreenSpaceProjectionMatrix()
+	cameraMatrix := gmath.Matrix4(1)
+
+	return {
+		projectionMatrix = projectionMatrix,
+		cameraMatrix = cameraMatrix,
+		viewProjectionMatrix = projectionMatrix,
+	}
+}
+
+// @ref
 // Sets the **scissor** (clipping) rectangle.
 // Flushes the batch if the scissor state changes.
 setScissorCoordinates :: proc(coordinates: gmath.Vector4) {
@@ -133,6 +163,36 @@ setScissorCoordinates :: proc(coordinates: gmath.Vector4) {
 
 	_scissorState.enabled = true
 	_scissorState.coordinates = coordinates
+}
+
+// @ref
+// Maps a **screen-space** rectangle to a screen-space scissor rectangle.
+// Used for clipping rendering to specific regions (masking).
+setScissorRectangle :: proc(rectangle: gmath.Rectangle) {
+	drawFrame := getDrawFrame()
+	coreContext := core.getCoreContext()
+
+	projection := drawFrame.reset.coordSpace.projectionMatrix
+
+	bottomLeftWorld := gmath.Vector4{rectangle.x, rectangle.y, 0, 1}
+	topRightWorld := gmath.Vector4{rectangle.z, rectangle.w, 0, 1}
+
+	bottomLeftClip := projection * bottomLeftWorld
+	topRightClip := projection * topRightWorld
+
+	bottomLeftNdc := bottomLeftClip.xy / bottomLeftClip.w
+	topRightNdc := topRightClip.xy / topRightClip.w
+
+	frameBufferWidth := f32(coreContext.windowWidth)
+	frameBufferHeight := f32(coreContext.windowHeight)
+
+	scissorX := (bottomLeftNdc.x + 1.0) * 0.5 * frameBufferWidth
+	scissorY := (bottomLeftNdc.y + 1.0) * 0.5 * frameBufferHeight
+
+	scissorWidth := (topRightNdc.x + 1.0) * 0.5 * frameBufferWidth - scissorX
+	scissorHeight := (topRightNdc.y + 1.0) * 0.5 * frameBufferHeight - scissorY
+
+	setScissorCoordinates(gmath.Vector4{scissorX, scissorY, scissorWidth, scissorHeight})
 }
 
 // @ref
@@ -235,7 +295,6 @@ resetDrawFrame :: proc() {
 		clear(&layer)
 	}
 
-	// reset default camera to center of the game height
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
 	when core.SCALE_MODE == core.ScaleMode.FixedHeight {

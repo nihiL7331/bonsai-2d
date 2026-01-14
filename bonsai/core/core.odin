@@ -33,29 +33,6 @@ import "bonsai:core/gmath"
 import "bonsai:core/scene/type"
 
 // @ref
-// Defines how the game content scales to fit the window aspect ratio.
-ScaleMode :: enum {
-	// Locks vertical height.
-	// Game height is constant, width is matched to fit.
-	FixedHeight,
-	// Locks horizontal width.
-	// Game width is constant, height is matched to fit.
-	FixedWidth,
-}
-
-// @ref
-// The global configuration determining which scaling logic is active.
-SCALE_MODE :: ScaleMode.FixedHeight
-
-// @ref
-// The internal design resolution width **in pixels**.
-GAME_WIDTH :: 480
-
-// @ref
-// The internal design resolution height **in pixels**.
-GAME_HEIGHT :: 270
-
-// @ref
 // **On desktop:** Assigns the window name
 //
 // **On web:** Assings the tab name
