@@ -70,7 +70,7 @@ draw :: proc() {
   render.setScreenSpace()
 
   centerPosition := core.getViewportPivot(.centerCenter)
-  render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
+  render.drawTextSimple(centerPosition, "Hello, Pot!", pivot = .centerCenter)
 }
 ```
 
@@ -94,7 +94,7 @@ draw :: proc() {
   render.setScreenSpace()
 
   centerPosition := core.getViewportPivot(.centerCenter)
-  render.drawTextSimple(centerPosition, "Hello, Pot!", fontName = .PixelCode, pivot = .centerCenter)
+  render.drawTextSimple(centerPosition, "Hello, Pot!", pivot = .centerCenter)
 }
 
 shutdown :: proc() {
