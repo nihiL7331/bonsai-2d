@@ -47,13 +47,6 @@ Camera :: struct {
 }
 
 // @ref
-// Returns **game window** bounds (in screen space).
-getWindowBounds :: proc() -> gmath.Rectangle {
-	size := gmath.getRectangleSize(_coreContext.camera.bounds)
-	return gmath.Rectangle{0, 0, size.x, size.y}
-}
-
-// @ref
 // The core context holding global engine state shared across systems.
 // Acts as the bridge between the platform layer (**Sokol**), **core logic**, and **renderer**.
 CoreContext :: struct {
