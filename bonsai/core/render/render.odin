@@ -92,6 +92,12 @@ getDrawFrame :: proc() -> ^DrawFrame {
 }
 
 // @ref
+// Returns a pointer to the [`RenderContext`] struct.
+getRenderContext :: proc() -> ^RenderContext {
+	return &_renderContext
+}
+
+// @ref
 // Sets the coordinate space (projection/camera matrices).
 //
 // **Arguments:**
