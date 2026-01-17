@@ -49,6 +49,7 @@ package render
 
 import "bonsai:core"
 import "bonsai:core/gmath"
+import "bonsai:core/gmath/colors"
 import "bonsai:core/platform"
 import "bonsai:generated"
 import "bonsai:shaders"
@@ -65,7 +66,7 @@ import "core:slice"
 @(private = "file")
 _renderContext: RenderContext
 
-@(private = "file")
+@(private = "package")
 _atlas: Atlas
 
 @(private = "file")
@@ -112,6 +113,7 @@ setCoordSpace :: proc {
 // Flushes the current batch and switches coordinate space to **world space (gameplay)**.
 // Sets the active draw layer to [`DrawLayer.background`](#drawlayer).
 setWorldSpace :: proc() {
+	if _drawFrame.reset.activeDrawLayer == DrawLayer.background && _renderContext.activeCanvasId == _renderContext.defaultCanvasId do return
 	flushBatch()
 	_setCoordSpaceValue(getWorldSpace())
 	_drawFrame.reset.activeDrawLayer = DrawLayer.background
@@ -121,6 +123,7 @@ setWorldSpace :: proc() {
 // Flushes the current batch and switches coordinate space to **screen space (UI)**.
 // Sets the active draw layer to [`DrawLayer.ui`](#drawlayer).
 setScreenSpace :: proc() {
+	if _drawFrame.reset.activeDrawLayer == DrawLayer.ui && _renderContext.activeCanvasId == _renderContext.defaultCanvasId do return
 	flushBatch()
 	_setCoordSpaceValue(getScreenSpace())
 	_drawFrame.reset.activeDrawLayer = DrawLayer.ui
@@ -157,6 +160,20 @@ getScreenSpace :: proc() -> CoordSpace {
 }
 
 // @ref
+// Calculates the coordinate space for **a custom [`Canvas`](#canvas)**.
+// Called internally by [`setCanvas`](#setcanvas).
+getCanvasSpace :: proc(width, height: f32) -> CoordSpace {
+	projectionMatrix := gmath.matrixOrtho3d(f32(0.0), width, f32(0.0), height, f32(-1.0), f32(1.0))
+	cameraMatrix := gmath.Matrix4(1)
+
+	return {
+		projectionMatrix = projectionMatrix,
+		cameraMatrix = cameraMatrix,
+		viewProjectionMatrix = projectionMatrix * cameraMatrix,
+	}
+}
+
+// @ref
 // Sets the **scissor** (clipping) rectangle.
 // Flushes the batch if the scissor state changes.
 setScissorCoordinates :: proc(coordinates: gmath.Vector4) {
@@ -185,8 +202,16 @@ setScissorRectangle :: proc(rectangle: gmath.Rectangle) {
 	bottomLeftNdc := bottomLeftClip.xy / bottomLeftClip.w
 	topRightNdc := topRightClip.xy / topRightClip.w
 
-	frameBufferWidth := f32(coreContext.windowWidth)
-	frameBufferHeight := f32(coreContext.windowHeight)
+	frameBufferWidth, frameBufferHeight: f32
+
+	if _renderContext.activeCanvasId != 0 {
+		canvas := _renderContext.canvases[_renderContext.activeCanvasId]
+		frameBufferWidth = canvas.size.x
+		frameBufferHeight = canvas.size.y
+	} else {
+		frameBufferWidth = f32(coreContext.windowWidth)
+		frameBufferHeight = f32(coreContext.windowHeight)
+	}
 
 	scissorX := (bottomLeftNdc.x + 1.0) * 0.5 * frameBufferWidth
 	scissorY := (bottomLeftNdc.y + 1.0) * 0.5 * frameBufferHeight
@@ -210,6 +235,8 @@ clearScissor :: proc() {
 // Initializes the rendering subsystem (Sokol, buffers, pipelines).
 // Called in main.odin.
 init :: proc() {
+	coreContext := core.getCoreContext()
+
 	sokol_gfx.setup(
 		{
 			environment = sokol_glue.environment(),
@@ -242,6 +269,14 @@ init :: proc() {
 		indices[i + 5] = baseIndex + 3
 	}
 
+	defaultSamplerDescription := sokol_gfx.Sampler_Desc {
+		min_filter = .NEAREST,
+		mag_filter = .NEAREST,
+		wrap_u     = .CLAMP_TO_EDGE,
+		wrap_v     = .CLAMP_TO_EDGE,
+	}
+	_renderContext.defaultCanvasSampler = sokol_gfx.make_sampler(defaultSamplerDescription)
+
 	_renderContext.bindings.index_buffer = sokol_gfx.make_buffer(
 		{
 			usage = {index_buffer = true},
@@ -251,6 +286,7 @@ init :: proc() {
 
 	_renderContext.bindings.samplers[shaders.SMP_uDefaultSampler] = sokol_gfx.make_sampler({})
 	_renderContext.defaultShaderId = loadShader(shaders.quad_shader_desc)
+	_renderContext.defaultCanvasId = loadCanvas(coreContext.windowWidth, coreContext.windowHeight)
 
 	// set the initial clear color
 	setClearColor(CLEAR_COLOR)
@@ -267,11 +303,9 @@ coreRenderFrameStart :: proc() {
 		_renderContext.bindings.views[shaders.VIEW_uFontTex] = _atlas.view //HACK: do that to avoid crash when font isnt loaded
 	}
 
-	_renderContext.passAction.colors[0].load_action = .CLEAR
 
 	_scissorState.enabled = false
 
-	sokol_gfx.begin_pass({action = _renderContext.passAction, swapchain = sokol_glue.swapchain()})
 
 	setWorldSpace()
 }
@@ -293,6 +327,11 @@ resetDrawFrame :: proc() {
 	for &layer in _drawFrame.reset.quads {
 		clear(&layer)
 	}
+
+	_renderContext.inPass = false
+	_renderContext.customUniformsSize = 0
+
+	_renderContext.activeCanvasId = _renderContext.defaultCanvasId
 
 	coreContext := core.getCoreContext()
 	aspect := f32(coreContext.windowWidth) / f32(coreContext.windowHeight)
@@ -410,6 +449,208 @@ flushBatch :: proc() {
 }
 
 // @ref
+// Cleans up all rendering resources.
+// Called internally by **main.odin**.
+shutdown :: proc() {
+	destroyFonts()
+
+	for i := 1; i < len(_renderContext.canvases); i += 1 {
+		destroyCanvas(CanvasId(i))
+	}
+
+	clear(&_renderContext.canvases)
+
+	for shader in _renderContext.shaders {
+		sokol_gfx.destroy_pipeline(shader.pipeline)
+	}
+	clear(&_renderContext.shaders)
+
+	sokol_gfx.destroy_buffer(_renderContext.bindings.vertex_buffers[0])
+	sokol_gfx.destroy_buffer(_renderContext.bindings.index_buffer)
+
+	sokol_gfx.destroy_sampler(_renderContext.defaultCanvasSampler)
+
+	if _atlas.view.id != sokol_gfx.INVALID_ID {
+		sokol_gfx.destroy_view(_atlas.view)
+		sokol_gfx.destroy_image(_atlas.image)
+	}
+}
+
+// @ref
+loadCanvas :: proc(width: i32, height: i32) -> CanvasId {
+	swapchain := sokol_glue.swapchain()
+	imageDescription := sokol_gfx.Image_Desc {
+		type = ._2D,
+		width = width,
+		height = height,
+		usage = sokol_gfx.Image_Usage{immutable = true, color_attachment = true},
+		pixel_format = swapchain.color_format,
+	}
+	image := sokol_gfx.make_image(imageDescription)
+
+	writerViewDescription := sokol_gfx.View_Desc {
+		color_attachment = {image = image, mip_level = 0, slice = 0},
+	}
+	writerView := sokol_gfx.make_view(writerViewDescription)
+
+	readerViewDescription := sokol_gfx.View_Desc {
+		texture = {image = image},
+	}
+	readerView := sokol_gfx.make_view(readerViewDescription)
+
+	depthImage := sokol_gfx.Image{}
+	depthView := sokol_gfx.View{}
+
+	if swapchain.depth_format != .NONE {
+		depthImageDescription := sokol_gfx.Image_Desc {
+			type = ._2D,
+			width = width,
+			height = height,
+			usage = {immutable = true, depth_stencil_attachment = true},
+			pixel_format = swapchain.depth_format,
+		}
+		depthImage = sokol_gfx.make_image(depthImageDescription)
+
+		depthViewDescription := sokol_gfx.View_Desc {
+			depth_stencil_attachment = {image = depthImage},
+		}
+		depthView = sokol_gfx.make_view(depthViewDescription)
+	}
+
+	attachments := sokol_gfx.Attachments{}
+	attachments.colors[0] = writerView
+
+	if swapchain.depth_format != .NONE {
+		attachments.depth_stencil = depthView
+	}
+
+	id := CanvasId(len(_renderContext.canvases))
+
+	append(
+		&_renderContext.canvases,
+		Canvas {
+			image = image,
+			depthImage = depthImage,
+			readerView = readerView,
+			attachments = attachments,
+			sampler = _renderContext.defaultCanvasSampler,
+			id = id,
+			size = gmath.Vector2{f32(width), f32(height)},
+		},
+	)
+
+	return id
+}
+
+// @ref
+// Sets the current [`Canvas`](#canvas) (render target).
+// Defaults to screen space canvas.
+//
+// **Arguments:**
+// - [`CanvasId`](#canvasid): Handle linked to the targeted [`Canvas`](#canvas). Returned by the [`loadCanvas`](#loadcanvas) function.
+// - 'clear': if `true` - clears contents of the canvas, if `false` - preserves previously drawn content.
+// - `clearColor`: Clear (background) color, takes effect only if `clear` is `true`.
+//
+// :::note[Example]
+// ```Odin
+// draw :: proc() {
+//   render.setCanvas(shadowCanvas)
+//
+//   render.drawSprite({x1, y1}, .shadowMedium)
+//   render.drawSprite({x2, y2}, .shadowSmall)
+//
+//   render.setCanvas()
+//
+//   render.drawCanvas(shadowCanvas, drawLayer = render.DrawLayer.shadow)
+//   render.drawSprite({x3, y3}, .pot)
+//   // ...
+// }
+// ```
+// :::
+setCanvas :: proc(
+	id: CanvasId = _renderContext.defaultCanvasId,
+	clear: bool = true,
+	clearColor: Maybe(gmath.Color) = nil,
+) {
+	if id == _renderContext.activeCanvasId && !clear && _renderContext.inPass do return
+	flushBatch()
+
+	if _renderContext.inPass {
+		sokol_gfx.end_pass()
+		_renderContext.inPass = false
+	}
+
+	targetCanvas := _renderContext.canvases[id]
+	pass := sokol_gfx.Pass{}
+
+	if targetCanvas.image.id == sokol_gfx.INVALID_ID {
+		log.warn("Attempted to render to a destroyed Canvas. Fallback to default.")
+		setCanvas(_renderContext.defaultCanvasId, clear)
+		return
+	}
+
+	if targetCanvas.id == 0 {
+		pass.action = _renderContext.passAction
+	}
+
+	pass.action.colors[0].load_action = .LOAD
+	if clear {
+		pass.action.colors[0].load_action = .CLEAR
+
+		color: gmath.Color
+		if c, ok := clearColor.?; ok {
+			color = c
+		} else {
+			color = CLEAR_COLOR
+		}
+		pass.action.colors[0].clear_value = transmute(sokol_gfx.Color)(color)
+	}
+
+	if targetCanvas.id != 0 {
+		pass.attachments = targetCanvas.attachments
+		_drawFrame.reset.coordSpace = getCanvasSpace(targetCanvas.size.x, targetCanvas.size.y)
+	} else {
+		pass.swapchain = sokol_glue.swapchain()
+		if _drawFrame.reset.activeDrawLayer == .background {
+			// world space
+			_drawFrame.reset.coordSpace = getWorldSpace()
+		} else {
+			// screen space
+			_drawFrame.reset.coordSpace = getScreenSpace()
+		}
+	}
+
+	sokol_gfx.begin_pass(pass)
+	_renderContext.inPass = true
+	_renderContext.activeCanvasId = id
+}
+
+// @ref
+// Destroys the GPU resources associated with the [`Canvas`](#canvas).
+// :::caution
+// Calling this invalidates the [`CanvasId`](#canvasid).
+// :::
+destroyCanvas :: proc(id: CanvasId) {
+	if id == _renderContext.defaultCanvasId do return
+	if int(id) >= len(_renderContext.canvases) do return
+
+	canvas := &_renderContext.canvases[id]
+	if canvas.image.id == sokol_gfx.INVALID_ID do return
+
+	sokol_gfx.destroy_view(canvas.readerView)
+	sokol_gfx.destroy_view(canvas.attachments.colors[0])
+	sokol_gfx.destroy_image(canvas.image)
+
+	if canvas.attachments.depth_stencil.id != sokol_gfx.INVALID_ID {
+		sokol_gfx.destroy_view(canvas.attachments.depth_stencil)
+		sokol_gfx.destroy_image(canvas.depthImage)
+	}
+
+	canvas.image.id = sokol_gfx.INVALID_ID
+	canvas.readerView.id = sokol_gfx.INVALID_ID
+}
+
+// @ref
 // Creates a new [`ShaderId`](#shaderid) from a `sokol-shdc` generated description function.
 // This function enforces the framework's standard vertex layout to ensure compatibility with batching.
 //
@@ -472,23 +713,7 @@ loadShader :: proc(descriptionFunction: ShaderDescriptionFunction) -> ShaderId {
 //
 // **Arguments:**
 // - **`id`**: Expects the [`ShaderId`](#shaderid) returned by [`loadShader`](#loadshader).
-// - **`nil`**: Sets the shader to default.
-setShader :: proc {
-	_setShaderValue,
-	_setShaderDefault,
-}
-
-@(private = "file")
-_setShaderDefault :: proc() {
-	if _renderContext.activeShaderId == _renderContext.defaultShaderId do return
-
-	flushBatch()
-	_renderContext.activeShaderId = _renderContext.defaultShaderId
-	_renderContext.customUniformsSize = 0
-}
-
-@(private = "file")
-_setShaderValue :: proc(id: ShaderId) {
+setShader :: proc(id: ShaderId = _renderContext.defaultShaderId) {
 	if _renderContext.activeShaderId == id do return
 
 	flushBatch()
@@ -647,6 +872,73 @@ drawQuadProjected :: proc(
 
 	vertices[0].parameters = parameters; vertices[1].parameters = parameters
 	vertices[2].parameters = parameters; vertices[3].parameters = parameters
+}
+
+// @ref
+// Draws the contents of a [`Canvas`](#canvas) onto the screen (or current target) at the given position.
+// This triggers an immediate batch flush because it requires switching textures.
+drawCanvas :: proc(
+	id: CanvasId,
+	position: gmath.Vector2 = {0, 0},
+	rotation: f32 = 0.0,
+	pivot: gmath.Pivot = .bottomLeft,
+	scale: gmath.Vector2 = {1, 1},
+	size: Maybe(gmath.Vector2) = nil,
+	transform := gmath.Matrix4(1),
+	color := colors.WHITE,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	if id == 0 || int(id) >= len(_renderContext.canvases) do return
+
+	canvas := _renderContext.canvases[id]
+	if canvas.image.id == sokol_gfx.INVALID_ID do return
+
+	setTexture(canvas.readerView)
+
+	localTransform := gmath.Matrix4(1)
+	localTransform *= gmath.matrixTranslate(position)
+	if rotation != 0 {
+		localTransform *= gmath.matrixRotate(rotation)
+	}
+	localTransform *= gmath.matrixScale(scale)
+	localTransform *= transform
+	canvasSize, ok := size.?
+	if !ok {
+		canvasSize = canvas.size
+	}
+	pivotOffset := canvasSize * -gmath.scaleFromPivot(pivot)
+	localTransform *= gmath.matrixTranslate(pivotOffset)
+
+	bottomLeft := gmath.Vector2{0, 0}
+	topLeft := gmath.Vector2{0, canvasSize.y}
+	topRight := gmath.Vector2{canvasSize.x, canvasSize.y}
+	bottomRight := gmath.Vector2{canvasSize.x, 0}
+
+	//transform local -> world
+	worldBottomLeft := gmath.transformPoint(localTransform, bottomLeft)
+	worldTopLeft := gmath.transformPoint(localTransform, topLeft)
+	worldTopRight := gmath.transformPoint(localTransform, topRight)
+	worldBottomRight := gmath.transformPoint(localTransform, bottomRight)
+
+	uvs: [4]gmath.Vector2
+	if sokol_gfx.query_features().origin_top_left {
+		uvs = {{0, 1}, {0, 0}, {1, 0}, {1, 1}}
+	} else {
+		uvs = {{0, 0}, {0, 1}, {1, 1}, {1, 0}}
+	}
+
+	drawQuadProjected(
+		positions = {worldBottomLeft, worldTopLeft, worldTopRight, worldBottomRight},
+		colors = {color, color, color, color},
+		uvs = uvs,
+		textureIndex = 0,
+		quadSize = canvasSize,
+		colorOverride = {},
+		flags = {},
+		drawLayer = drawLayer,
+		sortKey = sortKey,
+	)
 }
 
 // image loading helpers

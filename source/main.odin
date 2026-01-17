@@ -59,7 +59,7 @@ main :: proc() {
 
 	description.width = coreContext.windowWidth
 	description.height = coreContext.windowHeight
-	description.sample_count = 4 //MSAA
+	description.sample_count = 1 //MSAA
 	description.window_title = core.WINDOW_TITLE
 	description.high_dpi = true
 	description.html5_update_document_title = true
@@ -132,7 +132,7 @@ event :: proc "c" (e: ^sokol_app.Event) {
 cleanup :: proc "c" () {
 	context = odinContext
 
-	render.destroyFonts()
+	render.shutdown()
 	game_app.shutdown()
 	sokol_gfx.shutdown()
 	audio.shutdown()

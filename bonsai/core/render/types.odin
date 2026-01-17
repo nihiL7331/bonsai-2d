@@ -55,6 +55,10 @@ BINDING_CUSTOM_UNIFORMS :: 1
 ShaderId :: distinct i32
 
 // @ref
+// A handle used to identify a loaded [`Canvas`](#canvas)
+CanvasId :: distinct i32
+
+// @ref
 // Wraps a compiled **Sokol** pipeline and its ID.
 Shader :: struct {
 	pipeline: sokol_gfx.Pipeline,
@@ -69,13 +73,29 @@ ShaderDescriptionFunction :: proc(backend: sokol_gfx.Backend) -> sokol_gfx.Shade
 // Internal context holding the global **Sokol** GFX state.
 // Manages active bindings (atlas/font) and stores the list of loaded [`Shaders`](#shader)
 RenderContext :: struct {
-	passAction:         sokol_gfx.Pass_Action,
-	bindings:           sokol_gfx.Bindings,
-	shaders:            [dynamic]Shader,
-	defaultShaderId:    ShaderId,
-	activeShaderId:     ShaderId,
-	customUniformsData: [1024]byte,
-	customUniformsSize: uint,
+	passAction:           sokol_gfx.Pass_Action,
+	inPass:               bool,
+	bindings:             sokol_gfx.Bindings,
+	shaders:              [dynamic]Shader,
+	defaultShaderId:      ShaderId,
+	activeShaderId:       ShaderId,
+	customUniformsData:   [1024]byte,
+	customUniformsSize:   uint,
+	canvases:             [dynamic]Canvas,
+	defaultCanvasId:      CanvasId,
+	activeCanvasId:       CanvasId,
+	defaultCanvasSampler: sokol_gfx.Sampler,
+}
+
+// @ref
+Canvas :: struct {
+	image:       sokol_gfx.Image,
+	depthImage:  sokol_gfx.Image,
+	readerView:  sokol_gfx.View,
+	attachments: sokol_gfx.Attachments,
+	sampler:     sokol_gfx.Sampler,
+	id:          CanvasId,
+	size:        gmath.Vector2,
 }
 
 // @ref
@@ -88,7 +108,8 @@ ScissorState :: struct {
 // @ref
 // Represents the global sprite atlas.
 Atlas :: struct {
-	view: sokol_gfx.View,
+	view:  sokol_gfx.View,
+	image: sokol_gfx.Image,
 }
 
 // size constraints for the font bitmap texture.
