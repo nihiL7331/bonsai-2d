@@ -114,7 +114,7 @@ setCoordSpace :: proc {
 setWorldSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getWorldSpace())
-	getDrawFrame().reset.activeDrawLayer = DrawLayer.background
+	_drawFrame.reset.activeDrawLayer = DrawLayer.background
 }
 
 // @ref
@@ -123,7 +123,7 @@ setWorldSpace :: proc() {
 setScreenSpace :: proc() {
 	flushBatch()
 	_setCoordSpaceValue(getScreenSpace())
-	getDrawFrame().reset.activeDrawLayer = DrawLayer.ui
+	_drawFrame.reset.activeDrawLayer = DrawLayer.ui
 }
 
 // @ref
@@ -146,7 +146,7 @@ getWorldSpace :: proc() -> CoordSpace {
 // @ref
 // Calculates the coordinate space for **UI/Screen elements**.
 getScreenSpace :: proc() -> CoordSpace {
-	projectionMatrix := core.getScreenSpaceProjectionMatrix()
+	projectionMatrix := getScreenSpaceProjectionMatrix()
 	cameraMatrix := gmath.Matrix4(1)
 
 	return {
@@ -172,10 +172,9 @@ setScissorCoordinates :: proc(coordinates: gmath.Vector4) {
 // Maps a **screen-space** rectangle to a screen-space scissor rectangle.
 // Used for clipping rendering to specific regions (masking).
 setScissorRectangle :: proc(rectangle: gmath.Rectangle) {
-	drawFrame := getDrawFrame()
 	coreContext := core.getCoreContext()
 
-	projection := drawFrame.reset.coordSpace.projectionMatrix
+	projection := _drawFrame.reset.coordSpace.projectionMatrix
 
 	bottomLeftWorld := gmath.Vector4{rectangle.x, rectangle.y, 0, 1}
 	topRightWorld := gmath.Vector4{rectangle.z, rectangle.w, 0, 1}
@@ -288,11 +287,10 @@ coreRenderFrameEnd :: proc() {
 // @ref
 // Resets the [`DrawFrame`](#drawframe) (clears quads, resets camera) and sets the shader to default.
 resetDrawFrame :: proc() {
-	drawFrame := getDrawFrame()
-	drawFrame.reset.coordSpace = {}
-	drawFrame.reset.shaderData = {}
+	_drawFrame.reset.coordSpace = {}
+	_drawFrame.reset.shaderData = {}
 
-	for &layer in drawFrame.reset.quads {
+	for &layer in _drawFrame.reset.quads {
 		clear(&layer)
 	}
 
@@ -312,23 +310,21 @@ resetDrawFrame :: proc() {
 			gmath.Pivot.centerCenter,
 		)
 	}
-	_setShaderDefault()
+	setShader(_renderContext.defaultShaderId)
 }
 
 // @ref
 // Flushes all queued quads to the GPU.
 // Sorts layers if necessary. Warns when [`MAX_QUADS`](#max_quads) is exceeded.
 flushBatch :: proc() {
-	drawFrame := getDrawFrame()
-
 	quadIndex := 0
 
-	for &quadsInLayer, layerIndex in drawFrame.reset.quads {
+	for &quadsInLayer, layerIndex in _drawFrame.reset.quads {
 		count := len(quadsInLayer)
 		if count == 0 do continue
 
 		currentLayer := DrawLayer(layerIndex)
-		if currentLayer in drawFrame.reset.sortedLayers {
+		if currentLayer in _drawFrame.reset.sortedLayers {
 			slice.sort_by(quadsInLayer[:], _ySortCompare)
 		} else {
 			slice.sort_by(quadsInLayer[:], _drawKeyCompare)
@@ -388,11 +384,11 @@ flushBatch :: proc() {
 	}
 
 	// upload uniforms
-	drawFrame.reset.shaderData.uViewProjectionMatrix =
-		drawFrame.reset.coordSpace.viewProjectionMatrix
+	_drawFrame.reset.shaderData.uViewProjectionMatrix =
+		_drawFrame.reset.coordSpace.viewProjectionMatrix
 	sokol_gfx.apply_uniforms(
 		BINDING_GLOBAL_UNIFORMS,
-		{ptr = &drawFrame.reset.shaderData, size = size_of(shaders.Shaderdata)},
+		{ptr = &_drawFrame.reset.shaderData, size = size_of(shaders.Shaderdata)},
 	)
 
 	if _renderContext.customUniformsSize > 0 {
@@ -408,7 +404,7 @@ flushBatch :: proc() {
 	// draw
 	sokol_gfx.draw(0, 6 * i32(quadIndex), 1)
 
-	for &quadsInLayer in drawFrame.reset.quads {
+	for &quadsInLayer in _drawFrame.reset.quads {
 		clear(&quadsInLayer)
 	}
 }
@@ -497,6 +493,8 @@ _setShaderValue :: proc(id: ShaderId) {
 
 	flushBatch()
 	_renderContext.activeShaderId = id
+
+	_renderContext.customUniformsSize = 0
 }
 
 // @ref
@@ -556,11 +554,7 @@ getSpriteSize :: proc(sprite: generated.SpriteName) -> gmath.Vector2 {
 
 @(private = "file")
 _setCoordSpaceDefault :: proc() {
-	_drawFrame.reset.coordSpace = {
-		projectionMatrix     = gmath.Matrix4(1),
-		cameraMatrix         = gmath.Matrix4(1),
-		viewProjectionMatrix = gmath.Matrix4(1),
-	}
+	_drawFrame.reset.coordSpace = getScreenSpace()
 }
 
 @(private = "file")
@@ -582,14 +576,13 @@ _drawKeyCompare :: proc(a, b: Quad) -> bool {
 
 @(private = "file")
 _initDrawFrameLayers :: proc() {
-	drawFrame := getDrawFrame()
 	allocator := context.allocator
 
-	drawFrame.reset.quads[DrawLayer.background] = make([dynamic]Quad, 0, 512, allocator)
-	drawFrame.reset.quads[DrawLayer.shadow] = make([dynamic]Quad, 0, 128, allocator)
-	drawFrame.reset.quads[DrawLayer.playspace] = make([dynamic]Quad, 0, 256, allocator)
-	drawFrame.reset.quads[DrawLayer.tooltip] = make([dynamic]Quad, 0, 256, allocator)
-	drawFrame.reset.quads[DrawLayer.ui] = make([dynamic]Quad, 0, 1024, allocator)
+	_drawFrame.reset.quads[DrawLayer.background] = make([dynamic]Quad, 0, 512, allocator)
+	_drawFrame.reset.quads[DrawLayer.shadow] = make([dynamic]Quad, 0, 128, allocator)
+	_drawFrame.reset.quads[DrawLayer.playspace] = make([dynamic]Quad, 0, 256, allocator)
+	_drawFrame.reset.quads[DrawLayer.tooltip] = make([dynamic]Quad, 0, 256, allocator)
+	_drawFrame.reset.quads[DrawLayer.ui] = make([dynamic]Quad, 0, 1024, allocator)
 }
 
 // @ref
@@ -606,14 +599,12 @@ drawQuadProjected :: proc(
 	parameters := gmath.Vector4{},
 	sortKey: f32 = 0.0,
 ) {
-	drawFrame := getDrawFrame()
-
 	mutDrawLayer := drawLayer
 	if mutDrawLayer == .nil { 	// default value for drawLayer
-		mutDrawLayer = drawFrame.reset.activeDrawLayer
+		mutDrawLayer = _drawFrame.reset.activeDrawLayer
 	}
 
-	quadArray := &drawFrame.reset.quads[mutDrawLayer]
+	quadArray := &_drawFrame.reset.quads[mutDrawLayer]
 
 	if len(quadArray) >= cap(quadArray) {
 		reserve(quadArray, max(8, cap(quadArray) * 2))
@@ -650,7 +641,7 @@ drawQuadProjected :: proc(
 	vertices[0].drawLayer = u8(mutDrawLayer); vertices[1].drawLayer = u8(mutDrawLayer)
 	vertices[2].drawLayer = u8(mutDrawLayer); vertices[3].drawLayer = u8(mutDrawLayer)
 
-	combinedFlags := flags | drawFrame.reset.activeFlags
+	combinedFlags := flags | _drawFrame.reset.activeFlags
 	vertices[0].quadFlags = combinedFlags; vertices[1].quadFlags = combinedFlags
 	vertices[2].quadFlags = combinedFlags; vertices[3].quadFlags = combinedFlags
 
