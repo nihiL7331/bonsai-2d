@@ -72,9 +72,6 @@ _atlas: Atlas
 _drawFrame: DrawFrame
 
 @(private = "file")
-_clearedFrame: bool
-
-@(private = "file")
 _actualQuadData: [MAX_QUADS]Quad
 
 @(private = "file")
@@ -272,8 +269,6 @@ coreRenderFrameStart :: proc() {
 	sokol_gfx.begin_pass({action = _renderContext.passAction, swapchain = sokol_glue.swapchain()})
 
 	setWorldSpace()
-
-	_clearedFrame = false
 }
 
 // Called at the end of every frame. Submits final batches to GPU.
