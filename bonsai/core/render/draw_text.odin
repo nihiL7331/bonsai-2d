@@ -26,12 +26,12 @@ drawTextWithDropShadow :: proc(
 	rotation: f32 = 0.0, // in radians
 	dropShadowColor := colors.BLACK,
 	color := colors.WHITE,
-	scale := 1.0,
+	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
 	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
-	shadowOffset := gmath.Vector2{1, -1} * f32(scale)
+	shadowOffset := gmath.Vector2{1, -1} * scale
 
 	// fetch font resource
 	font, ok := getFont(fontName, fontSize)
@@ -83,7 +83,7 @@ drawTextSimple :: proc(
 	fontSize: uint = 12,
 	rotation: f32 = 0.0, // in radians
 	color := colors.WHITE,
-	scale := 1.0,
+	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
 	colorOverride := gmath.Color{},
@@ -116,17 +116,13 @@ drawTextSimpleFont :: proc(
 	font: ^Font,
 	rotation: f32, // in radians
 	color := colors.WHITE,
-	scale := 1.0,
+	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
 	colorOverride := gmath.Color{},
 ) -> (
 	textBounds: gmath.Vector2,
 ) {
-	if drawLayer != DrawLayer.nil {
-		getDrawFrame().reset.activeDrawLayer = drawLayer
-	}
-
 	// find size
 	totalTextSize: gmath.Vector2
 	for char, i in text {
@@ -152,7 +148,9 @@ drawTextSimpleFont :: proc(
 		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 		topRight := gmath.Vector2{quad.x1, -quad.y0}
 
-		assert(bottomLeft + charSize == topRight, "Font sizing error (find size)")
+		when ODIN_DEBUG {
+			assert(bottomLeft + charSize == topRight, "Font sizing error (find size)")
+		}
 
 		if i == len(text) - 1 {
 			totalTextSize.x += charSize.x
@@ -164,11 +162,6 @@ drawTextSimpleFont :: proc(
 	}
 
 	pivotOffset := totalTextSize * -gmath.scaleFromPivot(pivot)
-
-	rotationMatrix := gmath.Matrix4(1)
-	if rotation != 0 {
-		rotationMatrix = gmath.matrixRotate(rotation)
-	}
 
 	// draw characters
 	cursorX: f32
@@ -202,8 +195,10 @@ drawTextSimpleFont :: proc(
 
 		transform := gmath.Matrix4(1)
 		transform *= gmath.matrixTranslate(position)
-		transform *= rotationMatrix
-		transform *= gmath.matrixScale(gmath.Vector2{f32(scale), f32(scale)})
+		if rotation != 0 {
+			transform *= gmath.matrixRotate(rotation)
+		}
+		transform *= gmath.matrixScale(scale)
 		transform *= gmath.matrixTranslate(offsetToRenderAt)
 
 		drawRectangleTransform(
@@ -219,5 +214,5 @@ drawTextSimpleFont :: proc(
 		cursorY += -advanceY
 	}
 
-	return totalTextSize * f32(scale)
+	return gmath.abs(totalTextSize * scale)
 }

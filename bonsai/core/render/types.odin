@@ -185,7 +185,7 @@ Quad :: [4]Vertex
 // @ref
 // Represents a single vertex in the sprite batcher.
 Vertex :: struct #packed {
-	position:      gmath.Vector2,
+	position:      gmath.Vector3,
 	color:         gmath.Vector4,
 	uv:            gmath.Vector2,
 	localUv:       gmath.Vector2,

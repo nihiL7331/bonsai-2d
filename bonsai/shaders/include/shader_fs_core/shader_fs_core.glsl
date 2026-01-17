@@ -30,7 +30,8 @@ layout(binding=0) uniform sampler uDefaultSampler;
 
 // @ref
 // **Input:** Interpolated world space position of the fragment.
-in vec2 vPosition;
+// Z position is used for depth.
+in vec3 vPosition;
 
 // @ref
 // **Input:** Vertex color (multiplied by sprite color).

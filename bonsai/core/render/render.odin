@@ -320,9 +320,6 @@ resetDrawFrame :: proc() {
 flushBatch :: proc() {
 	drawFrame := getDrawFrame()
 
-	activeShader := _renderContext.shaders[_renderContext.activeShaderId]
-	sokol_gfx.apply_pipeline(activeShader.pipeline)
-
 	quadIndex := 0
 
 	for &quadsInLayer, layerIndex in drawFrame.reset.quads {
@@ -332,6 +329,8 @@ flushBatch :: proc() {
 		currentLayer := DrawLayer(layerIndex)
 		if currentLayer in drawFrame.reset.sortedLayers {
 			slice.sort_by(quadsInLayer[:], _ySortCompare)
+		} else {
+			slice.sort_by(quadsInLayer[:], _drawKeyCompare)
 		}
 
 		spaceLeft := MAX_QUADS - quadIndex
@@ -353,6 +352,9 @@ flushBatch :: proc() {
 	}
 
 	if quadIndex == 0 do return
+
+	activeShader := _renderContext.shaders[_renderContext.activeShaderId]
+	sokol_gfx.apply_pipeline(activeShader.pipeline)
 
 	// upload to gpu
 	offset := sokol_gfx.append_buffer(
@@ -436,7 +438,7 @@ loadShader :: proc(descriptionFunction: ShaderDescriptionFunction) -> ShaderId {
 		index_type = .UINT16,
 		layout = {
 			attrs = {
-				LOCATION_POSITION = {format = .FLOAT2},
+				LOCATION_POSITION = {format = .FLOAT3},
 				LOCATION_COLOR = {format = .FLOAT4},
 				LOCATION_UV = {format = .FLOAT2},
 				LOCATION_LOCAL_UV = {format = .FLOAT2},
@@ -573,6 +575,11 @@ _ySortCompare :: proc(a, b: Quad) -> bool {
 }
 
 @(private = "file")
+_drawKeyCompare :: proc(a, b: Quad) -> bool {
+	return a[0].position.z < b[0].position.z
+}
+
+@(private = "file")
 _initDrawFrameLayers :: proc() {
 	drawFrame := getDrawFrame()
 	allocator := context.allocator
@@ -591,12 +598,12 @@ drawQuadProjected :: proc(
 	colors: [4]gmath.Color,
 	uvs: [4]gmath.Vector2,
 	textureIndex: u8,
-	spriteSize: gmath.Vector2,
+	quadSize: gmath.Vector2,
 	colorOverride: gmath.Color,
 	drawLayer: DrawLayer = DrawLayer.nil,
 	flags: QuadFlags,
 	parameters := gmath.Vector4{},
-	drawLayerQueue := -1,
+	sortKey: f32 = 0.0,
 ) {
 	drawFrame := getDrawFrame()
 
@@ -605,26 +612,21 @@ drawQuadProjected :: proc(
 		mutDrawLayer = drawFrame.reset.activeDrawLayer
 	}
 
-	vertices: [4]Vertex
-	defer {
-		quadArray := &drawFrame.reset.quads[mutDrawLayer]
+	quadArray := &drawFrame.reset.quads[mutDrawLayer]
 
-		if drawLayerQueue == -1 {
-			append(quadArray, vertices)
-		} else {
-			assert(drawLayerQueue < len(quadArray), "No elements pushed after the drawLayerQueue.")
-
-			resize_dynamic_array(quadArray, len(quadArray) + 1)
-			oldRange := quadArray[drawLayerQueue:len(quadArray) - 1]
-			newRange := quadArray[drawLayerQueue + 1:len(quadArray)]
-			copy(newRange, oldRange)
-
-			quadArray[drawLayerQueue] = vertices
-		}
+	if len(quadArray) >= cap(quadArray) {
+		reserve(quadArray, max(8, cap(quadArray) * 2))
 	}
 
-	vertices[0].position = positions[0]; vertices[1].position = positions[1]
-	vertices[2].position = positions[2]; vertices[3].position = positions[3]
+	oldLength := len(quadArray)
+	resize(quadArray, oldLength + 1)
+
+	vertices := &quadArray[oldLength]
+
+	vertices[0].position = {positions[0].x, positions[0].y, sortKey}
+	vertices[1].position = {positions[1].x, positions[1].y, sortKey}
+	vertices[2].position = {positions[2].x, positions[2].y, sortKey}
+	vertices[3].position = {positions[3].x, positions[3].y, sortKey}
 
 	vertices[0].color = colors[0]; vertices[1].color = colors[1]
 	vertices[2].color = colors[2]; vertices[3].color = colors[3]
@@ -638,8 +640,8 @@ drawQuadProjected :: proc(
 	vertices[0].textureIndex = textureIndex; vertices[1].textureIndex = textureIndex
 	vertices[2].textureIndex = textureIndex; vertices[3].textureIndex = textureIndex
 
-	vertices[0].size = spriteSize; vertices[1].size = spriteSize
-	vertices[2].size = spriteSize; vertices[3].size = spriteSize
+	vertices[0].size = quadSize; vertices[1].size = quadSize
+	vertices[2].size = quadSize; vertices[3].size = quadSize
 
 	vertices[0].colorOverride = colorOverride; vertices[1].colorOverride = colorOverride
 	vertices[2].colorOverride = colorOverride; vertices[3].colorOverride = colorOverride
@@ -660,7 +662,7 @@ drawQuadProjected :: proc(
 loadAtlas :: proc(filepath: string) {
 	pngData, success := platform.read_entire_file(filepath)
 	if !success {
-		log.warn("Failed to read atlas file at: %v. Defaulting to blank atlas.", filepath)
+		log.warnf("Failed to read atlas file at: %v. Defaulting to blank atlas.", filepath)
 		loadAtlas("bonsai/core/render/atlas/blank.png")
 		return
 	}
@@ -686,6 +688,7 @@ loadAtlas :: proc(filepath: string) {
 		return
 	}
 
+	_atlas.image = sgImage
 	_atlas.view = sokol_gfx.make_view({texture = sokol_gfx.Texture_View_Desc({image = sgImage})})
 }
 

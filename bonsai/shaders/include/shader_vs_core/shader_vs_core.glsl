@@ -23,7 +23,8 @@ layout(binding=0) uniform ShaderData {
 
 // @ref
 // **Location 0:** World space position (x, y).
-in vec2 aPosition;
+// Z position is used for depth.
+in vec3 aPosition;
 
 // @ref
 // **Location 1:** Vertex color (rgba).
@@ -53,7 +54,7 @@ in vec4 aColorOverride;
 // **Location 7:** Custom parameters for user shaders.
 in vec4 aParams;
 
-out vec2 vPosition;
+out vec3 vPosition;
 out vec4 vColor;
 out vec2 vUv;
 out vec2 vLocalUv;

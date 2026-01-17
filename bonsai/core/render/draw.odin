@@ -16,8 +16,8 @@ drawSprite :: proc(
 	position: gmath.Vector2,
 	sprite: generated.SpriteName,
 	rotation: f32 = 0.0, // in radians
-	pivot := gmath.Pivot.centerCenter,
-	isFlippedX := false,
+	pivot := gmath.Pivot.bottomLeft,
+	scale := gmath.Vector2{1, 1},
 	drawOffset := gmath.Vector2{},
 	transform := gmath.Matrix4(1),
 	animationIndex := 0,
@@ -30,9 +30,11 @@ drawSprite :: proc(
 	cropLeft: f32 = 0.0,
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
-	drawLayerQueue := -1,
+	sortKey: f32 = 0.0,
 	isCullingEnabled := false,
 ) {
+	setTexture(_atlas.view)
+
 	rectangleSize := getSpriteSize(sprite)
 	frameCount := generated.getFrameCount(sprite)
 
@@ -59,18 +61,15 @@ drawSprite :: proc(
 
 	// calculate local transform matrix
 	localTransform := gmath.Matrix4(1)
-	localTransform *= gmath.matrixTranslate(position)
-
+	localTransform *= gmath.matrixTranslate(position - drawOffset)
 	if rotation != 0 {
 		localTransform *= gmath.matrixRotate(rotation)
 	}
-	localTransform *= gmath.matrixScale(gmath.Vector2{isFlippedX ? -1.0 : 1.0, 1.0})
+	localTransform *= gmath.matrixScale(scale)
 	localTransform *= transform
-
-	// pivot adjustment
 	pivotOffset := rectangleSize * -gmath.scaleFromPivot(pivot)
 	localTransform *= gmath.matrixTranslate(pivotOffset)
-	localTransform *= gmath.matrixTranslate(-drawOffset)
+
 
 	drawRectangleTransform(
 		localTransform,
@@ -86,7 +85,7 @@ drawSprite :: proc(
 		cropLeft = cropLeft,
 		cropBottom = cropBottom,
 		cropRight = cropRight,
-		drawLayerQueue = drawLayerQueue,
+		sortKey = sortKey,
 	)
 }
 
@@ -145,7 +144,7 @@ drawRectangleLines :: proc(
 	thickness: f32 = 1.0,
 	rotation: f32 = 0.0, // in radians
 	drawLayer := DrawLayer.nil,
-	drawLayerQueue := -1,
+	sortKey: f32 = 0.0,
 	isCullingEnabled := false,
 ) {
 	if isCullingEnabled {
@@ -170,7 +169,7 @@ drawRectangleLines :: proc(
 		size = gmath.Vector2{fullWidth, thickness},
 		color = color,
 		drawLayer = drawLayer,
-		drawLayerQueue = drawLayerQueue,
+		sortKey = sortKey,
 	)
 
 	// bottom bar
@@ -179,7 +178,7 @@ drawRectangleLines :: proc(
 		size = gmath.Vector2{fullWidth, thickness},
 		color = color,
 		drawLayer = drawLayer,
-		drawLayerQueue = drawLayerQueue,
+		sortKey = sortKey,
 	)
 
 	// left bar
@@ -188,7 +187,7 @@ drawRectangleLines :: proc(
 		size = gmath.Vector2{thickness, size.y},
 		color = color,
 		drawLayer = drawLayer,
-		drawLayerQueue = drawLayerQueue,
+		sortKey = sortKey,
 	)
 
 	// right bar
@@ -197,7 +196,7 @@ drawRectangleLines :: proc(
 		size = gmath.Vector2{thickness, size.y},
 		color = color,
 		drawLayer = drawLayer,
-		drawLayerQueue = drawLayerQueue,
+		sortKey = sortKey,
 	)
 }
 
@@ -213,14 +212,14 @@ drawRectangle :: proc(
 	uv := DEFAULT_UV,
 	color := colors.WHITE,
 	colorOverride := gmath.Color{},
-	drawLayer := DrawLayer{},
+	drawLayer := DrawLayer.nil,
 	flags := QuadFlags{},
 	parameters := gmath.Vector4{},
 	cropTop: f32 = 0.0,
 	cropLeft: f32 = 0.0,
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
-	drawLayerQueue := -1,
+	sortKey: f32 = 0.0,
 	isCullingEnabled := false,
 ) {
 	if isCullingEnabled {
@@ -252,7 +251,7 @@ drawRectangle :: proc(
 		cropLeft,
 		cropBottom,
 		cropRight,
-		drawLayerQueue,
+		sortKey,
 	)
 }
 
@@ -327,7 +326,7 @@ drawRectangleTransform :: proc(
 	cropLeft: f32 = 0.0,
 	cropBottom: f32 = 0.0,
 	cropRight: f32 = 0.0,
-	drawLayerQueue := -1,
+	sortKey: f32 = 0.0,
 ) {
 	mutSize := size
 	mutUv := uv
@@ -347,7 +346,9 @@ drawRectangleTransform :: proc(
 		mutUv = gmath.shift(mutUv, gmath.Vector2{f32(animationIndex) * uvFrameSize.x, 0})
 	}
 
-	assert(drawFrame.reset.coordSpace != {}, "No coordinate space set.")
+	when ODIN_DEBUG {
+		assert(drawFrame.reset.coordSpace != {}, "No coordinate space set.")
+	}
 
 	worldMatrix := transform
 
@@ -410,6 +411,6 @@ drawRectangleTransform :: proc(
 		drawLayer,
 		flags,
 		parameters,
-		drawLayerQueue,
+		sortKey,
 	)
 }
