@@ -109,7 +109,7 @@ setCoordSpace :: proc {
 }
 
 // @ref
-// Flushses the current batch and switches coordinate space to **world space (gameplay)**.
+// Flushes the current batch and switches coordinate space to **world space (gameplay)**.
 // Sets the active draw layer to [`DrawLayer.background`](#drawlayer).
 setWorldSpace :: proc() {
 	flushBatch()
