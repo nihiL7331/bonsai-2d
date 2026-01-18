@@ -55,11 +55,9 @@ Let's use them to write your first 'Hello, World!' code in **bonsai**. Rather th
 be saying hello to **Pot**, the framework's mascot and hero of every code example and tutorial.
 
 We will use the `bonsai:core/render` package to do that.
-We also need `bonsai:core` to get a position anchor on the screen.
 Simply import it at the top of the file:
 
 ```odin
-import "bonsai:core"
 import "bonsai:core/render"
 ```
 
@@ -69,7 +67,7 @@ Then, in your draw functions you can use the imported functions:
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := core.getViewportPivot(.centerCenter)
+  centerPosition := render.getViewportPivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", pivot = .centerCenter)
 }
 ```
@@ -81,7 +79,6 @@ Finally, your code should look like this:
 
 package game
 
-import "bonsai:core"
 import "bonsai:core/render"
 
 init :: proc() {
@@ -93,7 +90,7 @@ update :: proc() {
 draw :: proc() {
   render.setScreenSpace()
 
-  centerPosition := core.getViewportPivot(.centerCenter)
+  centerPosition := render.getViewportPivot(.centerCenter)
   render.drawTextSimple(centerPosition, "Hello, Pot!", pivot = .centerCenter)
 }
 
