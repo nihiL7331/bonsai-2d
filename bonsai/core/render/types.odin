@@ -88,6 +88,8 @@ RenderContext :: struct {
 }
 
 // @ref
+// Wraps all data needed for each `Canvas` object. Each has unique [`CanvasId`](#canvasid).
+// Shouldn't be modified directly.
 Canvas :: struct {
 	image:       sokol_gfx.Image,
 	depthImage:  sokol_gfx.Image,
