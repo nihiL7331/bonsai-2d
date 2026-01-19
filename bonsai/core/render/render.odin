@@ -306,6 +306,7 @@ coreRenderFrameStart :: proc() {
 
 	_scissorState.enabled = false
 
+	setCanvas(_renderContext.defaultCanvasId, clear = true)
 
 	setWorldSpace()
 }
