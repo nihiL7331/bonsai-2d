@@ -75,8 +75,8 @@ out vec4 vParams;
 // gl_Position = getProjectedPosition(aPosition);
 // ```
 // :::
-vec4 getProjectedPosition(vec2 position) {
-  return uViewProjectionMatrix * vec4(position, 0.0, 1.0);
+vec4 getProjectedPosition(vec3 position) {
+  return uViewProjectionMatrix * vec4(position.xy, 0.0, 1.0);
 }
 
 // @ref
