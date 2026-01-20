@@ -80,6 +80,10 @@ PI :: math.PI
 TAU :: math.TAU
 
 // @ref
+// Constant e value. Approximately 2.718281828.
+E :: math.E
+
+// @ref
 // Enum representing the 9 cardinal points of a rectangle.
 // :::note
 // Used for anchoring UI and aligning sprites.
