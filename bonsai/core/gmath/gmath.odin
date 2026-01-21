@@ -143,13 +143,12 @@ scaleFromPivot :: proc(pivot: Pivot) -> Vector2 {
 // product := gmath.dot(directionA, directionB)
 // ```
 // :::
-dot :: proc {
-	_dotVector2,
-	_dotVector3,
-	_dotVector4,
-	_dotVector2Int,
-	_dotVector3Int,
-	_dotVector4Int,
+dot :: proc(a, b: [$N]$T) -> T where intrinsics.type_is_float(T) || intrinsics.type_is_integer(T) {
+	result: T = 0
+	for i in 0 ..< N {
+		result += a[i] * b[i]
+	}
+	return result
 }
 
 // @ref
@@ -161,13 +160,11 @@ dot :: proc {
 // pointLength := gmath.length(point) // Returns distance from {0, 0} = 4√2
 // ```
 // :::
-length :: proc {
-	_lengthVector2,
-	_lengthVector3,
-	_lengthVector4,
-	_lengthVector2Int,
-	_lengthVector3Int,
-	_lengthVector4Int,
+length :: proc(
+	input: [$N]$T,
+) -> T where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	return sqrt(lengthSquared(input))
 }
 
 // @ref
@@ -185,13 +182,11 @@ length :: proc {
 // result := gmath.lengthSquared(pointA) > gmath.lengthSquared(pointB) // result is true
 // ```
 // :::
-lengthSquared :: proc {
-	_lengthSquaredVector2,
-	_lengthSquaredVector3,
-	_lengthSquaredVector4,
-	_lengthSquaredVector2Int,
-	_lengthSquaredVector3Int,
-	_lengthSquaredVector4Int,
+lengthSquared :: proc(
+	input: [$N]$T,
+) -> T where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	return dot(input, input)
 }
 
 // @ref
@@ -205,10 +200,10 @@ lengthSquared :: proc {
 // directionNormalized := gmath.normalize(direction) // directionNormalized is gmath.Vector2{1, 0}
 // ```
 // :::
-normalize :: proc {
-	_normalizeVector2,
-	_normalizeVector3,
-	_normalizeVector4,
+normalize :: proc(input: $T) -> T where intrinsics.type_is_array(T) {
+	vectorLength := length(input)
+	if vectorLength == 0 do return T{}
+	return input / vectorLength
 }
 
 // @ref
@@ -221,13 +216,11 @@ normalize :: proc {
 // dist := gmath.distance(pointA, pointB) // dist is 4
 // ```
 // :::
-distance :: proc {
-	_distanceVector2,
-	_distanceVector3,
-	_distanceVector4,
-	_distanceVector2Int,
-	_distanceVector3Int,
-	_distanceVector4Int,
+distance :: proc(
+	a, b: [$N]$T,
+) -> T where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	return length(a - b)
 }
 
 // @ref
@@ -240,10 +233,8 @@ distance :: proc {
 // dir := gmath.direction(start, end) // dir is gmath.Vector2{0, -1}
 // ```
 // :::
-direction :: proc {
-	_directionVector2,
-	_directionVector3,
-	_directionVector4,
+direction :: proc(start, end: $T) -> T where intrinsics.type_is_array(T) {
+	return normalize(end - start)
 }
 
 // @ref
@@ -282,15 +273,22 @@ matrixInverse :: proc(mat: Matrix4) -> Matrix4 {
 // Objects inside this box are visible, objects outside are clipped.
 matrixOrtho3d :: proc(
 	left, right, bottom, top, near, far: $T,
-) -> Matrix4 where intrinsics.type_is_numeric(T) {
-	return linalg.matrix_ortho3d_f32(
-		f32(left),
-		f32(right),
-		f32(bottom),
-		f32(top),
-		f32(near),
-		f32(far),
-	)
+) -> Matrix4 where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_float(T) {
+		return Matrix4(linalg.matrix_ortho3d(left, right, bottom, top, near, far))
+	} else {
+		return Matrix4(
+			linalg.matrix_ortho3d_f32(
+				f32(left),
+				f32(right),
+				f32(bottom),
+				f32(top),
+				f32(near),
+				f32(far),
+			),
+		)
+	}
 }
 
 // @ref
@@ -301,32 +299,59 @@ matrixScale :: proc(scale: Vector2) -> Matrix4 {
 
 // @ref
 // Checks if two floats are equal within a small margin of error (`epsilon`).
-almostEquals :: proc(a: f32, b: f32, epsilon: f32 = 0.001) -> bool {
+almostEquals :: proc(
+	a, b: $T,
+	epsilon: $E,
+) -> bool where (intrinsics.type_is_float(T) || intrinsics.type_is_integer(T)) &&
+	intrinsics.type_is_float(E) {
 	return abs(a - b) <= epsilon
 }
 
 // @ref
 // Converts degrees to radians.
-toRadians :: proc(degrees: $T) -> T {
+toRadians :: proc(
+	degrees: $T,
+) -> T where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
 	return degrees * (PI / 180.0)
 }
 
 // @ref
 // Converts radians to degrees.
-toDegrees :: proc(radians: $T) -> T {
+toDegrees :: proc(
+	radians: $T,
+) -> T where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
 	return radians * (180.0 / PI)
 }
 
 // @ref
-// Clamps `input` between `min` and `max`.
-clamp :: proc {
-	_clampScalar,
-	_clampVector2,
-	_clampVector3,
-	_clampVector4,
-	_clampVector2Int,
-	_clampVector3Int,
-	_clampVector4Int,
+// Clamps `input` between `minimum` and `maximum`.
+clamp :: proc(
+	input: $T,
+	minimum, maximum: $E,
+) -> T where (intrinsics.type_is_array(T) &&
+		(intrinsics.type_is_array(E) ||
+				intrinsics.type_is_float(E) ||
+				intrinsics.type_is_integer(E))) ||
+	((intrinsics.type_is_float(T) || intrinsics.type_is_integer(T)) &&
+			(intrinsics.type_is_float(E) || intrinsics.type_is_integer(E))) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		when intrinsics.type_is_array(E) { 	// vector-vector clamp
+			#assert(len(input) == len(minimum), "Dimension mismatch in clamp(input, min, max)")
+			for i in 0 ..< len(input) {
+				result[i] = clamp(input[i], minimum[i], maximum[i])
+			}
+		} else { 	// vector-scalar clamp
+			for i in 0 ..< len(input) {
+				result[i] = clamp(input[i], minimum, maximum)
+			}
+		}
+		return result
+	} else {
+		return math.clamp(input, T(minimum), T(maximum))
+	}
 }
 
 // @ref
@@ -338,40 +363,75 @@ clamp :: proc {
 // roundedValue := gmath.roundToInt(value) // roundedValue is gmath.Vector3Int{5, 8, 7}
 // ```
 // :::
-roundToInt :: proc {
-	_roundToIntVector2,
-	_roundToIntVector3,
-	_roundToIntVector4,
+roundToInt :: proc(input: [$N]$T) -> [N]int where intrinsics.type_is_float(T) {
+	result: [N]int
+	for i in 0 ..< N {
+		result[i] = int(math.round(input[i]))
+	}
+	return result
 }
 
 // @ref
 // Rounds the value to the nearest whole number.
 // Accepts scalar and vector values as an argument.
-round :: proc {
-	_roundScalar,
-	_roundVector2,
-	_roundVector3,
-	_roundVector4,
+round :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = round(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.round(input)
+	} else {
+		return input
+	}
 }
 
 // @ref
 // Returns the largest whole number less than or equal to the `input`.
 // Accepts scalar and vector values as an argument.
-floor :: proc {
-	_floorScalar,
-	_floorVector2,
-	_floorVector3,
-	_floorVector4,
+floor :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = floor(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.floor(input)
+	} else {
+		return input
+	}
 }
 
 // @ref
 // Returns the smallest whole number greater than or equal to the `input`.
 // Accepts scalar and vector values as an argument.
-ceil :: proc {
-	_ceilScalar,
-	_ceilVector2,
-	_ceilVector3,
-	_ceilVector4,
+ceil :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = ceil(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.ceil(input)
+	} else {
+		return input
+	}
 }
 
 // @ref
@@ -390,11 +450,52 @@ ceil :: proc {
 // result := gmath.lerp(start, finish, 0.5) // result is gmath.Vector2{10, 10}
 // ```
 // :::
-lerp :: proc {
-	_lerpScalar,
-	_lerpVector2,
-	_lerpVector3,
-	_lerpVector4,
+lerp :: proc(a, b: $T, t: $E) -> T {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(a) {
+			result[i] = lerp(a[i], b[i], t)
+		}
+		return result
+	} else {
+		return math.lerp(a, b, T(t))
+	}
+}
+
+// @ref
+// Returns the value of `base` raised to `power`.
+// Accepts scalars, [`Vectors`](#vector2), and [`Color`](#color) as an argument.
+pow :: proc(
+	base: $B,
+	power: $P,
+) -> B where (intrinsics.type_is_array(B) &&
+		(intrinsics.type_is_array(P) ||
+				intrinsics.type_is_float(P) ||
+				intrinsics.type_is_integer(P))) ||
+	((intrinsics.type_is_float(B) || intrinsics.type_is_integer(B)) &&
+				intrinsics.type_is_float(P) ||
+			intrinsics.type_is_integer(P)) {
+	when intrinsics.type_is_array(B) {
+		result := base
+
+		when intrinsics.type_is_array(P) { 	// vector^vector
+			#assert(len(base) == len(power), "Dimension mismatch in pow(vector, vector)")
+			for i in 0 ..< len(base) {
+				result[i] = pow(base[i], power[i])
+			}
+		} else { 	// vector^scalar
+			for i in 0 ..< len(base) {
+				result[i] = pow(base[i], power)
+			}
+		}
+		return result
+	} else { 	// scalar^scalar
+		when intrinsics.type_is_float(B) {
+			return math.pow(base, B(power))
+		} else {
+			return B(math.round(math.pow_f64(f64(base), f64(power))))
+		}
+	}
 }
 
 // @ref
@@ -402,11 +503,34 @@ lerp :: proc {
 //
 // :::note[Example]
 // ```Odin
-// remapped := gmath.remap(50, 0, 100, 0, 1.0) // remapped is 0.5
+// remapped := gmath.remap(50.0, 0.0, 100.0, 0.0, 1.0) // remapped is 0.5
 // ```
 // :::
-remap :: proc(input, inMin, inMax, outMin, outMax: $T) -> T {
-	return outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin)
+remap :: proc(
+	input, inMin, inMax, outMin, outMax: $T,
+) -> T where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	return outMin + (input - inMin) * (outMax - outMin) / (inMax - inMin)
+}
+
+// @ref
+// Returns [`e`](#e) raised to the power of `input`.
+exp :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = exp(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.exp(input)
+	} else {
+		return T(math.round(math.exp_f64(f64(input))))
+	}
 }
 
 // @ref
@@ -415,28 +539,50 @@ remap :: proc(input, inMin, inMax, outMin, outMax: $T) -> T {
 // - 0, if `input` is equal to zero.
 // - -1, if `input` is smaller than zero.
 // **For vectors** returns a component-wise sign vector.
-sign :: proc {
-	_signScalarFloat,
-	_signScalarInt,
-	_signVector2,
-	_signVector3,
-	_signVector4,
-	_signVector2Int,
-	_signVector3Int,
-	_signVector4Int,
+sign :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = sign(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.sign(input)
+	} else {
+		return T(math.sign(f64(input)))
+	}
 }
 
 // @ref
 // Returns the square root of `input` value.
-sqrt :: proc(input: $T) -> T {
-	return math.sqrt(input)
+// Works with [`Vectors`](#vector2), [`Matrices`](#matrix4) and scalars.
+// If an integer is passed as an argument, it's rounded on return.
+sqrt :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = sqrt(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.sqrt(input)
+	} else {
+		return T(math.round(math.sqrt(f64(input))))
+	}
 }
 
 // @ref
 // Returns the smallest value among all arguments.
 // If arguments are vectors, returns a component-wise minimum vector.
-// Accepts any number of arguments (minimum 1).
-// If no arguments are provided, returns `0`.
+// Accepts any number of arguments (minimum 2).
 //
 // :::note[Example]
 // ```Odin
@@ -444,22 +590,40 @@ sqrt :: proc(input: $T) -> T {
 // vectorMinimum := gmath.min(vectorA, vectorB) // vectorMinimum is a component-wise minimum vector
 // ```
 // :::
-min :: proc {
-	_minScalarVariadic,
-	_minScalarBinary,
-	_minVector2,
-	_minVector3,
-	_minVector4,
-	_minVector2Int,
-	_minVector3Int,
-	_minVector4Int,
+min :: proc(
+	a, b: $T,
+	rest: ..T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result := a
+		for i in 0 ..< len(result) {
+			if b[i] < result[i] {
+				result[i] = b[i]
+			}
+		}
+		for i in 0 ..< len(rest) {
+			for j in 0 ..< len(result) {
+				if rest[i][j] < result[j] {
+					result[j] = rest[i][j]
+				}
+			}
+		}
+		return result
+	} else {
+		result := a < b ? a : b
+		for input in rest {
+			if input < result do result = input
+		}
+		return result
+	}
 }
 
 // @ref
 // Returns the largest value among all arguments.
 // If arguments are vectors, returns a component-wise maximum vector.
-// Accepts any number of arguments (minimum 1).
-// If no arguments are provided, returns `0`.
+// Accepts any number of arguments (minimum 2).
 //
 // :::note[Example]
 // ```Odin
@@ -467,15 +631,34 @@ min :: proc {
 // vectorMaximum := gmath.max(vectorA, vectorB) // vectorMaximum is a component-wise maximum vector
 // ```
 // :::
-max :: proc {
-	_maxScalarVariadic,
-	_maxScalarBinary,
-	_maxVector2,
-	_maxVector3,
-	_maxVector4,
-	_maxVector2Int,
-	_maxVector3Int,
-	_maxVector4Int,
+max :: proc(
+	a, b: $T,
+	rest: ..T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result := a
+		for i in 0 ..< len(result) {
+			if b[i] > result[i] {
+				result[i] = b[i]
+			}
+		}
+		for i in 0 ..< len(rest) {
+			for j in 0 ..< len(result) {
+				if rest[i][j] > result[j] {
+					result[j] = rest[i][j]
+				}
+			}
+		}
+		return result
+	} else {
+		result := a > b ? a : b
+		for input in rest {
+			if input > result do result = input
+		}
+		return result
+	}
 }
 
 // @ref
@@ -489,18 +672,24 @@ max :: proc {
 // result := gmath.abs(direction) // result is gmath.Vector2{1, 1}
 // ```
 // :::
-abs :: proc {
-	_absScalar,
-	_absVector2,
-	_absVector3,
-	_absVector4,
-	_absVector2Int,
-	_absVector3Int,
-	_absVector4Int,
+abs :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = abs(input[i])
+		}
+		return result
+	} else {
+		return math.abs(input)
+	}
 }
 
 // @ref
-// Retuns the sine of the angle **(in radians)**.
+// Retuns the sine of `angle` **(in radians)**.
 // - For **scalars**: Standard trigonometric sin function.
 // - For **vectors**: Component-wise sine.
 //
@@ -510,16 +699,26 @@ abs :: proc {
 // result := gmath.sin(wave) // result is gmath.Vector2{ -1, 1 }
 // ```
 // :::
-sin :: proc {
-	_sinScalarFloat,
-	_sinScalarInt,
-	_sinVector2,
-	_sinVector3,
-	_sinVector4,
+sin :: proc(
+	angle: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(angle) {
+			result[i] = sin(angle[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.sin(angle)
+	} else {
+		return T(math.round(f64(math.sin_f64(f64(angle)))))
+	}
 }
 
 // @ref
-// Returns the cosine of the angle **(in radians)**.
+// Returns the cosine of `angle` **(in radians)**.
 // - For **scalars**: Standard trigonometric cos function.
 // - For **vectors**: Component-wise cosine.
 //
@@ -529,12 +728,22 @@ sin :: proc {
 // result := gmath.cos(wave) // result is gmath.Vector2{ 1, 0 }
 // ```
 // :::
-cos :: proc {
-	_cosScalarFloat,
-	_cosScalarInt,
-	_cosVector2,
-	_cosVector3,
-	_cosVector4,
+cos :: proc(
+	angle: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(angle) {
+			result[i] = cos(angle[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.cos(angle)
+	} else {
+		return T(math.round(f64(math.cos_f64(f64(angle)))))
+	}
 }
 
 // @ref
@@ -544,8 +753,12 @@ cos :: proc {
 //
 // `angle := gmath.atan2(target.y - position.y, target.x - position.x)`
 // :::
-atan2 :: proc(y, x: $T) -> T {
-	return math.atan2(y, x)
+atan2 :: proc(y, x: $T) -> T where intrinsics.type_is_float(T) || intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_float(T) {
+		return math.atan2(y, x)
+	} else {
+		return T(math.round(math.atan2_f64(f64(y), f64(x))))
+	}
 }
 
 // @ref
@@ -554,752 +767,9 @@ vectorToAngle :: atan2
 
 // @ref
 // Returns a normalized direction vector from an angle **(in radians)**.
-angleToVector :: proc(radians: f32) -> Vector2 {
-	return Vector2{math.cos(radians), math.sin(radians)}
-}
-
-// Vector2 helper for the dot function.
-@(private = "file")
-_dotVector2 :: proc(a, b: Vector2) -> f32 {
-	return a.x * b.x + a.y * b.y
-}
-
-// Vector3 helper for the dot function.
-@(private = "file")
-_dotVector3 :: proc(a, b: Vector3) -> f32 {
-	return a.x * b.x + a.y * b.y + a.z * b.z
-}
-
-// Vector4 helper for the dot function.
-@(private = "file")
-_dotVector4 :: proc(a, b: Vector4) -> f32 {
-	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
-}
-
-// Vector2Int helper for the dot function.
-@(private = "file")
-_dotVector2Int :: proc(a, b: Vector2Int) -> i32 {
-	return a.x * b.x + a.y * b.y
-}
-
-// Vector3Int helper for the dot function.
-@(private = "file")
-_dotVector3Int :: proc(a, b: Vector3Int) -> i32 {
-	return a.x * b.x + a.y * b.y + a.z * b.z
-}
-
-// Vector4Int helper for the dot function.
-@(private = "file")
-_dotVector4Int :: proc(a, b: Vector4Int) -> i32 {
-	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
-}
-
-// Scalar float helper for the lerp function.
-@(private = "file")
-_lerpScalar :: proc(a, b: $T, t: f32) -> T where intrinsics.type_is_numeric(T) {
-	return math.lerp(a, b, t)
-}
-
-// Vector2 helper for the lerp function.
-@(private = "file")
-_lerpVector2 :: proc(a, b: Vector2, t: f32) -> Vector2 {
-	return a + (b - a) * t
-}
-
-// Vector3 helper for the lerp function.
-@(private = "file")
-_lerpVector3 :: proc(a, b: Vector3, t: f32) -> Vector3 {
-	return a + (b - a) * t
-}
-
-// Vector4 helper for the lerp function.
-@(private = "file")
-_lerpVector4 :: proc(a, b: Vector4, t: f32) -> Vector4 {
-	return a + (b - a) * t
-}
-
-// Scalar helper for the abs function.
-@(private = "file")
-_absScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
-	return math.abs(input)
-}
-
-// Vector2 helper for the abs function.
-@(private = "file")
-_absVector2 :: proc(input: Vector2) -> Vector2 {
-	return Vector2{math.abs(input.x), math.abs(input.y)}
-}
-
-// Vector3 helper for the abs function.
-@(private = "file")
-_absVector3 :: proc(input: Vector3) -> Vector3 {
-	return Vector3{math.abs(input.x), math.abs(input.y), math.abs(input.z)}
-}
-
-// Vector4 helper for the abs function.
-@(private = "file")
-_absVector4 :: proc(input: Vector4) -> Vector4 {
-	return Vector4{math.abs(input.x), math.abs(input.y), math.abs(input.z), math.abs(input.w)}
-}
-
-// Vector2Int helper for the abs function.
-@(private = "file")
-_absVector2Int :: proc(input: Vector2Int) -> Vector2Int {
-	return Vector2Int{math.abs(input.x), math.abs(input.y)}
-}
-
-// Vector3Int helper for the abs function.
-@(private = "file")
-_absVector3Int :: proc(input: Vector3Int) -> Vector3Int {
-	return Vector3Int{math.abs(input.x), math.abs(input.y), math.abs(input.z)}
-}
-
-// Vector4Int helper for the abs function.
-@(private = "file")
-_absVector4Int :: proc(input: Vector4Int) -> Vector4Int {
-	return Vector4Int{math.abs(input.x), math.abs(input.y), math.abs(input.z), math.abs(input.w)}
-}
-
-// Scalar float helper for the sin function.
-@(private = "file")
-_sinScalarFloat :: proc(radians: $T) -> T where intrinsics.type_is_float(T) {
-	return math.sin(radians)
-}
-
-// Scalar integer helper for the sin function.
-@(private = "file")
-_sinScalarInt :: proc(radians: $T) -> T where intrinsics.type_is_integer(T) {
-	return i32(math.sin(f32(radians)))
-}
-
-// Scalar float helper for the cos function.
-@(private = "file")
-_cosScalarFloat :: proc(radians: $T) -> T where intrinsics.type_is_float(T) {
-	return math.cos(radians)
-}
-
-// Scalar integer helper for the cos function.
-@(private = "file")
-_cosScalarInt :: proc(radians: $T) -> T where intrinsics.type_is_integer(T) {
-	return i32(math.cos(f32(radians)))
-}
-
-// Vector2 helper for the sin function.
-@(private = "file")
-_sinVector2 :: proc(radians: Vector2) -> Vector2 {
-	return Vector2{math.sin(radians.x), math.sin(radians.y)}
-}
-
-// Vector2 helper for the cos function.
-@(private = "file")
-_cosVector2 :: proc(radians: Vector2) -> Vector2 {
-	return Vector2{math.cos(radians.x), math.cos(radians.y)}
-}
-
-// Vector3 helper for the sin function.
-@(private = "file")
-_sinVector3 :: proc(radians: Vector3) -> Vector3 {
-	return Vector3{math.sin(radians.x), math.sin(radians.y), math.sin(radians.z)}
-}
-
-// Vector3 helper for the cos function.
-@(private = "file")
-_cosVector3 :: proc(radians: Vector3) -> Vector3 {
-	return Vector3{math.cos(radians.x), math.cos(radians.y), math.cos(radians.z)}
-}
-
-// Vector4 helper for the sin function.
-@(private = "file")
-_sinVector4 :: proc(radians: Vector4) -> Vector4 {
-	return Vector4 {
-		math.sin(radians.x),
-		math.sin(radians.y),
-		math.sin(radians.z),
-		math.sin(radians.w),
-	}
-}
-
-// Vector4 helper for the cos function.
-@(private = "file")
-_cosVector4 :: proc(radians: Vector4) -> Vector4 {
-	return Vector4 {
-		math.cos(radians.x),
-		math.cos(radians.y),
-		math.cos(radians.z),
-		math.cos(radians.w),
-	}
-}
-
-// Vector2 helper for the lengthSquared function.
-@(private = "file")
-_lengthSquaredVector2 :: proc(input: Vector2) -> f32 {
-	return input.x * input.x + input.y * input.y
-}
-
-// Vector3 helper for the lengthSquared function.
-@(private = "file")
-_lengthSquaredVector3 :: proc(input: Vector3) -> f32 {
-	return input.x * input.x + input.y * input.y + input.z * input.z
-}
-
-// Vector4 helper for the lengthSquared function.
-@(private = "file")
-_lengthSquaredVector4 :: proc(input: Vector4) -> f32 {
-	return input.x * input.x + input.y * input.y + input.z * input.z + input.w * input.w
-}
-
-// Vector2Int helper for the lengthSquared function.
-@(private = "file")
-_lengthSquaredVector2Int :: proc(input: Vector2Int) -> i32 {
-	return input.x * input.x + input.y * input.y
-}
-
-// Vector3Int helper for the lengthSquared function.
-@(private = "file")
-_lengthSquaredVector3Int :: proc(input: Vector3Int) -> i32 {
-	return input.x * input.x + input.y * input.y + input.z * input.z
-}
-
-// Vector4Int helper for the lengthSquared function.
-@(private = "file")
-_lengthSquaredVector4Int :: proc(input: Vector4Int) -> i32 {
-	return input.x * input.x + input.y * input.y + input.z * input.z + input.w * input.w
-}
-
-// Vector2 helper for the length function.
-@(private = "file")
-_lengthVector2 :: proc(input: Vector2) -> f32 {
-	return math.sqrt(_lengthSquaredVector2(input))
-}
-
-// Vector3 helper for the length function.
-@(private = "file")
-_lengthVector3 :: proc(input: Vector3) -> f32 {
-	return math.sqrt(_lengthSquaredVector3(input))
-}
-
-// Vector4 helper for the length function.
-@(private = "file")
-_lengthVector4 :: proc(input: Vector4) -> f32 {
-	return math.sqrt(_lengthSquaredVector4(input))
-}
-
-// Vector2Int helper for the length function.
-@(private = "file")
-_lengthVector2Int :: proc(input: Vector2Int) -> f32 {
-	return math.sqrt(f32(_lengthSquaredVector2Int(input)))
-}
-
-// Vector3Int helper for the length function.
-@(private = "file")
-_lengthVector3Int :: proc(input: Vector3Int) -> f32 {
-	return math.sqrt(f32(_lengthSquaredVector3Int(input)))
-}
-
-// Vector4Int helper for the length function.
-@(private = "file")
-_lengthVector4Int :: proc(input: Vector4Int) -> f32 {
-	return math.sqrt(f32(_lengthSquaredVector4Int(input)))
-}
-
-// Vector2 helper for the normalize function.
-@(private = "file")
-_normalizeVector2 :: proc(input: Vector2) -> Vector2 {
-	vectorLength := length(input)
-	if vectorLength == 0 do return Vector2{0, 0}
-	return input / vectorLength
-}
-
-// Vector3 helper for the normalize function.
-@(private = "file")
-_normalizeVector3 :: proc(input: Vector3) -> Vector3 {
-	vectorLength := length(input)
-	if vectorLength == 0 do return Vector3{0, 0, 0}
-	return input / vectorLength
-}
-
-// Vector4 helper for the normalize function.
-@(private = "file")
-_normalizeVector4 :: proc(input: Vector4) -> Vector4 {
-	vectorLength := length(input)
-	if vectorLength == 0 do return Vector4{0, 0, 0, 0}
-	return input / vectorLength
-}
-
-// Vector2 helper for the distance function.
-@(private = "file")
-_distanceVector2 :: proc(a, b: Vector2) -> f32 {
-	return length(a - b)
-}
-
-// Vector3 helper for the distance function.
-@(private = "file")
-_distanceVector3 :: proc(a, b: Vector3) -> f32 {
-	return length(a - b)
-}
-
-// Vector4 helper for the distance function.
-@(private = "file")
-_distanceVector4 :: proc(a, b: Vector4) -> f32 {
-	return length(a - b)
-}
-
-// Vector2Int helper for the distance function.
-@(private = "file")
-_distanceVector2Int :: proc(a, b: Vector2Int) -> f32 {
-	return length(a - b)
-}
-
-// Vector3Int helper for the distance function.
-@(private = "file")
-_distanceVector3Int :: proc(a, b: Vector3Int) -> f32 {
-	return length(a - b)
-}
-
-// Vector4Int helper for the distance function.
-@(private = "file")
-_distanceVector4Int :: proc(a, b: Vector4Int) -> f32 {
-	return length(a - b)
-}
-
-// Vector2 helper for the direction function.
-@(private = "file")
-_directionVector2 :: proc(start, end: Vector2) -> Vector2 {
-	return normalize(end - start)
-}
-
-// Vector3 helper for the direction function.
-@(private = "file")
-_directionVector3 :: proc(start, end: Vector3) -> Vector3 {
-	return normalize(end - start)
-}
-
-// Vector4 helper for the direction function.
-@(private = "file")
-_directionVector4 :: proc(start, end: Vector4) -> Vector4 {
-	return normalize(end - start)
-}
-
-// Scalar helper for the clamp function.
-@(private = "file")
-_clampScalar :: proc(input, min, max: $T) -> T where intrinsics.type_is_numeric(T) {
-	return math.clamp(input, min, max)
-}
-
-// Vector2 helper for the clamp function.
-@(private = "file")
-_clampVector2 :: proc(input: Vector2, min: Vector2, max: Vector2) -> Vector2 {
-	return Vector2{math.clamp(input.x, min.x, max.x), math.clamp(input.y, min.y, max.y)}
-}
-
-// Vector3 helper for the clamp function.
-@(private = "file")
-_clampVector3 :: proc(input: Vector3, min: Vector3, max: Vector3) -> Vector3 {
-	return Vector3 {
-		math.clamp(input.x, min.x, max.x),
-		math.clamp(input.y, min.y, max.y),
-		math.clamp(input.z, min.z, max.z),
-	}
-}
-
-// Vector4 helper for the clamp function.
-@(private = "file")
-_clampVector4 :: proc(input: Vector4, min: Vector4, max: Vector4) -> Vector4 {
-	return Vector4 {
-		math.clamp(input.x, min.x, max.x),
-		math.clamp(input.y, min.y, max.y),
-		math.clamp(input.z, min.z, max.z),
-		math.clamp(input.w, min.w, max.w),
-	}
-}
-
-// Vector2Int helper for the clamp function.
-@(private = "file")
-_clampVector2Int :: proc(input: Vector2Int, min: Vector2Int, max: Vector2Int) -> Vector2Int {
-	return Vector2Int{math.clamp(input.x, min.x, max.x), math.clamp(input.y, min.y, max.y)}
-}
-
-// Vector3Int helper for the clamp function.
-@(private = "file")
-_clampVector3Int :: proc(input: Vector3Int, min: Vector3Int, max: Vector3Int) -> Vector3Int {
-	return Vector3Int {
-		math.clamp(input.x, min.x, max.x),
-		math.clamp(input.y, min.y, max.y),
-		math.clamp(input.z, min.z, max.z),
-	}
-}
-
-// Vector4Int helper for the clamp function.
-@(private = "file")
-_clampVector4Int :: proc(input: Vector4Int, min: Vector4Int, max: Vector4Int) -> Vector4Int {
-	return Vector4Int {
-		math.clamp(input.x, min.x, max.x),
-		math.clamp(input.y, min.y, max.y),
-		math.clamp(input.z, min.z, max.z),
-		math.clamp(input.w, min.w, max.w),
-	}
-}
-
-// Vector2 helper for the roundToInt function.
-@(private = "file")
-_roundToIntVector2 :: proc(input: Vector2) -> Vector2Int {
-	return Vector2Int{i32(math.round(input.x)), i32(math.round(input.y))}
-}
-
-// Vector3 helper for the roundToInt function.
-@(private = "file")
-_roundToIntVector3 :: proc(input: Vector3) -> Vector3Int {
-	return Vector3Int{i32(math.round(input.x)), i32(math.round(input.y)), i32(math.round(input.z))}
-}
-
-// Vector4 helper for the roundToInt function.
-@(private = "file")
-_roundToIntVector4 :: proc(input: Vector4) -> Vector4Int {
-	return Vector4Int {
-		i32(math.round(input.x)),
-		i32(math.round(input.y)),
-		i32(math.round(input.z)),
-		i32(math.round(input.w)),
-	}
-}
-
-// Scalar float helper for the sign function.
-@(private = "file")
-_signScalarFloat :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
-	return math.sign(input)
-}
-
-// Scalar integer helper for the sign function.
-@(private = "file")
-_signScalarInt :: proc(input: $T) -> T where intrinsics.type_is_integer(T) {
-	return i32(math.sign(f32(input)))
-}
-
-// Vector2 helper for the sign function.
-@(private = "file")
-_signVector2 :: proc(input: Vector2) -> Vector2 {
-	return Vector2{math.sign(input.x), math.sign(input.y)}
-}
-
-// Vector3 helper for the sign function.
-@(private = "file")
-_signVector3 :: proc(input: Vector3) -> Vector3 {
-	return Vector3{math.sign(input.x), math.sign(input.y), math.sign(input.z)}
-}
-
-// Vector4 helper for the sign function.
-@(private = "file")
-_signVector4 :: proc(input: Vector4) -> Vector4 {
-	return Vector4{math.sign(input.x), math.sign(input.y), math.sign(input.z), math.sign(input.w)}
-}
-
-// Vector2Int helper for the sign function.
-@(private = "file")
-_signVector2Int :: proc(input: Vector2Int) -> Vector2Int {
-	return Vector2Int{sign(input.x), sign(input.y)}
-}
-
-// Vector3Int helper for the sign function.
-@(private = "file")
-_signVector3Int :: proc(input: Vector3Int) -> Vector3Int {
-	return Vector3Int{sign(input.x), sign(input.y), sign(input.z)}
-}
-
-// Vector4Int helper for the sign function.
-@(private = "file")
-_signVector4Int :: proc(input: Vector4Int) -> Vector4Int {
-	return Vector4Int{sign(input.x), sign(input.y), sign(input.z), sign(input.w)}
-}
-
-// Scalar helper for the min function.
-@(private = "file")
-_minScalarVariadic :: proc(inputs: ..$T) -> T where intrinsics.type_is_numeric(T) {
-	if len(inputs) == 0 do return 0
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input < result do result = input
-	}
-	return result
-}
-
-// Binary scalar helper for the min function.
-@(private = "file")
-_minScalarBinary :: proc(a, b: $T) -> T where intrinsics.type_is_numeric(T) {
-	if a < b do return a
-	return b
-}
-
-// Vector2 helper for the min function.
-// This finds the minimum x and minimum y across all vectors passed in.
-@(private = "file")
-_minVector2 :: proc(inputs: ..Vector2) -> Vector2 {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x < result.x do result.x = input.x
-		if input.y < result.y do result.y = input.y
-	}
-	return result
-}
-
-// Vector3 helper for the min function.
-@(private = "file")
-_minVector3 :: proc(inputs: ..Vector3) -> Vector3 {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x < result.x do result.x = input.x
-		if input.y < result.y do result.y = input.y
-		if input.z < result.z do result.z = input.z
-	}
-	return result
-}
-
-// Vector4 helper for the min function.
-@(private = "file")
-_minVector4 :: proc(inputs: ..Vector4) -> Vector4 {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x < result.x do result.x = input.x
-		if input.y < result.y do result.y = input.y
-		if input.z < result.z do result.z = input.z
-		if input.w < result.w do result.w = input.w
-	}
-	return result
-}
-
-// Vector2Int helper for the min function.
-// This finds the minimum x and minimum y across all vectors passed in.
-@(private = "file")
-_minVector2Int :: proc(inputs: ..Vector2Int) -> Vector2Int {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x < result.x do result.x = input.x
-		if input.y < result.y do result.y = input.y
-	}
-	return result
-}
-
-// Vector3Int helper for the min function.
-@(private = "file")
-_minVector3Int :: proc(inputs: ..Vector3Int) -> Vector3Int {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x < result.x do result.x = input.x
-		if input.y < result.y do result.y = input.y
-		if input.z < result.z do result.z = input.z
-	}
-	return result
-}
-
-// Vector4Int helper for the min function.
-@(private = "file")
-_minVector4Int :: proc(inputs: ..Vector4Int) -> Vector4Int {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x < result.x do result.x = input.x
-		if input.y < result.y do result.y = input.y
-
-		if input.z < result.z do result.z = input.z
-		if input.w < result.w do result.w = input.w
-	}
-	return result
-}
-
-// Scalar helper for the max function.
-@(private = "file")
-_maxScalarVariadic :: proc(inputs: ..$T) -> T where intrinsics.type_is_float(T) {
-	if len(inputs) == 0 do return 0
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input > result do result = input
-	}
-	return result
-}
-
-// Binary scalar helper for the max function.
-@(private = "file")
-_maxScalarBinary :: proc(a, b: $T) -> T where intrinsics.type_is_float(T) {
-	if a > b do return a
-	return b
-}
-
-// Vector2 helper for the min function.
-// This finds the minimum x and minimum y across all vectors passed in.
-@(private = "file")
-_maxVector2 :: proc(inputs: ..Vector2) -> Vector2 {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x > result.x do result.x = input.x
-		if input.y > result.y do result.y = input.y
-	}
-	return result
-}
-
-// Vector3 helper for the min function.
-@(private = "file")
-_maxVector3 :: proc(inputs: ..Vector3) -> Vector3 {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x > result.x do result.x = input.x
-		if input.y > result.y do result.y = input.y
-		if input.z > result.z do result.z = input.z
-	}
-	return result
-}
-
-// Vector4 helper for the min function.
-@(private = "file")
-_maxVector4 :: proc(inputs: ..Vector4) -> Vector4 {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x > result.x do result.x = input.x
-		if input.y > result.y do result.y = input.y
-		if input.z > result.z do result.z = input.z
-		if input.w > result.w do result.w = input.w
-	}
-	return result
-}
-
-// Vector2Int helper for the min function.
-// This finds the minimum x and minimum y across all vectors passed in.
-@(private = "file")
-_maxVector2Int :: proc(inputs: ..Vector2Int) -> Vector2Int {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x > result.x do result.x = input.x
-		if input.y > result.y do result.y = input.y
-	}
-	return result
-}
-
-// Vector3Int helper for the min function.
-@(private = "file")
-_maxVector3Int :: proc(inputs: ..Vector3Int) -> Vector3Int {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x > result.x do result.x = input.x
-		if input.y > result.y do result.y = input.y
-		if input.z > result.z do result.z = input.z
-	}
-	return result
-}
-
-// Vector4Int helper for the min function.
-@(private = "file")
-_maxVector4Int :: proc(inputs: ..Vector4Int) -> Vector4Int {
-	if len(inputs) == 0 do return {}
-
-	result := inputs[0]
-	for input in inputs[1:] {
-		if input.x > result.x do result.x = input.x
-		if input.y > result.y do result.y = input.y
-		if input.z > result.z do result.z = input.z
-		if input.w > result.w do result.w = input.w
-	}
-	return result
-}
-
-// Scalar helper for the round function.
-@(private = "file")
-_roundScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
-	return math.round(input)
-}
-
-// Vector2 helper for the round function.
-@(private = "file")
-_roundVector2 :: proc(input: Vector2) -> Vector2 {
-	return Vector2{math.round(input.x), math.round(input.y)}
-}
-
-// Vector3 helper for the round function.
-@(private = "file")
-_roundVector3 :: proc(input: Vector3) -> Vector3 {
-	return Vector3{math.round(input.x), math.round(input.y), math.round(input.z)}
-}
-
-// Vector4 helper for the round function.
-@(private = "file")
-_roundVector4 :: proc(input: Vector4) -> Vector4 {
-	return Vector4 {
-		math.round(input.x),
-		math.round(input.y),
-		math.round(input.z),
-		math.round(input.w),
-	}
-}
-
-// Scalar helper for the floor function.
-@(private = "file")
-_floorScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
-	return math.floor(input)
-}
-
-// Vector2 helper for the floor function.
-@(private = "file")
-_floorVector2 :: proc(input: Vector2) -> Vector2 {
-	return Vector2{math.floor(input.x), math.floor(input.y)}
-}
-
-// Vector3 helper for the floor function.
-@(private = "file")
-_floorVector3 :: proc(input: Vector3) -> Vector3 {
-	return Vector3{math.floor(input.x), math.floor(input.y), math.floor(input.z)}
-}
-
-// Vector4 helper for the floor function.
-@(private = "file")
-_floorVector4 :: proc(input: Vector4) -> Vector4 {
-	return Vector4 {
-		math.floor(input.x),
-		math.floor(input.y),
-		math.floor(input.z),
-		math.floor(input.w),
-	}
-}
-
-// Scalar helper for the ceil function.
-@(private = "file")
-_ceilScalar :: proc(input: $T) -> T where intrinsics.type_is_float(T) {
-	return math.ceil(input)
-}
-
-// Vector2 helper for the ceil function.
-@(private = "file")
-_ceilVector2 :: proc(input: Vector2) -> Vector2 {
-	return Vector2{math.ceil(input.x), math.ceil(input.y)}
-}
-
-// Vector3 helper for the ceil function.
-@(private = "file")
-_ceilVector3 :: proc(input: Vector3) -> Vector3 {
-	return Vector3{math.ceil(input.x), math.ceil(input.y), math.ceil(input.z)}
-}
-
-// Vector4 helper for the ceil function.
-@(private = "file")
-_ceilVector4 :: proc(input: Vector4) -> Vector4 {
-	return Vector4{math.ceil(input.x), math.ceil(input.y), math.ceil(input.z), math.ceil(input.w)}
+angleToVector :: proc(
+	radians: $T,
+) -> Vector2 where intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	return Vector2{f32(cos(radians)), f32(sin(radians))}
 }
