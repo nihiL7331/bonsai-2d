@@ -244,8 +244,36 @@ matrixTranslate :: proc(position: Vector2) -> Matrix4 {
 }
 
 // @ref
+// Creates a rotation matrix from a `rotation` [`Vector3`](#vector3).
+//
+// :::note
+// This function applies the multiplication in the following order:
+//
+// X (pitch) -> Y (yaw) -> Z (roll).
+// :::
+matrixRotate :: proc(rotation: Vector3) -> Matrix4 {
+	rotatedMatrixX := matrixRotateX(rotation.x)
+	rotatedMatrixY := matrixRotateY(rotation.y)
+	rotatedMatrixZ := matrixRotateZ(rotation.z)
+
+	return rotatedMatrixZ * rotatedMatrixY * rotatedMatrixX
+}
+
+// @ref
+// Creates a rotation matrix (X-axis) from an angle **in radians**.
+matrixRotateX :: proc(radians: f32) -> Matrix4 {
+	return linalg.matrix4_rotate(radians, Vector3{1, 0, 0})
+}
+
+// @ref
+// Creates a rotation matrix (Y-axis) from an angle **in radians**.
+matrixRotateY :: proc(radians: f32) -> Matrix4 {
+	return linalg.matrix4_rotate(radians, Vector3{0, 1, 0})
+}
+
+// @ref
 // Creates a rotation matrix (Z-axis) from an angle **in radians**.
-matrixRotate :: proc(radians: f32) -> Matrix4 {
+matrixRotateZ :: proc(radians: f32) -> Matrix4 {
 	return linalg.matrix4_rotate(radians, Vector3{0, 0, 1})
 }
 
