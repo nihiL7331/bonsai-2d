@@ -12,7 +12,96 @@ WHITE_TEXTURE_INDEX: u8 : 255
 // @ref
 // Main function for drawing game entities.
 // **Supports rotation, animations, pivoting and camera culling.**
-drawSprite :: proc(
+// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/render/#vector3)
+// as the rotation. If a `f32` is provided, the sprite is rotated on the **Z axis**.
+// :::note
+// The rotation angle should be provided **in radians**.
+// :::
+drawSprite :: proc {
+	_drawSpriteVector3Rotation,
+	_drawSpriteF32Rotation,
+}
+
+@(private = "file")
+_drawSpriteVector3Rotation :: proc(
+	position: gmath.Vector2,
+	sprite: generated.SpriteName,
+	rotation: gmath.Vector3, // in radians
+	pivot := gmath.Pivot.bottomLeft,
+	scale := gmath.Vector2{1, 1},
+	drawOffset := gmath.Vector2{},
+	transform := gmath.Matrix4(1),
+	animationIndex := 0,
+	color := colors.WHITE,
+	colorOverride := gmath.Color{},
+	drawLayer := DrawLayer{},
+	flags := QuadFlags{},
+	parameters := gmath.Vector4{},
+	cropTop: f32 = 0.0,
+	cropLeft: f32 = 0.0,
+	cropBottom: f32 = 0.0,
+	cropRight: f32 = 0.0,
+	sortKey: f32 = 0.0,
+	isCullingEnabled := false,
+) {
+	setTexture(_atlas.view)
+
+	rectangleSize := getSpriteSize(sprite)
+	frameCount := generated.getFrameCount(sprite)
+
+	// assuming horizontal strip animation layout
+	rectangleSize.x /= f32(frameCount)
+
+	// camera culling
+	if isCullingEnabled {
+		coreContext := core.getCoreContext()
+		cameraBounds := coreContext.camera.bounds
+
+		// uses max to handle rotation safely
+		maxDimension := max(rectangleSize.x, rectangleSize.y)
+
+		spriteRectangle := gmath.rectangleMake(
+			position,
+			gmath.Vector2{maxDimension, maxDimension},
+			pivot,
+		)
+		spriteRectangle = gmath.shift(spriteRectangle, -drawOffset)
+
+		if !gmath.rectangleIntersects(spriteRectangle, cameraBounds) do return
+	}
+
+	// calculate local transform matrix
+	localTransform := gmath.Matrix4(1)
+	localTransform *= gmath.matrixTranslate(position - drawOffset)
+	if rotation != {} {
+		localTransform *= gmath.matrixRotate(rotation)
+	}
+	localTransform *= gmath.matrixScale(scale)
+	localTransform *= transform
+	pivotOffset := rectangleSize * -gmath.scaleFromPivot(pivot)
+	localTransform *= gmath.matrixTranslate(pivotOffset)
+
+
+	drawRectangleTransform(
+		localTransform,
+		rectangleSize,
+		sprite,
+		animationIndex = animationIndex,
+		color = color,
+		colorOverride = colorOverride,
+		drawLayer = drawLayer,
+		flags = flags,
+		parameters = parameters,
+		cropTop = cropTop,
+		cropLeft = cropLeft,
+		cropBottom = cropBottom,
+		cropRight = cropRight,
+		sortKey = sortKey,
+	)
+}
+
+@(private = "file")
+_drawSpriteF32Rotation :: proc(
 	position: gmath.Vector2,
 	sprite: generated.SpriteName,
 	rotation: f32 = 0.0, // in radians
@@ -63,7 +152,7 @@ drawSprite :: proc(
 	localTransform := gmath.Matrix4(1)
 	localTransform *= gmath.matrixTranslate(position - drawOffset)
 	if rotation != 0 {
-		localTransform *= gmath.matrixRotate(rotation)
+		localTransform *= gmath.matrixRotateZ(rotation)
 	}
 	localTransform *= gmath.matrixScale(scale)
 	localTransform *= transform
@@ -104,7 +193,7 @@ drawLine :: proc(
 	angle := gmath.vectorToAngle(end.y - start.y, end.x - start.x)
 
 	transform := gmath.matrixTranslate(start)
-	transform *= gmath.matrixRotate(angle)
+	transform *= gmath.matrixRotateZ(angle)
 	transform *= gmath.matrixTranslate(gmath.Vector2{0, -0.5 * thickness})
 
 	drawRectangleTransform(
@@ -157,7 +246,7 @@ drawRectangleLines :: proc(
 	transform := gmath.matrixTranslate(rectangle.xy)
 
 	if rotation != 0 {
-		transform *= gmath.matrixRotate(rotation)
+		transform *= gmath.matrixRotateZ(rotation)
 	}
 
 	size := gmath.getRectangleSize(rectangle)
@@ -231,7 +320,7 @@ drawRectangle :: proc(
 
 	transform := gmath.matrixTranslate(rectangle.xy)
 	if rotation != 0 {
-		transform *= gmath.matrixRotate(rotation)
+		transform *= gmath.matrixRotateZ(rotation)
 	}
 	size := gmath.getRectangleSize(rectangle)
 
