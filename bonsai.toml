@@ -3,9 +3,3 @@ name = "bonsai-2d"
 version = "0.0.1"
 
 [systems]
-tween = { path = "source/systems/tween" }
-camera = { path = "source/systems/camera" }
-particles = { path = "source/systems/particles" }
-physics = { path = "source/systems/physics" }
-entities = { path = "source/systems/entities" }
-ldtk = { path = "source/systems/ldtk" }

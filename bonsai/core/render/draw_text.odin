@@ -14,7 +14,7 @@ drawText :: drawTextWithDropShadow
 // @ref
 // Draws text with a **hard-coded** drop shadow for contrast**.
 // Retrieves the font using the **automatically** generated [`FontName`](https://bonsai-framework.dev/reference/generated/#fontname) enum.
-// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/render/#vector3)
+// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/gmath/#vector3)
 // as the rotation. If a `f32` is provided, the text is rotated on the **Z axis**.
 // :::caution
 // Fonts are currently rendered as bitmaps. For the sharpest results, you may want to find a native font size (e.g. 12 for `PixelCode`)
@@ -132,7 +132,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 // @ref
 // Draws text without a drop shadow.
 // Retrieves the font using the **automatically** generated [`FontName`](https://bonsai-framework.dev/reference/generated/#fontname) enum.
-// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/render/#vector3)
+// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/gmath/#vector3)
 // as the rotation. If a `f32` is provided, the text is rotated on the **Z axis**.
 // :::caution
 // Fonts are currently rendered as bitmaps. For the sharpest results, you may want to find a native font size (e.g. 12 for `PixelCode`)
@@ -210,7 +210,7 @@ _drawTextSimpleF32Angle :: proc(
 // @ref
 // Internal primitive for drawing a single line of text.
 // Calculates layout, pivots, and batches the quads.
-// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/render/#vector3)
+// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/gmath/#vector3)
 // as the rotation. If a `f32` is provided, the text is rotated on the **Z axis**.
 drawTextSimpleFont :: proc {
 	_drawTextSimpleFontVector3Angle,

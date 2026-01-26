@@ -12,7 +12,7 @@ WHITE_TEXTURE_INDEX: u8 : 255
 // @ref
 // Main function for drawing game entities.
 // **Supports rotation, animations, pivoting and camera culling.**
-// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/render/#vector3)
+// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/gmath/#vector3)
 // as the rotation. If a `f32` is provided, the sprite is rotated on the **Z axis**.
 // :::note
 // The rotation angle should be provided **in radians**.
