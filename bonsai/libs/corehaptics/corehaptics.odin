@@ -5,6 +5,8 @@ package corehaptics
 import "base:intrinsics"
 import foundation "core:sys/darwin/Foundation"
 
+import "bonsai:libs/gccontroller"
+
 foreign import CoreHaptics "system:CoreHaptics.framework"
 
 messageSend :: intrinsics.objc_send
@@ -54,7 +56,7 @@ Haptics :: struct {
 @(objc_type = Haptics, objc_name = "createEngineWithLocality")
 HapticsCreateEngineWithLocality :: proc "c" (
 	self: ^Haptics,
-	locality: HapticsLocality,
+	locality: gccontroller.HapticsLocality,
 ) -> ^HapticEngine {
 	return messageSend(^HapticEngine, self, "createEngineWithLocality:", locality)
 }

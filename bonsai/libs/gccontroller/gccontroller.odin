@@ -248,7 +248,7 @@ ControllerButtonInputIsTouched :: proc "c" (self: ^ControllerButtonInput) -> boo
 
 when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
 	@(objc_type = Controller, objc_name = "haptics")
-	ControllerHaptics :: proc "c" (self: ^Controller) -> ^Haptics {
-		return messageSend(^Haptics, self, "haptics")
+	ControllerHaptics :: proc "c" (self: ^Controller) -> rawptr {
+		return messageSend(rawptr, self, "haptics")
 	}
 }
