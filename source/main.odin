@@ -106,6 +106,8 @@ frame :: proc "c" () {
 
 	clock.tick()
 
+	input.updateGamepads()
+
 	render.coreRenderFrameStart()
 
 	game_app.update()

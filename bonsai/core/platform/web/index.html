@@ -126,6 +126,40 @@ Feel free to edit it to your likings.-->
               const dest = new Uint8Array(mem.buffer, destPtr, maxLen);
               dest.set(bytes);
             },
+            js_is_gamepad_connected: (index) => {
+              var gamepad = navigator.getGamepads()[index];
+              return (gamepad && gamepad.connected) ? 1 : 0;
+            },
+            js_get_gamepad_button: (index, buttonIndex) => {
+              var gamepad = navigator.getGamepads()[index];
+              if (!gamepad || !gamepad.buttons[buttonIndex]) return 0;
+              return gamepad.buttons[buttonIndex].pressed ? 1 : 0;
+            },
+            js_get_gamepad_axis: (index, axisIndex) => {
+              var gamepad = navigator.getGamepads()[index];
+              if (!gamepad) return 0.0;
+
+              if (axisIndex < 4) {
+                return gamepad.axes[axisIndex] || 0.0;
+              }
+
+              if (axisIndex === 6 || axisIndex === 7) {
+                return gamepad.buttons[axisIndex] ? gamepad.buttons[axisIndex].value : 0.0;
+              }
+
+              return 0.0;
+            },
+            js_set_gamepad_vibration: (index, durationMs, weakMag, strongMag) => {
+              var gamepad = navigator.getGamepads()[index];
+              if (!gamepad || !gamepad.vibrationActuator) return;
+
+              gamepad.vibrationActuator.playEffect("dual-rumble", {
+                startDelay: 0,
+                duration: durationMs,
+                weakMagnitude: weakMag,
+                strongMagnitude: strongMag,
+              });
+            },
           };
 
           const newImports = {

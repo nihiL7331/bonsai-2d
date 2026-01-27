@@ -41,7 +41,7 @@ _KEY_CODE_CAPACITY :: 512
 // makes each touch (0-index) emulate a mouse click.
 TOUCH_EMULATE_MOUSE :: true
 
-@(private = "file")
+@(private = "package")
 _inputState: Input
 
 // @ref
@@ -50,6 +50,7 @@ Input :: struct {
 	keys:          [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
 	mousePosition: gmath.Vector2,
 	mouseScroll:   gmath.Vector2,
+	gamepadKeys:   [MAX_GAMEPADS][GamepadButton]bit_set[InputFlag],
 }
 
 // @ref
@@ -219,6 +220,7 @@ KeyCode :: enum {
 init :: proc() {
 	// reset state on init
 	resetInputState(&_inputState)
+	initGamepad()
 }
 
 // @ref
