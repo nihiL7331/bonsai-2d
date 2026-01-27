@@ -52,6 +52,10 @@ ButtonReleased :: struct {
 }
 
 updateGamepads :: proc() {
+	when ODIN_OS == .Darwin {
+		pollForNewControllers()
+	}
+
 	for &gamepad in _inputState.gamepadKeys {
 		for &buttonState in gamepad {
 			buttonState -= {.pressed, .released}

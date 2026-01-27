@@ -2,6 +2,8 @@
 
 package input
 
+import "base:intrinsics"
+import "core:log"
 import foundation "core:sys/darwin/Foundation"
 
 import "bonsai:libs/corehaptics"
@@ -9,6 +11,26 @@ import "bonsai:libs/gccontroller"
 
 HAPTICS_SHARPNESS_LEFT :: 0.1
 HAPTICS_SHARPNESS_RIGHT :: 0.9
+
+@(objc_class = "GCController")
+GCController :: struct {
+	using _: intrinsics.objc_object,
+}
+
+@(objc_class = "GCExtendedGamepad")
+GCExtendedGamepad :: struct {
+	using _: intrinsics.objc_object,
+}
+
+@(objc_class = "GCControllerButtonInput")
+GCTrigger :: struct {
+	using _: intrinsics.objc_object,
+}
+
+@(objc_class = "NSArray")
+NSArray :: struct {
+	using _: intrinsics.objc_object,
+}
 
 GamepadState :: struct {
 	gamepads:              [MAX_GAMEPADS]Gamepad,
@@ -23,6 +45,7 @@ Gamepad :: struct {
 	hapticEngineLeftRight: [2]^corehaptics.HapticEngine,
 	hapticPlayerLeftRight: [2]^corehaptics.HapticPatternPlayer,
 	oldIntensityLeftRight: [2]f32,
+	lastTriggerValues:     [2]f32,
 }
 
 @(private = "file")
@@ -65,6 +88,7 @@ pollForNewControllers :: proc() {
 
 		if availableSlot == -1 do continue
 
+		log.infof("Connected gamepad ID: %v", availableSlot)
 		_gamepadState.gamepads[availableSlot].controller = controller
 		_gamepadState.gamepads[availableSlot].extendedGamepad = extendedGamepad
 		_gamepadState.gamepads[availableSlot].buttonInputs = makeButtonInputs(extendedGamepad)
@@ -75,7 +99,7 @@ getGamepadEvents :: proc(events: ^[dynamic]GamepadEvent) {
 	for &gamepad, gamepadIndex in _gamepadState.gamepads {
 		if gamepad.controller == nil do continue
 
-		for button in input.GamepadButton {
+		for button in GamepadButton {
 			buttonInput := gamepad.buttonInputs[button]
 			if buttonInput == nil do continue
 
@@ -122,10 +146,30 @@ isControllerRegistered :: proc(controller: ^gccontroller.Controller) -> bool {
 	return false
 }
 
-isGamepadActive :: proc(gamepadIndex: int) -> bool {
-	if gamepadIndex < 0 || gamepadIndex >= MAX_GAMEPADS do return false
+isGamepadActive :: proc(index: GamepadIndex) -> bool {
+	if index < 0 || index >= MAX_GAMEPADS do return false
 
-	return _gamepadState.gamepads[gamepadIndex].controller != nil
+	return _gamepadState.gamepads[index].controller != nil
+}
+
+getControllerPointer :: proc(gamepadIndex: GamepadIndex) -> rawptr {
+	classPointer := foundation.objc_lookUpClass("GCController")
+	if classPointer == nil do return nil
+
+	class := cast(^GCController)classPointer
+
+	array := intrinsics.objc_send(^NSArray, class, "controllers")
+
+	count := intrinsics.objc_send(uint, array, "count")
+	if uint(gamepadIndex) >= count do return nil
+
+	controller := intrinsics.objc_send(
+		^intrinsics.objc_object,
+		array,
+		"objectAtIndex:",
+		uint(gamepadIndex),
+	)
+	return rawptr(controller)
 }
 
 removeController :: proc(controller: ^gccontroller.Controller) {
@@ -175,10 +219,10 @@ makeButtonInputs :: proc(
 	}
 }
 
-getGamepadAxis :: proc(gamepadIndex: int, axis: GamepadAxis) -> f32 {
-	if !isGamepadActive(gamepadIndex) do return 0
+getGamepadAxis :: proc(index: GamepadIndex, axis: GamepadAxis) -> f32 {
+	if !isGamepadActive(index) do return 0
 
-	extendedGamepad := _gamepadState.gamepads[gamepadIndex].extendedGamepad
+	extendedGamepad := _gamepadState.gamepads[index].extendedGamepad
 
 	switch axis {
 	case .None:
@@ -200,10 +244,10 @@ getGamepadAxis :: proc(gamepadIndex: int, axis: GamepadAxis) -> f32 {
 	return 0
 }
 
-setGamepadVibration :: proc(gamepadIndex: int, left: f32, right: f32) {
+setGamepadVibration :: proc(index: GamepadIndex, left: f32, right: f32) {
 	when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
-		if !isGamepadActive(gamepadIndex) do return
-		gamepad := &_gamepadState.gamepads[gamepadIndex]
+		if !isGamepadActive(index) do return
+		gamepad := &_gamepadState.gamepads[index]
 
 		if left < 0.01 {
 			stopHapticPlayer(&gamepad.hapticPlayerLeftRight[0])
@@ -224,12 +268,12 @@ setGamepadVibration :: proc(gamepadIndex: int, left: f32, right: f32) {
 
 		leftInitialized := initializeHapticEngine(
 			&gamepad.hapticEngineLeftRight[0],
-			LeftHandle,
+			gccontroller.LeftHandle,
 			gamepad,
 		)
 		rightInitialized := initializeHapticEngine(
 			&gamepad.hapticEngineLeftRight[1],
-			RightHandle,
+			gccontroller.RightHandle,
 			gamepad,
 		)
 
@@ -244,14 +288,14 @@ when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
 	stopHapticPlayer :: proc(player: ^^corehaptics.HapticPatternPlayer) {
 		if player^ == nil do return
 
-		player^->stopAtTime(TimeImmediate, nil)
+		player^->stopAtTime(corehaptics.TimeImmediate, nil)
 		player^->release()
 		player^ = nil
 	}
 
 	initializeHapticEngine :: proc(
 		engine: ^^corehaptics.HapticEngine,
-		locality: corehaptics.HapticsLocality,
+		locality: gccontroller.HapticsLocality,
 		gamepad: ^Gamepad,
 	) -> bool {
 		if engine^ != nil do return true
@@ -259,7 +303,7 @@ when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
 		haptics := gamepad.controller->haptics()
 		if haptics == nil do return false
 
-		engine^ = haptics->createEngineWithLocality(locality)
+		engine^ = (cast(^corehaptics.Haptics)haptics)->createEngineWithLocality(locality)
 		success := engine^ != nil && engine^->startAndReturnError(nil)
 
 		return success
@@ -273,11 +317,11 @@ when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
 		sharpness: f32 = leftRight == 0 ? HAPTICS_SHARPNESS_LEFT : HAPTICS_SHARPNESS_RIGHT
 
 		sharpnessParameter := corehaptics.HapticEventParameterAlloc()->initWithParameterID(
-			HapticSharpness,
+			corehaptics.HapticSharpness,
 			sharpness,
 		)
 		intensityParameter := corehaptics.HapticEventParameterAlloc()->initWithParameterID(
-			HapticIntensity,
+			corehaptics.HapticIntensity,
 			intensity,
 		)
 
@@ -285,10 +329,10 @@ when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
 		parametersArray := foundation.Array_alloc()->initWithObjects(raw_data(&parameters), 2)
 
 		event := corehaptics.HapticEventAlloc()->initWithEventType(
-			HapticContinuous,
+			corehaptics.HapticContinuous,
 			parametersArray,
 			0,
-			HapticDurationInfinite,
+			gccontroller.HapticDurationInfinite,
 		)
 		events := [1]^foundation.Object{event}
 		eventsArray := foundation.Array_alloc()->initWithObjects(raw_data(&events), 1)
@@ -301,7 +345,7 @@ when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
 			nil,
 		)
 		if gamepad.hapticPlayerLeftRight[leftRight] != nil {
-			gamepad.hapticPlayerLeftRight[leftRight]->startAtTime(TimeImmediate, nil)
+			gamepad.hapticPlayerLeftRight[leftRight]->startAtTime(corehaptics.TimeImmediate, nil)
 		}
 	}
 }
