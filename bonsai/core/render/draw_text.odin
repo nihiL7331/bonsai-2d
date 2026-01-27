@@ -49,7 +49,7 @@ _drawTextWithDropShadowVector3Angle :: proc(
 	}
 
 	// draw shadow
-	drawTextSimpleFont(
+	_drawTextSimpleFontVector3Angle(
 		position + shadowOffset,
 		text,
 		font = &font,
@@ -62,7 +62,7 @@ _drawTextWithDropShadowVector3Angle :: proc(
 	)
 
 	// draw main text
-	textDimensions := drawTextSimpleFont(
+	textDimensions := _drawTextSimpleFontVector3Angle(
 		position,
 		text,
 		font = &font,
@@ -101,7 +101,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 	}
 
 	// draw shadow
-	drawTextSimpleFont(
+	_drawTextSimpleFontF32Angle(
 		position + shadowOffset,
 		text,
 		font = &font,
@@ -114,7 +114,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 	)
 
 	// draw main text
-	textDimensions := drawTextSimpleFont(
+	textDimensions := _drawTextSimpleFontF32Angle(
 		position,
 		text,
 		font = &font,
