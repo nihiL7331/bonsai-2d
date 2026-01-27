@@ -267,17 +267,27 @@ isKeyRepeating :: proc(code: KeyCode) -> bool {
 
 // @ref
 // Manually consumes a **pressed** event for a key.
+// Returns `true` if the state was changed.
 // :::tip
 // Useful if an event should only trigger one game action per frame.
 // :::
-consumeKeyPressed :: proc(code: KeyCode) {
-	_inputState.keys[code] -= {.pressed}
+consumeKeyPressed :: proc(code: KeyCode) -> bool {
+	if .pressed in _inputState.keys[code] {
+		_inputState.keys[code] -= {.pressed}
+		return true
+	}
+	return false
 }
 
 // @ref
 // Manually consumes a **released** event for a key.
-consumeKeyReleased :: proc(code: KeyCode) {
-	_inputState.keys[code] -= {.released}
+// Returns `true` if the state was changed.
+consumeKeyReleased :: proc(code: KeyCode) -> bool {
+	if .released in _inputState.keys[code] {
+		_inputState.keys[code] -= {.released}
+		return true
+	}
+	return false
 }
 
 // @ref
@@ -321,16 +331,18 @@ isActionDown :: proc(action: InputAction) -> bool {
 
 // @ref
 // Consumes the **press** event for a specific action.
-consumeActionPressed :: proc(action: InputAction) {
+// Returns `true` if the [`InputAction`](#inputaction) state was changed.
+consumeActionPressed :: proc(action: InputAction) -> bool {
 	key := _getKeyFromAction(action)
-	consumeKeyPressed(key)
+	return consumeKeyPressed(key)
 }
 
 // @ref
 // Consumes the **release** event for a specific action.
-consumeActionReleased :: proc(action: InputAction) {
+// Returns `true` if the [`InputAction`](#inputaction) state was changed.
+consumeActionReleased :: proc(action: InputAction) -> bool {
 	key := _getKeyFromAction(action)
-	consumeKeyReleased(key)
+	return consumeKeyReleased(key)
 }
 
 // @ref
