@@ -162,7 +162,7 @@ _drawTextSimpleVector3Angle :: proc(
 		return gmath.Vector2{0, 0}
 	}
 
-	return drawTextSimpleFont(
+	return _drawTextSimpleFontVector3Angle(
 		position,
 		text,
 		&font,
@@ -194,7 +194,7 @@ _drawTextSimpleF32Angle :: proc(
 		return gmath.Vector2{0, 0}
 	}
 
-	return drawTextSimpleFont(
+	return _drawTextSimpleFontF32Angle(
 		position,
 		text,
 		&font,
