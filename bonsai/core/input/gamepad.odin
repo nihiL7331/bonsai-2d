@@ -1,9 +1,17 @@
 package input
 
+// @ref
+// The maximum number of supported concurrent gamepads.
+// Default is 4, being in line with the maximum limit for
+// **Windows** and **Web**.
 MAX_GAMEPADS :: 4
 
+// @ref
+// Unique identifier for a connected gamepad.
 GamepadIndex :: int
 
+// @ref
+// Standard analog axes for a dual-stick controller.
 GamepadAxis :: enum {
 	None,
 	LeftStickX,
@@ -14,6 +22,12 @@ GamepadAxis :: enum {
 	RightTrigger,
 }
 
+// @ref
+// Standard physical buttons for a modern controller.
+//
+// :::note
+// Aliases are provided for common "Face" directions.
+// :::
 GamepadButton :: enum {
 	None,
 	LeftFaceUp,
@@ -33,7 +47,6 @@ GamepadButton :: enum {
 	MiddleFaceLeft,
 	MiddleFaceMiddle,
 	MiddleFaceRight,
-	Count,
 }
 
 GamepadEvent :: union {
@@ -41,18 +54,25 @@ GamepadEvent :: union {
 	ButtonReleased,
 }
 
+// @ref
+// Event payload when a button is pressed down.
 ButtonPressed :: struct {
 	index:  GamepadIndex,
 	button: GamepadButton,
 }
 
+// @ref
+// Event payload when a button is released.
 ButtonReleased :: struct {
 	index:  GamepadIndex,
 	button: GamepadButton,
 }
 
+// Polls the hardware for new events and updates the internal state.
+// Called internally by main.odin
 updateGamepads :: proc() {
 	when ODIN_OS == .Darwin {
+		// TODO: replace active polling with notification center approach
 		pollForNewControllers()
 	}
 
@@ -77,21 +97,30 @@ updateGamepads :: proc() {
 	}
 }
 
+// @ref
+// Checks if a [`GamepadButton`](#gamepadbutton) was **pressed** this frame.
 isGamepadPressed :: proc(index: GamepadIndex, button: GamepadButton) -> bool {
 	if index < 0 || index >= MAX_GAMEPADS do return false
 	return .pressed in _inputState.gamepadKeys[index][button]
 }
 
+// @ref
+// Checks if a [`GamepadButton`](#gamepadbutton) is currently **held down**.
 isGamepadDown :: proc(index: GamepadIndex, button: GamepadButton) -> bool {
 	if index < 0 || index >= MAX_GAMEPADS do return false
 	return .down in _inputState.gamepadKeys[index][button]
 }
 
+// @ref
+// Checks if a [`GamepadButton`](#gamepadbutton) was **released** this frame.
 isGamepadReleased :: proc(index: GamepadIndex, button: GamepadButton) -> bool {
 	if index < 0 || index >= MAX_GAMEPADS do return false
 	return .released in _inputState.gamepadKeys[index][button]
 }
 
+// @ref
+// Manually consumes a **pressed** event.
+// Returns `true` if the state was successfully changed.
 consumeGamepadPressed :: proc(index: GamepadIndex, button: GamepadButton) -> bool {
 	if index < 0 || index >= MAX_GAMEPADS do return false
 
@@ -102,6 +131,24 @@ consumeGamepadPressed :: proc(index: GamepadIndex, button: GamepadButton) -> boo
 	return false
 }
 
+// @ref
+// Manually consumes a **released** event.
+// Returns `true` if the state was successfully changed.
+consumeGamepadReleased :: proc(index: GamepadIndex, button: GamepadButton) -> bool {
+	if index < 0 || index >= MAX_GAMEPADS do return false
+
+	if .released in _inputState.gamepadKeys[index][button] {
+		_inputState.gamepadKeys[index][button] -= {.released}
+		return true
+	}
+	return false
+}
+
+// @ref
+// Checks if **any** button on a specific gamepad (or all gamepads if the argument isn't provided) was pressed.
+// :::tip
+// Useful for "Press X to Join" logic.
+// :::
 consumeAnyGamepadPress :: proc(index: GamepadIndex = -1) -> bool {
 	if index != -1 {
 		if index < 0 || index >= MAX_GAMEPADS do return false
