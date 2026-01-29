@@ -61,11 +61,11 @@ getGamepadAxis :: proc(gamepadIndex: int, axis: GamepadAxis) -> f32 {
 	case .LeftStickX:
 		return js_get_gamepad_axis(index, 0)
 	case .LeftStickY:
-		return js_get_gamepad_axis(index, 1)
+		return -js_get_gamepad_axis(index, 1)
 	case .RightStickX:
 		return js_get_gamepad_axis(index, 2)
 	case .RightStickY:
-		return js_get_gamepad_axis(index, 3)
+		return -js_get_gamepad_axis(index, 3)
 	case .LeftTrigger:
 		return js_get_gamepad_axis(index, 6) // see JS implementation below
 	case .RightTrigger:

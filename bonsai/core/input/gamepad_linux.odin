@@ -431,13 +431,11 @@ getGamepadEvents :: proc(events: ^[dynamic]GamepadEvent) {
 						minimum := f32(gamepad.axes[axis].eventMinimum)
 						maximum := f32(gamepad.axes[axis].eventMaximum)
 						value := f32(event.value)
-						gamepad.axes[axis].value = gmath.remap(
-							value,
-							minimum,
-							maximum,
-							f32(-1.0),
-							f32(1.0),
-						)
+						value = gmath.remap(value, minimum, maximum, f32(-1.0), f32(1.0))
+						if axis == .LeftStickY || axis == .RightStickY {
+							value = -value
+						}
+						gamepad.axes[axis].value = value
 					}
 				}
 			}
