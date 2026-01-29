@@ -1,13 +1,15 @@
 package input
 
 // @overview
-// This package manages user input across keyboard and mouse devices (gamepad WIP).
-// It supports both raw key polling and an abstract [`InputAction`](#inputaction) system for remappable key controls.
+// This package manages user input across keyboard, mouse and gamepad devices.
+// It supports both raw key polling and an abstract, player-centric binding system that
+// decouples physical inputs from logical game actions.
 //
 // **Features:**
-// - **Action system:** Maps physical keys to logical [`InputAction`](#inputaction) enums, allowing for
-//   easy control remapping and clean game logic code.
-// - **Input consumption:** `consume` functions (e.g. [`consumeKeyPressed`](#consumekeypressed)) that make single-frame events easy.
+// - **Action system:** Maps physical keys to logical [`Action`](#action) enums (digital).
+// - **Axis system:** Maps keys and sticks to logical [`Axis`](#axis) enums (analog).
+// - **Multi-User:** Supports separate bindings for multiple (default: 5) players via [`PlayerProfile`](#playerprofile).
+// - **Hybrid input:** Automatically handles switching between keyboard and gamepad, as well as multiplayer input.
 // - **Mouse utilities:** Helpers for easy usage of the mouse inputs ([`getMousePosition`](#getmouseposition), [`getScrollY`](#getscrolly))
 // - **Key reading:** Direct access to key states via [`isKeyDown`](#iskeydown), [`isKeyPressed`](#iskeypressed) and [`isKeyReleased`](#iskeyreleased).
 // - **Cursor control:** Functions to lock or hide the system cursor ([`setCursorLocked`](#setcursorlocked), [`setCursorVisible`](#setcursorvisible)) **(Desktop only)**
@@ -16,12 +18,15 @@ package input
 // ```Odin
 // update :: proc() {
 //   // ...
-//   pot.position += input.getInputVector() * speed * deltaTime
+//   move := input.getInputVector() // handles WASD/Stick automatically
+//   player.position += move * speed * deltaTime
 //
-//   if input.isKeyPressed(.LEFT_MOUSE) {
-//     mousePosition := input.getMousePosition()
-//     potTeleport(mousePosition)
-//     input.consumeKeyPressed(.LEFT_MOUSE)
+//   if input.isActionPressed(.Jump) { // handles e.g. Space + Gamepad 'A'
+//     player.velocity.z = jumpForce
+//   }
+//
+//   if input.isActionPressed(.Jump, playerIndex = 1) {
+//     // Player 2 logic...
 //   }
 // }
 // ```
@@ -37,12 +42,19 @@ import sokol_app "bonsai:libs/sokol/app"
 _KEY_CODE_CAPACITY :: 512
 
 // @ref
+// Maximum count of logical players that will have their inputs separated.
+MAX_PLAYERS :: MAX_GAMEPADS + 1
+
+// @ref
 // Configuration constant for touch support. If set to `true`,
 // makes each touch (0-index) emulate a mouse click.
 TOUCH_EMULATE_MOUSE :: true
 
 @(private = "package")
 _inputState: Input
+
+@(private = "file")
+_players: [MAX_PLAYERS]PlayerProfile
 
 // @ref
 // Main container for the **current frame**'s input state.
@@ -54,35 +66,57 @@ Input :: struct {
 }
 
 // @ref
+// Represents a single physical input source.
+BindingSource :: union {
+	KeyCode,
+	GamepadButton,
+	GamepadAxis,
+}
+
+// @ref
+// Configuration for a single axis binding (e.g., 'W' key contributes -1.0 to `MoveY`).
+AxisBind :: struct {
+	source:   BindingSource,
+	scale:    f32,
+	deadzone: f32,
+}
+
+// @ref
+// Configuration state for a logical player.
+// Contains their assigned device ID and input mappings.
+PlayerProfile :: struct {
+	gamepadIndex: GamepadIndex, // -1 for no gamepad
+	useKeyboard:  bool,
+	bindings:     [Action][dynamic]BindingSource,
+	axes:         [Axis][dynamic]AxisBind,
+}
+
+// @ref
 // Bit flags representing the state of a specific **key** or **button** in the **current frame**.
 InputFlag :: enum u8 {
 	down, // Key is currently held down
 	pressed, // Key was pressed this frame
 	released, // Key was released this frame
-	repeat, // Key is being held (repeating event)
 }
 
 // @ref
-// Default mapping of **abstract game actions** to **physical** keys.
-// :::tip
-// This can be modified at runtime to support **key re-binding**.
-// :::
-actionMap: [InputAction]KeyCode = {
-	.left  = .A,
-	.right = .D,
-	.up    = .W,
-	.down  = .S,
-	// add more if needed
+// **Abstract** digital actions (on/off) that decouple game logic from specific **physical** keys.
+Action :: enum u8 {
+	MenuLeft,
+	MenuRight,
+	MenuUp,
+	MenuDown,
+	// Add more if needed!
 }
 
 // @ref
-// **Abstract** actions that decouple game logic from specific **physical** keys.
-InputAction :: enum u8 {
-	left,
-	right,
-	up,
-	down,
-	// add more if needed
+// **Abstract** analog axes (Float -1.0 to 1.0).
+// Used e.g. for movement.
+Axis :: enum u8 {
+	MoveX,
+	MoveY,
+	LookX,
+	LookY,
 }
 
 // @ref
@@ -221,6 +255,8 @@ init :: proc() {
 	// reset state on init
 	resetInputState(&_inputState)
 	initGamepad()
+
+	_players[0].useKeyboard = true
 }
 
 // @ref
@@ -256,15 +292,6 @@ isKeyReleased :: proc(code: KeyCode) -> bool {
 // Returns **true** as long as the key is held.
 isKeyDown :: proc(code: KeyCode) -> bool {
 	return .down in _inputState.keys[code]
-}
-
-// @ref
-// Checks if a physical key is sending **repeat** events **(OS specific)**.
-// :::tip
-// Useful for text input fields.
-// :::
-isKeyRepeating :: proc(code: KeyCode) -> bool {
-	return .repeat in _inputState.keys[code]
 }
 
 // @ref
@@ -311,72 +338,150 @@ consumeAnyKeyPress :: proc() -> bool {
 }
 
 // @ref
-// Checks if a mapped action (e.g. [`.left`](#inputaction), [`.right`](#inputaction)) was **pressed** this frame.
-isActionPressed :: proc(action: InputAction) -> bool {
-	key := _getKeyFromAction(action)
-	return isKeyPressed(key)
+// Checks if a mapped action (e.g. [`.MenuLeft`](#action), [`.MenuRight`](#action)) was **pressed** this frame.
+// Default `playerIndex` is **0**.
+isActionPressed :: proc(action: Action, playerIndex: uint = 0) -> bool {
+	player := &_players[playerIndex]
+
+	for bind in player.bindings[action] {
+		if _checkBindPressed(player, bind) do return true
+	}
+	return false
 }
 
 // @ref
 // Checks if a mapped action was **released** this frame.
-isActionReleased :: proc(action: InputAction) -> bool {
-	key := _getKeyFromAction(action)
-	return isKeyReleased(key)
+// Default `playerIndex` is **0**.
+isActionReleased :: proc(action: Action, playerIndex: uint = 0) -> bool {
+	player := &_players[playerIndex]
+
+	for bind in player.bindings[action] {
+		if _checkBindReleased(player, bind) do return true
+	}
+	return false
 }
 
 // @ref
 // Checks if a mapped action is currently **held down**.
-isActionDown :: proc(action: InputAction) -> bool {
-	key := _getKeyFromAction(action)
-	return isKeyDown(key)
+// Default `playerIndex` is **0**.
+isActionDown :: proc(action: Action, playerIndex: uint = 0) -> bool {
+	player := &_players[playerIndex]
+
+	for bind in player.bindings[action] {
+		if _checkBindDown(player, bind) do return true
+	}
+	return false
 }
 
 // @ref
 // Consumes the **press** event for a specific action.
-// Returns `true` if the [`InputAction`](#inputaction) state was changed.
-consumeActionPressed :: proc(action: InputAction) -> bool {
-	key := _getKeyFromAction(action)
-	return consumeKeyPressed(key)
+// Returns `true` if the [`Action`](#action) state was changed.
+consumeActionPressed :: proc(action: Action, playerIndex: uint = 0) -> bool {
+	player := &_players[playerIndex]
+	hasConsumedAny := false
+
+	for bind in player.bindings[action] {
+		if _consumeBindPressed(player, bind) {
+			hasConsumedAny = true
+		}
+	}
+
+	return hasConsumedAny
 }
 
 // @ref
 // Consumes the **release** event for a specific action.
-// Returns `true` if the [`InputAction`](#inputaction) state was changed.
-consumeActionReleased :: proc(action: InputAction) -> bool {
-	key := _getKeyFromAction(action)
-	return consumeKeyReleased(key)
+// Returns `true` if the [`Action`](#action) state was changed.
+// Default `playerIndex` is **0**.
+consumeActionReleased :: proc(action: Action, playerIndex: uint = 0) -> bool {
+	player := &_players[playerIndex]
+	hasConsumedAny := false
+
+	for bind in player.bindings[action] {
+		if _consumeBindReleased(player, bind) {
+			hasConsumedAny = true
+		}
+	}
+
+	return hasConsumedAny
+}
+
+// @ref
+// Binds a physical input to a logical [`Action`](#action).
+// Default `playerIndex` is **0**.
+bindAction :: proc(action: Action, source: BindingSource, playerIndex: uint = 0) {
+	append(&_players[playerIndex].bindings[action], source)
+}
+
+// @ref
+// Binds a physical input to an [`Axis`](#axis) with a specific scale.
+// Default `playerIndex` is **0**.
+// :::note(Example)
+// ```Odin
+// bindAxis(.MoveY, .W, 1.0)
+// bindAxis(.MoveY, .S, -1.0)
+// bindAxis(.MoveX, .A, -1.0)
+// bindAxis(.MoveX, .D, 1.0)
+// ```
+// :::
+bindAxis :: proc(
+	axis: Axis,
+	source: BindingSource,
+	scale: f32,
+	deadzone: f32 = 0.1,
+	playerIndex: uint = 0,
+) {
+	bind := AxisBind {
+		source   = source,
+		scale    = scale,
+		deadzone = deadzone,
+	}
+	append(&_players[playerIndex].axes[axis], bind)
+}
+
+// @ref
+// Helper to assign a specific gamepad of index `gamepadIndex` to a player slot of index `playerIndex`.
+assignGamepad :: proc(playerIndex: uint, gamepadIndex: GamepadIndex) {
+	_players[playerIndex].gamepadIndex = gamepadIndex
 }
 
 // @ref
 // Controls the visibility of the system (hardware) cursor.
 // Set to **false** if you intend to render your own custom cursor sprite.
-setCursorVisible :: proc(visible: bool) {
-	sokol_app.show_mouse(visible)
+setCursorVisible :: proc(isVisible: bool) {
+	sokol_app.show_mouse(isVisible)
 }
 
 // @ref
 // Locks the cursor to the window.
-setCursorLocked :: proc(locked: bool) {
-	sokol_app.lock_mouse(locked)
+setCursorLocked :: proc(isLocked: bool) {
+	sokol_app.lock_mouse(isLocked)
+}
+
+// @ref
+// Returns clamped float (-1.0 to 1.0) combining **all** bound inputs.
+// Default `playerIndex` is **0**.
+getAxis :: proc(axis: Axis, playerIndex: uint = 0) -> f32 {
+	totalAxis: f32 = 0.0
+	player := &_players[playerIndex]
+	bindings := player.axes[axis]
+
+	for axisBind in bindings {
+		totalAxis += _readBindingValue(player, axisBind)
+	}
+
+	return gmath.clamp(totalAxis, f32(-1.0), f32(1.0))
 }
 
 // @ref
 // Helper to construct a normalized directional vector from the standard
 // up/down/left/right actions.
-//
+// Default `playerIndex` is **0**.
 // Returns a zero vector if no input, or a normalized vector (length equal to 1.0).
-getInputVector :: proc() -> gmath.Vector2 {
-	input: gmath.Vector2
-	if isActionDown(InputAction.left) do input.x -= 1.0
-	if isActionDown(InputAction.right) do input.x += 1.0
-	if isActionDown(InputAction.down) do input.y -= 1.0
-	if isActionDown(InputAction.up) do input.y += 1.0
-
-	if input == {} {
-		return {}
-	} else {
-		return gmath.normalize(input)
-	}
+getInputVector :: proc(playerIndex: uint = 0) -> gmath.Vector2 {
+	inputVector := gmath.Vector2{getAxis(.MoveX, playerIndex), getAxis(.MoveY, playerIndex)}
+	if gmath.length(inputVector) > 1.0 do return gmath.normalize(inputVector)
+	return inputVector
 }
 
 // @ref
@@ -406,12 +511,6 @@ getMousePosition :: proc() -> gmath.Vector2 {
 // Returns the current vertical scroll delta (mouse wheel).
 getScrollY :: proc() -> f32 {
 	return _inputState.mouseScroll.y
-}
-
-// helper to get key from action
-@(private = "file")
-_getKeyFromAction :: proc(action: InputAction) -> KeyCode {
-	return actionMap[action]
 }
 
 // resets per-frame flags.
@@ -456,9 +555,6 @@ _inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
 	case .KEY_DOWN:
 		if !event.key_repeat && !(.down in inputState.keys[event.key_code]) {
 			inputState.keys[event.key_code] += {.down, .pressed}
-		}
-		if event.key_repeat {
-			inputState.keys[event.key_code] += {.repeat}
 		}
 
 	case .TOUCHES_BEGAN:
@@ -511,4 +607,87 @@ _mapSokolMouseButton :: proc "c" (sokolMouseButton: sokol_app.Mousebutton) -> Ke
 		return .MIDDLE_MOUSE
 	}
 	return nil
+}
+
+@(private = "file")
+_checkBindPressed :: proc(player: ^PlayerProfile, bind: BindingSource) -> bool {
+	switch button in bind {
+	case KeyCode:
+		return player.useKeyboard && isKeyPressed(button)
+	case GamepadButton:
+		return player.gamepadIndex != -1 && isGamepadPressed(player.gamepadIndex, button)
+	case GamepadAxis:
+		return false
+	}
+	return false
+}
+
+@(private = "file")
+_checkBindReleased :: proc(player: ^PlayerProfile, bind: BindingSource) -> bool {
+	switch button in bind {
+	case KeyCode:
+		return player.useKeyboard && isKeyReleased(button)
+	case GamepadButton:
+		return player.gamepadIndex >= 0 && isGamepadReleased(player.gamepadIndex, button)
+	case GamepadAxis:
+		return false
+	}
+	return false
+}
+
+@(private = "file")
+_checkBindDown :: proc(player: ^PlayerProfile, bind: BindingSource) -> bool {
+	switch button in bind {
+	case KeyCode:
+		return player.useKeyboard && isKeyDown(button)
+	case GamepadButton:
+		return player.gamepadIndex >= 0 && isGamepadDown(player.gamepadIndex, button)
+	case GamepadAxis:
+		return false
+	}
+	return false
+}
+
+@(private = "file")
+_consumeBindPressed :: proc(player: ^PlayerProfile, bind: BindingSource) -> bool {
+	switch button in bind {
+	case KeyCode:
+		return player.useKeyboard && consumeKeyPressed(button)
+	case GamepadButton:
+		return player.gamepadIndex >= 0 && consumeGamepadPressed(player.gamepadIndex, button)
+	case GamepadAxis:
+		return false
+	}
+	return false
+}
+
+@(private = "file")
+_consumeBindReleased :: proc(player: ^PlayerProfile, bind: BindingSource) -> bool {
+	switch button in bind {
+	case KeyCode:
+		return player.useKeyboard && consumeKeyReleased(button)
+	case GamepadButton:
+		return player.gamepadIndex >= 0 && consumeGamepadReleased(player.gamepadIndex, button)
+	case GamepadAxis:
+		return false
+	}
+	return false
+}
+
+@(private = "file")
+_readBindingValue :: proc(player: ^PlayerProfile, bind: AxisBind) -> f32 {
+	value: f32 = 0.0
+
+	switch button in bind.source {
+	case KeyCode:
+		if player.useKeyboard && isKeyDown(button) do value = 1.0
+	case GamepadButton:
+		if player.gamepadIndex >= 0 && isGamepadDown(player.gamepadIndex, button) do value = 1.0
+	case GamepadAxis:
+		if player.gamepadIndex >= 0 do value = getGamepadAxis(player.gamepadIndex, button)
+	}
+
+	if abs(value) < bind.deadzone do value = 0.0
+
+	return value * bind.scale
 }
