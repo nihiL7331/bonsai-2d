@@ -26,7 +26,7 @@ getGamepadEvents :: proc(events: ^[dynamic]GamepadEvent) {
 		if !js_is_gamepad_connected(i32(gamepadIndex)) do continue
 
 		for button in GamepadButton {
-			if button == .None || button == .Count do continue
+			if button == .None do continue
 
 			w3cIndex := getW3CButtonIndex(button)
 			if w3cIndex == -1 do continue
@@ -118,8 +118,6 @@ getW3CButtonIndex :: proc(button: GamepadButton) -> int {
 		return 15
 	case .MiddleFaceMiddle:
 		return 16
-	case .Count:
-		return -1
 	}
 	return -1
 }

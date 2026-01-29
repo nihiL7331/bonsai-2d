@@ -215,7 +215,6 @@ makeButtonInputs :: proc(
 		.LeftFaceDown = extendedGamepad->dpad()->down(),
 		.LeftFaceLeft = extendedGamepad->dpad()->left(),
 		.LeftFaceRight = extendedGamepad->dpad()->right(),
-		.Count = nil,
 	}
 }
 
