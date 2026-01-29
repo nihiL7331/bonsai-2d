@@ -49,6 +49,39 @@ GamepadButton :: enum {
 	MiddleFaceRight,
 }
 
+// @ref
+// Alias for [`RightFaceDown`](#gamepadbutton) gamepad button (equivalent of "A" on XBOX controllers and "X" on PS controllers).
+FACE_DOWN :: GamepadButton.RightFaceDown
+// @ref
+// Alias for [`RightFaceRight`](#gamepadbutton) gamepad button (equivalent of "B" on XBOX controllers and "○" on PS controllers).
+FACE_RIGHT :: GamepadButton.RightFaceRight
+// @ref
+// Alias for [`RightFaceLeft`](#gamepadbutton) gamepad button (equivalent of "X" on XBOX controllers and "□" on PS controllers).
+FACE_LEFT :: GamepadButton.RightFaceLeft
+// @ref
+// Alias for [`RightFaceUp`](#gamepadbutton) gamepad button (equivalent of "Y" on XBOX controllers and "∆" on PS controllers).
+FACE_UP :: GamepadButton.RightFaceUp
+// @ref
+// Alias for [`LeftFaceDown`](#gamepadbutton) gamepad button.
+DPAD_DOWN :: GamepadButton.LeftFaceDown
+// @ref
+// Alias for [`LeftFaceRight`](#gamepadbutton) gamepad button.
+DPAD_RIGHT :: GamepadButton.LeftFaceRight
+// @ref
+// Alias for [`LeftFaceLeft`](#gamepadbutton) gamepad button.
+DPAD_LEFT :: GamepadButton.LeftFaceLeft
+// @ref
+// Alias for [`LeftFaceUp`](#gamepadbutton) gamepad button.
+DPAD_UP :: GamepadButton.LeftFaceUp
+// @ref
+// Alias for [`MiddleFaceRight`](#gamepadbutton) gamepad button.
+START :: GamepadButton.MiddleFaceRight
+// @ref
+// Alias for [`MiddleFaceLeft`](#gamepadbutton) gamepad button.
+SELECT :: GamepadButton.MiddleFaceLeft
+
+// @ref
+// Union representing a state change event for a gamepad.
 GamepadEvent :: union {
 	ButtonPressed,
 	ButtonReleased,
