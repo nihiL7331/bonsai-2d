@@ -105,8 +105,7 @@ ButtonReleased :: struct {
 // Called internally by main.odin
 updateGamepads :: proc() {
 	when ODIN_OS == .Darwin {
-		// TODO: replace active polling with notification center approach
-		pollForNewControllers()
+		platformUpdateGamepads()
 	}
 
 	for &gamepad in _inputState.gamepadKeys {

@@ -12,6 +12,15 @@ import "bonsai:libs/gccontroller"
 HAPTICS_SHARPNESS_LEFT :: 0.1
 HAPTICS_SHARPNESS_RIGHT :: 0.9
 
+@(private = "file")
+_pendingDisconnects: [MAX_GAMEPADS]rawptr
+
+@(private = "file")
+_pendingDisconnectCount: int
+
+@(private = "file")
+_inputNeedsResync: bool
+
 @(objc_class = "GCController")
 GCController :: struct {
 	using _: intrinsics.objc_object,
@@ -35,6 +44,8 @@ NSArray :: struct {
 GamepadState :: struct {
 	gamepads:              [MAX_GAMEPADS]Gamepad,
 	cachedControllerCount: foundation.UInteger,
+	connectBlock:          foundation.Block,
+	disconnectBlock:       foundation.Block,
 }
 
 Gamepad :: struct {
@@ -46,6 +57,7 @@ Gamepad :: struct {
 	hapticPlayerLeftRight: [2]^corehaptics.HapticPatternPlayer,
 	oldIntensityLeftRight: [2]f32,
 	lastTriggerValues:     [2]f32,
+	needsRemoval:          bool,
 }
 
 @(private = "file")
@@ -53,51 +65,114 @@ _gamepadState: GamepadState
 
 initGamepad :: proc() {
 	gccontroller.ControllerStartWirelessControllerDiscovery(nil)
+
+	foundation.scoped_autoreleasepool()
+
+	syncControllers()
+
+	notificationCenter := foundation.NotificationCenter_defaultCenter()
+
+	disconnectHandler := foundation.Block_createGlobalWithParam(
+		nil,
+		proc "c" (s: rawptr, n: ^foundation.Notification) {
+			if _pendingDisconnectCount < MAX_GAMEPADS {
+				_pendingDisconnects[_pendingDisconnectCount] = n->object()
+				_pendingDisconnectCount += 1
+			}
+			_inputNeedsResync = true
+		},
+	)
+
+	connectHandler := foundation.Block_createGlobalWithParam(
+		nil,
+		proc "c" (s: rawptr, n: ^foundation.Notification) {
+			_inputNeedsResync = true
+		},
+	)
+
+	notificationCenter->addObserverForName(
+		gccontroller.DidDisconnectNotification,
+		nil,
+		nil,
+		disconnectHandler,
+	)
+	notificationCenter->addObserverForName(
+		gccontroller.DidConnectNotification,
+		nil,
+		nil,
+		connectHandler,
+	)
+
 }
 
-pollForNewControllers :: proc() {
-	controllers := gccontroller.ControllerControllers()
-	controllerCount := controllers != nil ? int(controllers->count()) : 0
-
-	removeDisconnectedControllers(controllers, controllerCount)
-
-	connectedCount := 0
-	for gamepad in _gamepadState.gamepads {
-		if gamepad.controller != nil {
-			connectedCount += 1
-		}
+platformUpdateGamepads :: proc() {
+	if _inputNeedsResync {
+		syncControllers()
+		_inputNeedsResync = false
 	}
-	if connectedCount >= MAX_GAMEPADS do return
+}
+
+syncControllers :: proc() {
+	osControllers := gccontroller.ControllerControllers()
+	controllerCount := osControllers != nil ? int(osControllers->count()) : 0
+
+	foundInOsList: [MAX_GAMEPADS]bool
 
 	for i in 0 ..< controllerCount {
-		controller := controllers->object(foundation.UInteger(i))
-		if controller == nil do continue
+		osController := osControllers->object(foundation.UInteger(i))
+		if osController == nil do continue
 
-		extendedGamepad := controller->extendedGamepad()
-		if extendedGamepad == nil do continue
-
-		if isControllerRegistered(controller) do continue
-
-		availableSlot := -1
-		for gamepad, index in _gamepadState.gamepads {
-			if gamepad.controller == nil {
-				availableSlot = index
+		for &gamepad, index in _gamepadState.gamepads {
+			if gamepad.controller == osController {
+				foundInOsList[index] = true
 				break
 			}
 		}
+	}
 
-		if availableSlot == -1 do continue
+	for &gamepad, index in _gamepadState.gamepads {
+		if gamepad.controller != nil && !foundInOsList[index] {
+			gamepad.needsRemoval = true
+		}
+	}
 
-		log.infof("Connected gamepad ID: %v", availableSlot)
-		_gamepadState.gamepads[availableSlot].controller = controller
-		_gamepadState.gamepads[availableSlot].extendedGamepad = extendedGamepad
-		_gamepadState.gamepads[availableSlot].buttonInputs = makeButtonInputs(extendedGamepad)
+	removeDisconnectedControllers()
+
+	for i in 0 ..< controllerCount {
+		osController := osControllers->object(foundation.UInteger(i))
+		if osController == nil do continue
+
+		if isControllerRegistered(osController) do continue
+
+		addController(osController)
 	}
 }
 
+addController :: proc(controller: ^gccontroller.Controller) {
+	extendedGamepad := controller->extendedGamepad()
+	if extendedGamepad == nil do return
+
+	slot := -1
+	for gamepad, index in _gamepadState.gamepads {
+		if gamepad.controller == nil {
+			slot = index
+			break
+		}
+	}
+	if slot == -1 do return
+
+	log.infof("Connected gamepad ID: %v", slot)
+	_gamepadState.gamepads[slot].controller = controller
+	_gamepadState.gamepads[slot].extendedGamepad = extendedGamepad
+	_gamepadState.gamepads[slot].buttonInputs = makeButtonInputs(extendedGamepad)
+	_gamepadState.gamepads[slot].needsRemoval = false
+}
+
 getGamepadEvents :: proc(events: ^[dynamic]GamepadEvent) {
+	if _inputNeedsResync do return
+
 	for &gamepad, gamepadIndex in _gamepadState.gamepads {
-		if gamepad.controller == nil do continue
+		if gamepad.controller == nil || gamepad.needsRemoval do continue
 
 		for button in GamepadButton {
 			buttonInput := gamepad.buttonInputs[button]
@@ -117,24 +192,25 @@ getGamepadEvents :: proc(events: ^[dynamic]GamepadEvent) {
 	}
 }
 
-removeDisconnectedControllers :: proc(controllers: ^gccontroller.ControllerArray, count: int) {
-	found: [MAX_GAMEPADS]bool
-
-	for i in 0 ..< count {
-		controller := controllers->object(foundation.UInteger(i))
-		if controller == nil do continue
-
-		for gamepad, index in _gamepadState.gamepads {
-			if gamepad.controller == controller {
-				found[index] = true
+removeDisconnectedControllers :: proc() {
+	for &gamepad in _gamepadState.gamepads {
+		if !gamepad.needsRemoval do continue
+		when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
+			for &engine in gamepad.hapticEngineLeftRight {
+				if engine != nil {
+					engine->release()
+					engine = nil
+				}
+			}
+			for &player in gamepad.hapticPlayerLeftRight {
+				if player != nil {
+					player->release()
+					player = nil
+				}
 			}
 		}
-	}
 
-	for gamepad, index in _gamepadState.gamepads {
-		if gamepad.controller != nil && !found[index] {
-			removeController(gamepad.controller)
-		}
+		gamepad = {}
 	}
 }
 
@@ -149,7 +225,12 @@ isControllerRegistered :: proc(controller: ^gccontroller.Controller) -> bool {
 isGamepadActive :: proc(index: GamepadIndex) -> bool {
 	if index < 0 || index >= MAX_GAMEPADS do return false
 
-	return _gamepadState.gamepads[index].controller != nil
+	if _inputNeedsResync do return false
+
+	return(
+		_gamepadState.gamepads[index].controller != nil &&
+		!_gamepadState.gamepads[index].needsRemoval \
+	)
 }
 
 getControllerPointer :: proc(gamepadIndex: GamepadIndex) -> rawptr {
@@ -175,19 +256,7 @@ getControllerPointer :: proc(gamepadIndex: GamepadIndex) -> rawptr {
 removeController :: proc(controller: ^gccontroller.Controller) {
 	for &gamepad in _gamepadState.gamepads {
 		if gamepad.controller == controller {
-			when ODIN_MINIMUM_OS_VERSION >= 11_00_00 {
-				for &engine in gamepad.hapticEngineLeftRight {
-					if engine != nil {
-						engine->stopWithCompletionHandler(nil)
-						engine->release()
-					}
-				}
-				for &player in gamepad.hapticPlayerLeftRight {
-					stopHapticPlayer(&player)
-				}
-			}
-
-			gamepad = {}
+			gamepad.needsRemoval = true
 			return
 		}
 	}
