@@ -128,7 +128,7 @@ event :: proc "c" (e: ^sokol_app.Event) {
 		coreContext.windowHeight = sokol_app.height()
 	}
 
-	input.getInputEventCallback()(e)
+	input.inputEventCallback(e, odinContext)
 }
 
 cleanup :: proc "c" () {
