@@ -32,6 +32,7 @@ package input
 // ```
 // :::
 
+import "base:runtime"
 import "bonsai:core"
 import "bonsai:core/gmath"
 import "bonsai:core/render"
@@ -50,19 +51,26 @@ MAX_PLAYERS :: MAX_GAMEPADS + 1
 // makes each touch (0-index) emulate a mouse click.
 TOUCH_EMULATE_MOUSE :: true
 
+// @ref
+// Configuration constant for touch emulation. If set to `true`,
+// makes each mouse click emulate a 0-index touch.
+MOUSE_EMULATE_TOUCH :: true
+
 @(private = "package")
 _inputState: Input
 
-@(private = "file")
+@(private = "package")
 _players: [MAX_PLAYERS]PlayerProfile
 
 // @ref
 // Main container for the **current frame**'s input state.
 Input :: struct {
-	keys:          [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
-	mousePosition: gmath.Vector2,
-	mouseScroll:   gmath.Vector2,
-	gamepadKeys:   [MAX_GAMEPADS][GamepadButton]bit_set[InputFlag],
+	keys:              [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
+	mousePosition:     gmath.Vector2,
+	mouseScroll:       gmath.Vector2,
+	gamepadKeys:       [MAX_GAMEPADS][GamepadButton]bit_set[InputFlag],
+	touches:           [MAX_TOUCHES]Touch,
+	virtualAxisValues: [MAX_GAMEPADS][GamepadAxis]f32,
 }
 
 // @ref
@@ -263,14 +271,6 @@ init :: proc() {
 // Returns the input state for **current frame**.
 getInputState :: proc() -> ^Input {
 	return &_inputState
-}
-
-// Returns the internal input event callback.
-//
-// This is used by the core application loop to route window events into the input system.
-// Called in main.odin.
-getInputEventCallback :: proc() -> proc "c" (event: ^sokol_app.Event) {
-	return _inputEventCallback
 }
 
 // @ref
@@ -484,27 +484,27 @@ getInputVector :: proc(playerIndex: uint = 0) -> gmath.Vector2 {
 	return inputVector
 }
 
-// @ref
-// Converts the raw screen mouse coordinates into World/UI space coordinates
-// by un-projecting them using the current renderer's projection matrix.
-getMousePosition :: proc() -> gmath.Vector2 {
+@(private = "package")
+_convertRawCoordinates :: proc(coordinates: gmath.Vector2) -> gmath.Vector2 {
 	drawFrame := render.getDrawFrame()
 	coreContext := core.getCoreContext()
 	projectionMatrix := drawFrame.reset.coordSpace.projectionMatrix
 
-	mousePosition := _inputState.mousePosition
-
-	// normalize mouse to -1.0 -> +1.0
-	normalX := (mousePosition.x / (f32(coreContext.windowWidth) * 0.5)) - 1.0
-	normalY := (mousePosition.y / (f32(coreContext.windowHeight) * 0.5)) - 1.0
+	normalX := (coordinates.x / (f32(coreContext.windowWidth) * 0.5)) - 1.0
+	normalY := (coordinates.y / (f32(coreContext.windowHeight) * 0.5)) - 1.0
 	normalY *= -1
 
-	mouseNormal := gmath.Vector2{normalX, normalY}
-	mouseWorld := gmath.Vector4{mouseNormal.x, mouseNormal.y, 0, 1}
+	worldMatrix := gmath.Vector4{normalX, normalY, 0, 1}
+	worldMatrix = gmath.matrixInverse(projectionMatrix) * worldMatrix
 
-	mouseWorld = gmath.matrixInverse(projectionMatrix) * mouseWorld
+	return worldMatrix.xy
+}
 
-	return mouseWorld.xy
+// @ref
+// Converts the raw screen mouse coordinates into World/UI space coordinates
+// by un-projecting them using the current renderer's projection matrix.
+getMousePosition :: proc() -> gmath.Vector2 {
+	return _convertRawCoordinates(_inputState.mousePosition)
 }
 
 // @ref
@@ -514,16 +514,26 @@ getScrollY :: proc() -> f32 {
 }
 
 // resets per-frame flags.
-// called internally from main.odin at the start of a frame.
+// called internally from main.odin at the end of a frame.
 resetInputState :: proc(input: ^Input) {
 	for &key in input.keys {
 		key -= ~{.down}
 	}
 	input.mouseScroll = {}
+
+	for &touch in input.touches {
+		if touch.phase == .Ended || touch.phase == .Cancelled {
+			touch.phase = .None
+			touch.index = 0
+		} else if touch.phase == .Began || touch.phase == .Moved {
+			touch.phase = .Stationary
+		}
+	}
+	input.virtualAxisValues = {}
 }
 
-@(private = "file")
-_inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
+inputEventCallback :: proc "c" (event: ^sokol_app.Event, ctx: runtime.Context) {
+	context = ctx
 	inputState := &_inputState
 
 	#partial switch event.type {
@@ -532,17 +542,41 @@ _inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
 		inputState.mouseScroll.y = event.scroll_y
 
 	case .MOUSE_MOVE:
+		when MOUSE_EMULATE_TOUCH {
+			fakeTouch := sokol_app.Touchpoint {
+				identifier = 0,
+				pos_x      = event.mouse_x,
+				pos_y      = event.mouse_y,
+			}
+			_updateTouchState(.TOUCHES_MOVED, fakeTouch)
+		}
 		inputState.mousePosition.x = event.mouse_x
 		inputState.mousePosition.y = event.mouse_y
 
 	case .MOUSE_UP:
 		if .down in inputState.keys[_mapSokolMouseButton(event.mouse_button)] {
+			when MOUSE_EMULATE_TOUCH {
+				fakeTouch := sokol_app.Touchpoint {
+					identifier = 0,
+					pos_x      = event.mouse_x,
+					pos_y      = event.mouse_y,
+				}
+				_updateTouchState(.TOUCHES_ENDED, fakeTouch)
+			}
 			inputState.keys[_mapSokolMouseButton(event.mouse_button)] -= {.down}
 			inputState.keys[_mapSokolMouseButton(event.mouse_button)] += {.released}
 		}
 
 	case .MOUSE_DOWN:
 		if !(.down in inputState.keys[_mapSokolMouseButton(event.mouse_button)]) {
+			when MOUSE_EMULATE_TOUCH {
+				fakeTouch := sokol_app.Touchpoint {
+					identifier = 0,
+					pos_x      = event.mouse_x,
+					pos_y      = event.mouse_y,
+				}
+				_updateTouchState(.TOUCHES_BEGAN, fakeTouch)
+			}
 			inputState.keys[_mapSokolMouseButton(event.mouse_button)] += {.down, .pressed}
 		}
 
@@ -557,41 +591,12 @@ _inputEventCallback :: proc "c" (event: ^sokol_app.Event) {
 			inputState.keys[event.key_code] += {.down, .pressed}
 		}
 
-	case .TOUCHES_BEGAN:
-		when !TOUCH_EMULATE_MOUSE do break
+	case .TOUCHES_BEGAN, .TOUCHES_MOVED, .TOUCHES_ENDED, .TOUCHES_CANCELLED:
+		touchCount := event.num_touches
 
-		if event.num_touches > 0 {
-			touch := event.touches[0]
-
-			inputState.mousePosition.x = touch.pos_x
-			inputState.mousePosition.y = touch.pos_y
-
-			if !(.down in inputState.keys[KeyCode.LEFT_MOUSE]) {
-				inputState.keys[KeyCode.LEFT_MOUSE] += {.down, .pressed}
-			}
-		}
-
-	case .TOUCHES_MOVED:
-		when !TOUCH_EMULATE_MOUSE do break
-
-		if event.num_touches > 0 {
-			touch := event.touches[0]
-			inputState.mousePosition.x = touch.pos_x
-			inputState.mousePosition.y = touch.pos_y
-		}
-
-	case .TOUCHES_ENDED, .TOUCHES_CANCELLED:
-		when !TOUCH_EMULATE_MOUSE do break
-
-		if event.num_touches > 0 {
-			touch := event.touches[0]
-			inputState.mousePosition.x = touch.pos_x
-			inputState.mousePosition.y = touch.pos_y
-		}
-
-		if .down in inputState.keys[KeyCode.LEFT_MOUSE] {
-			inputState.keys[KeyCode.LEFT_MOUSE] -= {.down}
-			inputState.keys[KeyCode.LEFT_MOUSE] += {.released}
+		for i in 0 ..< touchCount {
+			sokolTouch := event.touches[i]
+			_updateTouchState(event.type, sokolTouch)
 		}
 	}
 }
@@ -606,7 +611,45 @@ _mapSokolMouseButton :: proc "c" (sokolMouseButton: sokol_app.Mousebutton) -> Ke
 	case .MIDDLE:
 		return .MIDDLE_MOUSE
 	}
-	return nil
+	return .INVALID
+}
+
+@(private = "file")
+_updateTouchState :: proc(type: sokol_app.Event_Type, point: sokol_app.Touchpoint) {
+	phase: TouchPhase = .Moved
+	if type == .TOUCHES_BEGAN do phase = .Began
+	if type == .TOUCHES_ENDED do phase = .Ended
+	if type == .TOUCHES_CANCELLED do phase = .Cancelled
+
+	slotIndex := -1
+	for i in 0 ..< MAX_TOUCHES {
+		touch := &_inputState.touches[i]
+		if touch.phase != .None && touch.index == cast(i64)point.identifier {
+			slotIndex = i
+			break
+		}
+	}
+
+	if slotIndex == -1 && phase == .Began {
+		for i in 0 ..< MAX_TOUCHES {
+			if _inputState.touches[i].phase == .None {
+				slotIndex = i
+				break
+			}
+		}
+	}
+
+	if slotIndex != -1 {
+		touch := &_inputState.touches[slotIndex]
+		touch.index = cast(i64)point.identifier
+		touch.position = gmath.Vector2{point.pos_x, point.pos_y}
+		touch.position = _convertRawCoordinates(touch.position)
+
+		if phase == .Moved && (touch.phase == .Began || touch.phase == .Ended) {
+			return
+		}
+		touch.phase = phase
+	}
 }
 
 @(private = "file")
@@ -678,13 +721,22 @@ _consumeBindReleased :: proc(player: ^PlayerProfile, bind: BindingSource) -> boo
 _readBindingValue :: proc(player: ^PlayerProfile, bind: AxisBind) -> f32 {
 	value: f32 = 0.0
 
-	switch button in bind.source {
+	switch source in bind.source {
 	case KeyCode:
-		if player.useKeyboard && isKeyDown(button) do value = 1.0
+		if player.useKeyboard && isKeyDown(source) do value = 1.0
 	case GamepadButton:
-		if player.gamepadIndex >= 0 && isGamepadDown(player.gamepadIndex, button) do value = 1.0
+		if player.gamepadIndex >= 0 && isGamepadDown(player.gamepadIndex, source) do value = 1.0
 	case GamepadAxis:
-		if player.gamepadIndex >= 0 do value = getGamepadAxis(player.gamepadIndex, button)
+		if player.gamepadIndex >= 0 {
+			hardwareValue := getGamepadAxis(player.gamepadIndex, source)
+			virtualValue := _inputState.virtualAxisValues[player.gamepadIndex][source]
+
+			if abs(virtualValue) > abs(hardwareValue) {
+				value = virtualValue
+			} else {
+				value = hardwareValue
+			}
+		}
 	}
 
 	if abs(value) < bind.deadzone do value = 0.0

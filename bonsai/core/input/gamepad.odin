@@ -127,6 +127,9 @@ updateGamepads :: proc() {
 			_inputState.gamepadKeys[e.index][e.button] += {.released}
 		}
 	}
+
+	updateVirtualControls()
+	updateTouchMouseEmulation()
 }
 
 // @ref
