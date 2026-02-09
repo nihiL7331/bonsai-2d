@@ -208,24 +208,35 @@ drawLine :: proc(
 }
 
 // @ref
+// Draws a filled circle.
+// :::note
+// Internally it's just a wrapper around `drawRegularPolygon` with high segment count.
+// :::
+drawCircle :: proc(
+	center: gmath.Vector2,
+	radius: f32,
+	color: gmath.Color,
+	segments: uint = 32,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	drawRegularPolygon(center, radius, segments, color, 0.0, drawLayer, sortKey)
+}
+
+// @ref
 // Draws the outline of a circle using line segments.
+// Internally it just calls the [`drawRegularPolygonLines`](#drawregularpolygonlines)
+// function with a high default count of segments.
 drawCircleLines :: proc(
 	center: gmath.Vector2,
 	radius: f32,
 	color: gmath.Color,
-	segments: int = 32,
+	segments: uint = 32,
+	thickness: f32 = 1.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 ) {
-	angleStep := gmath.TAU / f32(segments)
-
-	previousAngle := f32(0)
-	previousPosition := center + gmath.angleToVector(previousAngle) * radius
-
-	for i in 1 ..= segments {
-		currentAngle := f32(i) * angleStep
-		nextPosition := center + gmath.angleToVector(currentAngle) * radius
-		drawLine(previousPosition, nextPosition, color)
-		previousPosition = nextPosition
-	}
+	drawRegularPolygonLines(center, radius, segments, color, thickness, 0.0, drawLayer, sortKey)
 }
 
 // @ref
@@ -291,6 +302,141 @@ drawRectangleLines :: proc(
 		drawLayer = drawLayer,
 		sortKey = sortKey,
 	)
+}
+
+// @ref
+// Draws a triangle outline.
+// Expects points to be listed in a **counter-clockwise** order.
+drawTriangleLines :: proc(
+	point1, point2, point3: gmath.Vector2,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	drawLine(point1, point2, color, thickness, drawLayer, sortKey)
+	drawLine(point2, point3, color, thickness, drawLayer, sortKey)
+	drawLine(point3, point1, color, thickness, drawLayer, sortKey)
+}
+
+// @ref
+// Draws the outline of a polygon.
+// Expects points to be listed in a **counter-clockwise** order.
+drawPolygonLines :: proc(
+	points: []gmath.Vector2,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	count := len(points)
+	if count < 2 do return
+
+	for i in 0 ..< count {
+		point1 := points[i]
+		point2 := points[(i + 1) % count]
+
+		drawLine(point1, point2, color, thickness, drawLayer, sortKey)
+	}
+}
+
+// @ref
+// Draws the outline of a regular N-gon.
+// :::note
+// The shape starts rotated at 90 degrees to point up.
+// A `rotation` of `0.0` results in the first vertex being at 12 o'clock.
+// :::
+drawRegularPolygonLines :: proc(
+	center: gmath.Vector2,
+	radius: f32,
+	sides: uint,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	rotation: f32 = 0.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	angleStep := gmath.TAU / f32(sides)
+
+	previousAngle: f32 = gmath.PI / 2
+	previousPosition := center + gmath.angleToVector(previousAngle) * radius
+
+	for i in 1 ..= sides {
+		currentAngle := previousAngle + f32(i) * angleStep
+		nextPosition := center + gmath.angleToVector(currentAngle) * radius
+		drawLine(previousPosition, nextPosition, color, thickness, drawLayer, sortKey)
+		previousPosition = nextPosition
+	}
+}
+
+// @ref
+// Draws a filled triangle.
+// Expects points to be listed in a **counter-clockwise** order.
+drawTriangle :: proc(
+	point1, point2, point3: gmath.Vector2,
+	color: gmath.Color,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	_drawTriangleBackend(point1, point2, point3, color, drawLayer, sortKey)
+}
+
+// @ref
+// Draws a filled generic polygon.
+// Expects points to be listed in a **counter-clockwise** order.
+// :::note
+// The polygon **must be convex**.
+// :::
+drawPolygon :: proc(
+	points: []gmath.Vector2,
+	color: gmath.Color,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	if len(points) < 3 do return
+
+	center := points[0]
+
+	for i in 1 ..< len(points) - 1 {
+		point2 := points[i]
+		point3 := points[i + 1]
+
+		drawTriangle(center, point2, point3, color, drawLayer, sortKey)
+	}
+}
+
+// @ref
+// Draws a filled regular N-gon.
+// :::note
+// The shape starts rotated at 90 degrees to point up.
+// A `rotation` of `0.0` results in the first vertex being at 12 o'clock.
+// :::
+drawRegularPolygon :: proc(
+	center: gmath.Vector2,
+	radius: f32,
+	sides: uint,
+	color: gmath.Color,
+	rotation: f32 = 0.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	if sides < 3 do return
+
+	points := make([dynamic]gmath.Vector2, 0, context.temp_allocator)
+
+	angleStep := gmath.TAU / f32(sides)
+	startingAngle: f32 = gmath.PI / 2.0
+
+	for i in 0 ..< sides {
+		angle := startingAngle + (f32(i) * angleStep) + rotation
+
+		x := center.x + gmath.cos(angle) * radius
+		y := center.y + gmath.sin(angle) * radius
+
+		append(&points, gmath.Vector2{x, y})
+	}
+
+	drawPolygon(points[:], color, drawLayer, sortKey)
 }
 
 // @ref
@@ -504,6 +650,30 @@ drawRectangleTransform :: proc(
 		drawLayer,
 		flags,
 		parameters,
+		sortKey,
+	)
+}
+
+// HACK:
+// for now we just draw a quad that has one tri squashed,
+// might want to look into making it cleaner/faster later on
+@(private = "file")
+_drawTriangleBackend :: proc(
+	point1, point2, point3: gmath.Vector2,
+	color: gmath.Color,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	drawQuadProjected(
+		{point1, point2, point3, point3},
+		{color, color, color, color},
+		{DEFAULT_UV.xy, DEFAULT_UV.xw, DEFAULT_UV.zw, DEFAULT_UV.zw},
+		WHITE_TEXTURE_INDEX,
+		{1, 1},
+		{},
+		drawLayer,
+		{},
+		{},
 		sortKey,
 	)
 }
