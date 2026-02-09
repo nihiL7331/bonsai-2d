@@ -188,6 +188,8 @@ drawLine :: proc(
 	end: gmath.Vector2,
 	color: gmath.Color,
 	thickness: f32 = 1.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 ) {
 	length := gmath.distance(start, end)
 	angle := gmath.vectorToAngle(end.y - start.y, end.x - start.x)
@@ -200,6 +202,8 @@ drawLine :: proc(
 		transform = transform,
 		size = gmath.Vector2{length, thickness},
 		color = color,
+		drawLayer = drawLayer,
+		sortKey = sortKey,
 	)
 }
 
