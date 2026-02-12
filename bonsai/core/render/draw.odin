@@ -231,6 +231,59 @@ drawLine :: proc(
 }
 
 // @ref
+// Draws a dashed line between `start` and `end`.
+// `dashLength` is the length of the solid part, `gapLength` is the empty space.
+drawDashedLine :: proc(
+	start, end: gmath.Vector2,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	dashLength: f32 = 10.0,
+	gapLength: f32 = 5.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	difference := end - start
+	totalLength := gmath.length(difference)
+	direction := gmath.normalize(difference)
+
+	currentDistance: f32 = 0.0
+
+	for currentDistance < totalLength {
+		lengthRemaining := totalLength - currentDistance
+		currentDashLength := min(dashLength, lengthRemaining)
+
+		point1 := start + (direction * currentDistance)
+		point2 := point1 + (direction * currentDashLength)
+
+		drawLine(point1, point2, color, thickness, drawLayer, sortKey)
+
+		currentDistance += dashLength + gapLength
+	}
+}
+
+// @ref
+// Draws an arrow pointing from `start` to `end`.
+// `headSize` determines the length of the arrow tip lines.
+drawArrow :: proc(
+	start, end: gmath.Vector2,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	headSize: f32 = 10.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	drawLine(start, end, color, thickness, drawLayer, sortKey)
+
+	angle := gmath.vectorToAngle(end.y - start.y, end.x - start.x)
+
+	point1 := end + gmath.angleToVector(angle + gmath.PI * 0.75) * headSize
+	point2 := end + gmath.angleToVector(angle - gmath.PI * 0.75) * headSize
+
+	drawLine(end, point1, color, thickness, drawLayer, sortKey)
+	drawLine(end, point2, color, thickness, drawLayer, sortKey)
+}
+
+// @ref
 // Draws a filled circle.
 // :::note
 // Internally it's just a wrapper around `drawRegularPolygon` with high segment count.
