@@ -244,6 +244,19 @@ matrixTranslate :: proc(position: Vector2) -> Matrix4 {
 }
 
 // @ref
+// Rotates a point around a `pivot` point by `radians`.
+rotatePoint :: proc(point, pivot: Vector2, radians: f32) -> Vector2 {
+	if radians == 0 do return point
+
+	translated := point - pivot
+	rotated := Vector2 {
+		translated.x * cos(radians) - translated.y * sin(radians),
+		translated.x * sin(radians) + translated.y * cos(radians),
+	}
+	return rotated + pivot
+}
+
+// @ref
 // Creates a rotation matrix from a `rotation` [`Vector3`](#vector3).
 //
 // :::note
