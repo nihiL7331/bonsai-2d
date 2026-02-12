@@ -377,6 +377,42 @@ drawCircleLines :: proc(
 }
 
 // @ref
+// Draws the outline of an ellipse.
+// The shape is created by stretching a circle, so `segments` determines the vertex count.
+drawEllipseLines :: proc(
+	center: gmath.Vector2,
+	radiusX: f32,
+	radiusY: f32,
+	color: gmath.Color,
+	rotation: f32 = 0.0,
+	segments: uint = 32,
+	thickness: f32 = 1.0,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	if radiusX <= 0 || radiusY <= 0 do return
+
+	angleStep := gmath.TAU / f32(segments)
+	lastPoint := gmath.Vector2{center.x + radiusX, center.y}
+
+	if rotation != 0 {
+		lastPoint = gmath.rotatePoint(lastPoint, center, rotation)
+	}
+
+	for i in 1 ..= segments {
+		angle := f32(i) * angleStep
+		x := center.x + gmath.cos(angle) * radiusX
+		y := center.y + gmath.sin(angle) * radiusY
+		point := gmath.Vector2{x, y}
+		if rotation != 0 {
+			point = gmath.rotatePoint(point, center, rotation)
+		}
+		drawLine(lastPoint, point, color, thickness, drawLayer, sortKey)
+		lastPoint = point
+	}
+}
+
+// @ref
 // Draws the outline of a [`Rectangle`](https://bonsai-framework.dev/reference/core/gmath/#rectangle).
 // The border grows **outwards** from the rectangle edges.
 drawRectangleLines :: proc(
