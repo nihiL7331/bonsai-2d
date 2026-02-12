@@ -955,6 +955,52 @@ drawSpriteInRectangle :: proc(
 }
 
 // @ref
+// Draws a quad defined by 4 arbitrary points.
+// Useful for skewing, soft-body physics, or perspective distortion.
+// Points should be defined in **counter-clockwise** order: BL, TL, TR, BR.
+drawQuad :: proc(
+	point1, point2, point3, point4: gmath.Vector2,
+	color: gmath.Color = colors.WHITE,
+	sprite := generated.SpriteName.nil,
+	uvs: Maybe([4]gmath.Vector2) = nil,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	finalUvs: [4]gmath.Vector2
+	textureIndex: u8 = 0
+
+	if uvs != nil {
+		finalUvs = uvs.?
+
+		if sprite == .nil {
+			textureIndex = WHITE_TEXTURE_INDEX
+		}
+	} else {
+		rectangle := getAtlasUv(sprite)
+		finalUvs[0] = {rectangle.x, rectangle.y}
+		finalUvs[1] = {rectangle.x, rectangle.w}
+		finalUvs[2] = {rectangle.z, rectangle.w}
+		finalUvs[3] = {rectangle.z, rectangle.y}
+
+		if sprite == .nil {
+			textureIndex = WHITE_TEXTURE_INDEX
+		}
+	}
+
+	drawQuadProjected(
+		positions = {point1, point2, point3, point4},
+		colors = {color, color, color, color},
+		uvs = finalUvs,
+		textureIndex = textureIndex,
+		quadSize = {1, 1},
+		colorOverride = {},
+		flags = {},
+		drawLayer = drawLayer,
+		sortKey = sortKey,
+	)
+}
+
+// @ref
 // Low-level function that pushes the final quad vertex data to the batcher.
 drawRectangleTransform :: proc(
 	transform: gmath.Matrix4,
