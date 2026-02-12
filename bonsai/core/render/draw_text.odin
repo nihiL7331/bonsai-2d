@@ -53,6 +53,7 @@ _drawTextWithDropShadowVector3Angle :: proc(
 		position + shadowOffset,
 		text,
 		font = &font,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = dropShadowColor * color, // tint the shadow by the main color
 		scale = scale,
@@ -66,6 +67,7 @@ _drawTextWithDropShadowVector3Angle :: proc(
 		position,
 		text,
 		font = &font,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = color,
 		scale = scale,
@@ -105,6 +107,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 		position + shadowOffset,
 		text,
 		font = &font,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = dropShadowColor * color, // tint the shadow by the main color
 		scale = scale,
@@ -118,6 +121,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 		position,
 		text,
 		font = &font,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = color,
 		scale = scale,
@@ -166,6 +170,7 @@ _drawTextSimpleVector3Angle :: proc(
 		position,
 		text,
 		&font,
+		fontSize,
 		rotation,
 		color = color,
 		scale = scale,
@@ -198,6 +203,7 @@ _drawTextSimpleF32Angle :: proc(
 		position,
 		text,
 		&font,
+		fontSize,
 		rotation,
 		color = color,
 		scale = scale,
@@ -222,6 +228,7 @@ _drawTextSimpleFontVector3Angle :: proc(
 	position: gmath.Vector2,
 	text: string,
 	font: ^Font,
+	fontSize: uint,
 	rotation: gmath.Vector3, // in radians
 	color := colors.WHITE,
 	scale := gmath.Vector2{1, 1},
@@ -277,6 +284,11 @@ _drawTextSimpleFontVector3Angle :: proc(
 
 	//draw
 	for char in text {
+		if char == '\n' {
+			cursorX = 0
+			cursorY -= f32(fontSize)
+			continue
+		}
 		advanceX: f32
 		advanceY: f32
 		quad: stb_truetype.aligned_quad
@@ -330,6 +342,7 @@ _drawTextSimpleFontF32Angle :: proc(
 	position: gmath.Vector2,
 	text: string,
 	font: ^Font,
+	fontSize: uint,
 	rotation: f32, // in radians
 	color := colors.WHITE,
 	scale := gmath.Vector2{1, 1},
@@ -385,6 +398,11 @@ _drawTextSimpleFontF32Angle :: proc(
 
 	//draw
 	for char in text {
+		if char == '\n' {
+			cursorX = 0
+			cursorY -= f32(fontSize)
+			continue
+		}
 		advanceX: f32
 		advanceY: f32
 		quad: stb_truetype.aligned_quad
