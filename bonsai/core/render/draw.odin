@@ -286,7 +286,7 @@ drawArrow :: proc(
 // @ref
 // Draws a filled circle.
 // :::note
-// Internally it's just a wrapper around `drawRegularPolygon` with high segment count.
+// Internally it's just a wrapper around [`drawRegularPolygon`](#drawregularpolygon) with high segment count.
 // :::
 drawCircle :: proc(
 	center: gmath.Vector2,
