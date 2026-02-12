@@ -11,25 +11,28 @@ import "core:fmt"
 import "core:log"
 import "core:strings"
 
+FontKey :: struct {
+	id:   generated.FontName,
+	size: uint,
+}
+
 @(private = "file")
-_fontCache: map[string]Font
+_fontCache: map[FontKey]Font
 
 // @ref
 // Retrieves or loads a font for a specific size.
 // **Caches** the result to avoid re-baking the bitmap every frame.
 getFont :: proc(fontName: generated.FontName, size: uint) -> (Font, bool) {
+	key := FontKey{fontName, size}
+
 	if fontName == .nil {
 		log.error("Got .nil font name.")
 		return {}, false
 	}
 
-	// create a unique cache key: "FontName_Size"
-	// e.g. "PixelCode_12"
-	nameString := fmt.tprintf("%v", fontName)
-	cacheKey := fmt.tprintf("%s_%d", nameString, size)
 
-	if cacheKey in _fontCache {
-		cachedFont := _fontCache[cacheKey]
+	if key in _fontCache {
+		cachedFont := _fontCache[key]
 		setFontTexture(cachedFont.view)
 		return cachedFont, true
 	}
@@ -49,7 +52,7 @@ getFont :: proc(fontName: generated.FontName, size: uint) -> (Font, bool) {
 	defer delete(bitmap)
 
 	font := Font {
-		name = strings.clone(nameString),
+		name = strings.clone(fmt.tprintf("%v", fontName)),
 	}
 
 	rowsBaked := stb_truetype.BakeFontBitmap(
@@ -95,7 +98,7 @@ getFont :: proc(fontName: generated.FontName, size: uint) -> (Font, bool) {
 	setFontTexture(font.view)
 
 	// store in cache
-	_fontCache[strings.clone(cacheKey)] = font
+	_fontCache[key] = font
 
 	return font, true
 }
@@ -149,11 +152,10 @@ getTextSize :: proc(fontName: generated.FontName, fontSize: uint, text: string) 
 //
 // Is called on application shutdown from main.odin.
 destroyFonts :: proc() {
-	for key, font in _fontCache {
+	for _, font in _fontCache {
 		sokol_gfx.destroy_image(font.texture)
 		sokol_gfx.destroy_view(font.view)
 		delete(font.name)
-		delete(key)
 	}
 	delete(_fontCache)
 }
