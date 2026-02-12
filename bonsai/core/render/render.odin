@@ -63,6 +63,12 @@ import "core:log"
 import "core:mem"
 import "core:slice"
 
+BACKGROUND_QUAD_SIZE :: 512
+SHADOW_QUAD_SIZE :: 128
+PLAYSPACE_QUAD_SIZE :: 256
+TOOLTIP_QUAD_SIZE :: 256
+UI_QUAD_SIZE :: 1024
+
 @(private = "file")
 _renderContext: RenderContext
 
@@ -93,7 +99,7 @@ getDrawFrame :: proc() -> ^DrawFrame {
 }
 
 // @ref
-// Returns a pointer to the [`RenderContext`] struct.
+// Returns a pointer to the `RenderContext` struct.
 getRenderContext :: proc() -> ^RenderContext {
 	return &_renderContext
 }
@@ -478,6 +484,36 @@ shutdown :: proc() {
 }
 
 // @ref
+// Creates a new [`Canvas`](#canvas) with the specified dimensions and returns its [`CanvasId`](#canvasid).
+//
+// **Arguments:**
+// - `width`: Width of the Canvas in pixels.
+// - `height`: Height of the Canvas in pixels.
+//
+// **Returns:**
+// - [`CanvasId`](#canvasid): A unique identifier for the created Canvas.
+//
+// :::note[Usage]
+// Canvases are used as offscreen render targets. After creating a Canvas, use [`setCanvas`](#setcanvas) to render to it
+// and [`drawCanvas`](#drawcanvas) to display its contents on the screen.
+//
+// ```Odin
+// // Create a Canvas for rendering shadows
+// shadowCanvas := render.loadCanvas(512, 512)
+//
+// // Render to the Canvas
+// render.setCanvas(shadowCanvas)
+// render.drawSprite(.shadow, position)
+//
+// // Resume rendering to screen and draw the Canvas
+// render.setCanvas()
+// render.drawCanvas(shadowCanvas, drawLayer = .shadow)
+// ```
+// :::
+//
+// :::caution[Performance]
+// Canvases consume GPU resources. Use [`destroyCanvas`](#destroycanvas) to free them when no longer needed.
+// :::
 loadCanvas :: proc(width: i32, height: i32) -> CanvasId {
 	swapchain := sokol_glue.swapchain()
 	imageDescription := sokol_gfx.Image_Desc {
@@ -544,29 +580,31 @@ loadCanvas :: proc(width: i32, height: i32) -> CanvasId {
 }
 
 // @ref
-// Sets the current [`Canvas`](#canvas) (render target).
-// Defaults to screen space canvas.
+// Sets the current render target (Canvas).
+// Flushes the batch and switches to the specified Canvas or falls back to the default screen buffer.
 //
 // **Arguments:**
-// - [`CanvasId`](#canvasid): Handle linked to the targeted [`Canvas`](#canvas). Returned by the [`loadCanvas`](#loadcanvas) function.
-// - 'clear': if `true` - clears contents of the canvas, if `false` - preserves previously drawn content.
-// - `clearColor`: Clear (background) color, takes effect only if `clear` is `true`.
+// - `id`: [`CanvasId`](#canvasid) to render to (default = screen).
+// - `clear`: If `true`, clears the Canvas with `clearColor` (default = `true`).
+// - `clearColor`: Background fill color (defaults to [`CLEAR_COLOR`](#clear_color)).
 //
-// :::note[Example]
+// :::note[Usage]
+// - Use [`loadCanvas`](#loadcanvas) to create a new Canvas.
+// - Rendering to a Canvas requires calling `drawCanvas` afterward to display it.
+//
 // ```Odin
-// draw :: proc() {
-//   render.setCanvas(shadowCanvas)
+// // Render shadows to an offscreen buffer
+// render.setCanvas(shadowCanvas)
+// render.drawSprite(.shadow, position)
 //
-//   render.drawSprite({x1, y1}, .shadowMedium)
-//   render.drawSprite({x2, y2}, .shadowSmall)
-//
-//   render.setCanvas()
-//
-//   render.drawCanvas(shadowCanvas, drawLayer = render.DrawLayer.shadow)
-//   render.drawSprite({x3, y3}, .pot)
-//   // ...
-// }
+// // Resume rendering to screen
+// render.setCanvas()
+// render.drawCanvas(shadowCanvas, drawLayer = .shadow)
 // ```
+// :::
+//
+// :::caution[Performance]
+// Switching Canvases forces a [`flushBatch`](#flushbatch). Minimize calls to avoid performance overhead.
 // :::
 setCanvas :: proc(
 	id: CanvasId = _renderContext.defaultCanvasId,
@@ -649,6 +687,7 @@ destroyCanvas :: proc(id: CanvasId) {
 
 	canvas.image.id = sokol_gfx.INVALID_ID
 	canvas.readerView.id = sokol_gfx.INVALID_ID
+	_renderContext.canvases[id] = {}
 }
 
 // @ref
@@ -804,15 +843,62 @@ _drawKeyCompare :: proc(a, b: Quad) -> bool {
 _initDrawFrameLayers :: proc() {
 	allocator := context.allocator
 
-	_drawFrame.reset.quads[DrawLayer.background] = make([dynamic]Quad, 0, 512, allocator)
-	_drawFrame.reset.quads[DrawLayer.shadow] = make([dynamic]Quad, 0, 128, allocator)
-	_drawFrame.reset.quads[DrawLayer.playspace] = make([dynamic]Quad, 0, 256, allocator)
-	_drawFrame.reset.quads[DrawLayer.tooltip] = make([dynamic]Quad, 0, 256, allocator)
-	_drawFrame.reset.quads[DrawLayer.ui] = make([dynamic]Quad, 0, 1024, allocator)
+	_drawFrame.reset.quads[DrawLayer.background] = make(
+		[dynamic]Quad,
+		0,
+		BACKGROUND_QUAD_SIZE,
+		allocator,
+	)
+	_drawFrame.reset.quads[DrawLayer.shadow] = make([dynamic]Quad, 0, SHADOW_QUAD_SIZE, allocator)
+	_drawFrame.reset.quads[DrawLayer.playspace] = make(
+		[dynamic]Quad,
+		0,
+		PLAYSPACE_QUAD_SIZE,
+		allocator,
+	)
+	_drawFrame.reset.quads[DrawLayer.tooltip] = make(
+		[dynamic]Quad,
+		0,
+		TOOLTIP_QUAD_SIZE,
+		allocator,
+	)
+	_drawFrame.reset.quads[DrawLayer.ui] = make([dynamic]Quad, 0, UI_QUAD_SIZE, allocator)
 }
 
 // @ref
 // Core function for pushing a quad into the **draw list**.
+//
+// This is a low-level rendering function used by higher-level drawing utilities.
+// It directly submits a quad (4 vertices) with full control over positions, UVs, colors, and rendering parameters.
+//
+// **Arguments:**
+// - `positions`: World-space positions of the quad's 4 corners (bottom-left, top-left, top-right, bottom-right).
+// - `colors`: Vertex colors (RGBA) for each corner.
+// - `uvs`: Texture coordinates for each corner (x,y = bottom-left, x,w = top-left, z,w = top-right, z,y = bottom-right).
+// - `textureIndex`: Texture slot (0 = atlas, 1 = font, 255 = white pixel).
+// - `quadSize`: Original size of the quad (before transforms).
+// - `colorOverride`: Optional tint color (multiplied with vertex colors).
+// - `drawLayer`: Target draw layer (defaults to current active layer).
+// - `flags`: Special shader flags (e.g., effects).
+// - `parameters`: Custom shader parameters (vec4).
+// - `sortKey`: Z-order key (higher values draw on top).
+//
+// :::note[Performance]
+// Prefer higher-level helpers like `drawSprite` or `drawRectangle` unless you need per-vertex control.
+// :::
+//
+// :::note[Example]
+// ```Odin
+// render.drawQuadProjected(
+//     positions = { ... },
+//     colors    = { colors.WHITE, ... },
+//     uvs       = { uv.xy, uv.xw, uv.zw, uv.zy },
+//     textureIndex = 0,
+//     quadSize = {64, 64},
+//     drawLayer = .background,
+// )
+// ```
+// :::
 drawQuadProjected :: proc(
 	positions: [4]gmath.Vector2,
 	colors: [4]gmath.Color,
