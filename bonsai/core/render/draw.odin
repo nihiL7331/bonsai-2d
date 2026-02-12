@@ -420,24 +420,22 @@ drawRectangleLines :: proc(
 	color: gmath.Color,
 	thickness: f32 = 1.0,
 	rotation: f32 = 0.0, // in radians
+	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
 	sortKey: f32 = 0.0,
-	isCullingEnabled := false,
 ) {
-	if isCullingEnabled {
-		coreContext := core.getCoreContext()
-		cameraBounds := coreContext.camera.bounds
+	size := gmath.getRectangleSize(rectangle)
+	pivotOffset := gmath.scaleFromPivot(pivot) * size
 
-		if !gmath.rectangleIntersects(cameraBounds, rectangle) do return
-	}
-
-	transform := gmath.matrixTranslate(rectangle.xy)
+	transform := gmath.Matrix4(1)
+	transform *= gmath.matrixTranslate(rectangle.xy + pivotOffset)
 
 	if rotation != 0 {
 		transform *= gmath.matrixRotateZ(rotation)
 	}
 
-	size := gmath.getRectangleSize(rectangle)
+	transform *= gmath.matrixTranslate(-pivotOffset)
+
 	fullWidth := size.x + (thickness * 2)
 
 	// top bar
