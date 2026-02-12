@@ -300,6 +300,39 @@ drawCircle :: proc(
 }
 
 // @ref
+// Draws a filled ellipse.
+// The shape is created by stretching a circle, so `segments` determines the vertex count.
+drawEllipse :: proc(
+	center: gmath.Vector2,
+	radiusX: f32,
+	radiusY: f32,
+	color: gmath.Color,
+	rotation: f32 = 0.0,
+	segments: uint = 32,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	if radiusX <= 0 || radiusY <= 0 do return
+
+	points := make([dynamic]gmath.Vector2, 0, segments + 1, context.temp_allocator)
+
+	angleStep := gmath.TAU / f32(segments)
+	for i in 0 ..= segments {
+		angle := f32(i) * angleStep
+		x := center.x + gmath.cos(angle) * radiusX
+		y := center.y + gmath.sin(angle) * radiusY
+		append(&points, gmath.Vector2{x, y})
+	}
+
+	if rotation != 0 {
+		for &point in points {
+			point = gmath.rotatePoint(point, center, rotation)
+		}
+	}
+
+	drawPolygon(points[:], color, drawLayer, sortKey)
+}
+// @ref
 // Draws the outline of a circle using line segments.
 // Internally it just calls the [`drawRegularPolygonLines`](#drawregularpolygonlines)
 // function with a high default count of segments.
