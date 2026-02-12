@@ -332,6 +332,34 @@ drawEllipse :: proc(
 
 	drawPolygon(points[:], color, drawLayer, sortKey)
 }
+
+// @ref
+// Draws a filled arc defined by `startAngle` and `endAngle`.
+// Angles are **in radians**.
+drawArc :: proc(
+	center: gmath.Vector2,
+	radius: f32,
+	startAngle: f32, // in radians
+	endAngle: f32, // in radians
+	color: gmath.Color,
+	segments: uint = 32,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	points := make([dynamic]gmath.Vector2, 0, context.temp_allocator)
+	append(&points, center)
+
+	angleStep := (endAngle - startAngle) / f32(segments)
+	for i in 0 ..= segments {
+		angle := startAngle + f32(i) * angleStep
+		x := center.x + gmath.cos(angle) * radius
+		y := center.y + gmath.sin(angle) * radius
+		append(&points, gmath.Vector2{x, y})
+	}
+
+	drawPolygon(points[:], color, drawLayer, sortKey)
+}
+
 // @ref
 // Draws the outline of a circle using line segments.
 // Internally it just calls the [`drawRegularPolygonLines`](#drawregularpolygonlines)
