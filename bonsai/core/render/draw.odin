@@ -754,6 +754,26 @@ drawRectangle :: proc(
 }
 
 // @ref
+// Draws a 9-slice sprite.
+// - If `tiled` is **false** (default): The edges and center are **stretched**. (Fast, 9 quads).
+// - If `tiled` is **true**: The edges and center are **repeated**. (Slower, good for pixel art textures).
+drawNineSlice :: proc(
+	sprite: generated.SpriteName,
+	rectangle: gmath.Rectangle,
+	sliceBorder: f32, // in pixels
+	color := colors.WHITE,
+	tiled := false,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	if tiled {
+		_drawNineSliceTiled(sprite, rectangle, sliceBorder, color, drawLayer, sortKey)
+	} else {
+		_drawNineSliceStretched(sprite, rectangle, sliceBorder, color, drawLayer, sortKey)
+	}
+}
+
+// @ref
 // Helper to draw a sprite scaled to fit inside a target rectangle.
 // Maintains aspect ratio (letterboxing).
 drawSpriteInRectangle :: proc(
@@ -935,4 +955,335 @@ _drawTriangleBackend :: proc(
 		{},
 		sortKey,
 	)
+}
+
+@(private = "file")
+_drawNineSliceTiled :: proc(
+	sprite: generated.SpriteName,
+	rectangle: gmath.Rectangle,
+	sliceBorder: f32,
+	color: gmath.Color,
+	drawLayer: DrawLayer,
+	sortKey: f32,
+) {
+	targetSize := gmath.getRectangleSize(rectangle)
+	spriteSize := getSpriteSize(sprite)
+	uv := getAtlasUv(sprite)
+
+	border := sliceBorder
+	if targetSize.x < 2 * border {
+		border = targetSize.x / 2
+	}
+	if targetSize.y < 2 * border {
+		border = targetSize.y / 2
+	}
+
+	centerSize := targetSize - (border * 2)
+	sourceCenterSize := spriteSize - (border * 2)
+
+	hasCenter := sourceCenterSize.x > 0.001 && sourceCenterSize.y > 0.001
+
+	uvWidth := uv.z - uv.x
+	uvHeight := uv.w - uv.y
+
+	uBorder := (border / spriteSize.x) * uvWidth
+	vBorder := (border / spriteSize.y) * uvHeight
+
+	uCenter := uvWidth - (uBorder * 2)
+	vCenter := uvHeight - (vBorder * 2)
+
+	u0 := uv.x
+	v0 := uv.y
+	u1 := uv.x + uBorder
+	v1 := uv.y + vBorder
+	u2 := uv.z - uBorder
+	v2 := uv.w - vBorder
+
+	drawTile :: proc(
+		position: gmath.Vector2,
+		size: gmath.Vector2,
+		uvStart: gmath.Vector2,
+		uvSize: gmath.Vector2,
+		fullSize: gmath.Vector2, // in pixels, size of the full source
+		col: gmath.Color,
+		layer: DrawLayer,
+		key: f32,
+		spr: generated.SpriteName,
+	) {
+		ratioX := size.x / fullSize.x
+		ratioY := size.y / fullSize.y
+
+		currentUv := gmath.Vector4 {
+			uvStart.x,
+			uvStart.y,
+			uvStart.x + (uvSize.x * ratioX),
+			uvStart.y + (uvSize.y * ratioY),
+		}
+
+		drawRectangle(
+			gmath.rectangleMake(position, size),
+			uv = currentUv,
+			sprite = spr,
+			color = col,
+			drawLayer = layer,
+			sortKey = key,
+		)
+	}
+
+	// corners
+	drawTile(
+		rectangle.xy,
+		{border, border},
+		{u0, v0},
+		{uBorder, vBorder},
+		{border, border},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+	drawTile(
+		{rectangle.z - border, rectangle.y},
+		{border, border},
+		{u2, v0},
+		{uBorder, vBorder},
+		{border, border},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+	drawTile(
+		{rectangle.x, rectangle.w - border},
+		{border, border},
+		{u0, v2},
+		{uBorder, vBorder},
+		{border, border},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+	drawTile(
+		{rectangle.z - border, rectangle.w - border},
+		{border, border},
+		{u2, v2},
+		{uBorder, vBorder},
+		{border, border},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+
+	if !hasCenter do return
+
+	// bottom/top edges
+	cursorX: f32 = 0
+	for cursorX < centerSize.x {
+		step := min(sourceCenterSize.x, centerSize.x - cursorX)
+		if step <= 0 do break
+
+		drawTile(
+			{rectangle.x + border + cursorX, rectangle.y},
+			{step, border},
+			{u1, v0},
+			{uCenter, vBorder},
+			{sourceCenterSize.x, border},
+			color,
+			drawLayer,
+			sortKey,
+			sprite,
+		)
+
+		drawTile(
+			{rectangle.x + border + cursorX, rectangle.w - border},
+			{step, border},
+			{u1, v2},
+			{uCenter, vBorder},
+			{sourceCenterSize.x, border},
+			color,
+			drawLayer,
+			sortKey,
+			sprite,
+		)
+		cursorX += step
+	}
+
+	// left/right edges
+	cursorY: f32 = 0
+	for cursorY < centerSize.y {
+		step := min(sourceCenterSize.y, centerSize.y - cursorY)
+		if step <= 0 do break
+
+		drawTile(
+			{rectangle.x, rectangle.y + border + cursorY},
+			{border, step},
+			{u0, v1},
+			{uBorder, vCenter},
+			{border, sourceCenterSize.y},
+			color,
+			drawLayer,
+			sortKey,
+			sprite,
+		)
+
+		drawTile(
+			{rectangle.z - border, rectangle.y + border + cursorY},
+			{border, step},
+			{u2, v1},
+			{uBorder, vCenter},
+			{border, sourceCenterSize.y},
+			color,
+			drawLayer,
+			sortKey,
+			sprite,
+		)
+		cursorY += step
+	}
+
+	// center
+	cursorY = 0
+	for cursorY < centerSize.y {
+		stepY := min(sourceCenterSize.y, centerSize.y - cursorY)
+		if stepY <= 0 do break
+		cursorX = 0
+
+		for cursorX < centerSize.x {
+			stepX := min(sourceCenterSize.x, centerSize.x - cursorX)
+			if stepX <= 0 do break
+
+			drawTile(
+				{rectangle.x + border + cursorX, rectangle.y + border + cursorY},
+				{stepX, stepY},
+				{u1, v1},
+				{uCenter, vCenter},
+				{sourceCenterSize.x, sourceCenterSize.y},
+				color,
+				drawLayer,
+				sortKey,
+				sprite,
+			)
+			cursorX += stepX
+		}
+		cursorY += stepY
+	}
+}
+
+@(private = "file")
+_drawNineSliceStretched :: proc(
+	sprite: generated.SpriteName,
+	rectangle: gmath.Rectangle,
+	sliceBorder: f32,
+	color: gmath.Color,
+	drawLayer: DrawLayer,
+	sortKey: f32,
+) {
+	targetSize := gmath.getRectangleSize(rectangle)
+	spriteSize := getSpriteSize(sprite)
+	uv := getAtlasUv(sprite)
+
+	border := sliceBorder
+	if targetSize.x < 2 * border {
+		border = targetSize.x / 2
+	}
+	if targetSize.y < 2 * border {
+		border = targetSize.y / 2
+	}
+
+	uvWidth := uv.z - uv.x
+	uvHeight := uv.w - uv.y
+
+	uBorder := (border / spriteSize.x) * uvWidth
+	vBorder := (border / spriteSize.y) * uvHeight
+
+	drawSlice :: proc(
+		position: gmath.Vector2,
+		size: gmath.Vector2,
+		uvRectangle: gmath.Vector4,
+		col: gmath.Color,
+		layer: DrawLayer,
+		key: f32,
+		spr: generated.SpriteName,
+	) {
+		drawRectangle(
+			gmath.rectangleMake(position, size),
+			uv = uvRectangle,
+			sprite = spr,
+			color = col,
+			drawLayer = layer,
+			sortKey = key,
+		)
+	}
+
+	x0 := rectangle.x
+	y0 := rectangle.y
+	x1 := x0 + border
+	y1 := y0 + border
+	x2 := rectangle.z - border
+	y2 := rectangle.w - border
+
+	u0 := uv.x
+	v0 := uv.y
+	u1 := uv.x + uBorder
+	v1 := uv.y + vBorder
+	u2 := uv.z - uBorder
+	v2 := uv.w - vBorder
+	u3 := uv.z
+	v3 := uv.w
+
+	//bottom
+	drawSlice({x0, y0}, {border, border}, {u0, v0, u1, v1}, color, drawLayer, sortKey, sprite)
+	drawSlice(
+		{x1, y0},
+		{targetSize.x - 2 * border, border},
+		{u1, v0, u2, v1},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+	drawSlice({x2, y0}, {border, border}, {u2, v0, u3, v1}, color, drawLayer, sortKey, sprite)
+
+	// middle
+	drawSlice(
+		{x0, y1},
+		{border, targetSize.y - 2 * border},
+		{u0, v1, u1, v2},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+	drawSlice(
+		{x1, y1},
+		{targetSize.x - 2 * border, targetSize.y - 2 * border},
+		{u1, v1, u2, v2},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+	drawSlice(
+		{x2, y1},
+		{border, targetSize.y - 2 * border},
+		{u2, v1, u3, v2},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+
+	// top
+	drawSlice({x0, y2}, {border, border}, {u0, v2, u1, v3}, color, drawLayer, sortKey, sprite)
+	drawSlice(
+		{x1, y2},
+		{targetSize.x - 2 * border, border},
+		{u1, v2, u2, v3},
+		color,
+		drawLayer,
+		sortKey,
+		sprite,
+	)
+	drawSlice({x2, y2}, {border, border}, {u2, v2, u3, v3}, color, drawLayer, sortKey, sprite)
 }
