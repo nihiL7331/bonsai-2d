@@ -476,6 +476,94 @@ drawRectangleLines :: proc(
 }
 
 // @ref
+// Draws the outline of a rounded rectangle.
+// Connects the corners with straight lines and uses `segments` for the corner arcs.
+drawRoundedRectangleLines :: proc(
+	rectangle: gmath.Rectangle,
+	cornerRadius: f32,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	rotation: f32 = 0.0, // in radians
+	pivot := gmath.Pivot.bottomLeft,
+	segments: uint = 10, // segments per corner
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	size := gmath.getRectangleSize(rectangle)
+	radius := min(cornerRadius, min(size.x, size.y) * 0.5)
+
+	if radius <= 0 {
+		drawRectangleLines(rectangle, color, thickness, rotation, pivot, drawLayer, sortKey)
+		return
+	}
+
+	points := make([dynamic]gmath.Vector2, 0, segments * 4 + 1, context.temp_allocator)
+
+	appendArc :: proc(
+		center: gmath.Vector2,
+		r: f32,
+		startAngle, endAngle: f32,
+		segs: uint,
+		pts: ^[dynamic]gmath.Vector2,
+	) {
+		step := (endAngle - startAngle) / f32(segs)
+		for i in 0 ..= segs {
+			angle := startAngle + f32(i) * step
+			x := center.x + gmath.cos(angle) * r
+			y := center.y + gmath.sin(angle) * r
+			append(pts, gmath.Vector2{x, y})
+		}
+	}
+
+	appendArc(
+		gmath.Vector2{rectangle.z - radius, rectangle.w - radius},
+		radius,
+		0,
+		gmath.PI * 0.5,
+		segments,
+		&points,
+	)
+
+	appendArc(
+		gmath.Vector2{rectangle.x + radius, rectangle.w - radius},
+		radius,
+		gmath.PI * 0.5,
+		gmath.PI,
+		segments,
+		&points,
+	)
+
+	appendArc(
+		gmath.Vector2{rectangle.x + radius, rectangle.y + radius},
+		radius,
+		gmath.PI,
+		gmath.PI * 1.5,
+		segments,
+		&points,
+	)
+
+	appendArc(
+		gmath.Vector2{rectangle.z - radius, rectangle.y + radius},
+		radius,
+		gmath.PI * 1.5,
+		gmath.PI * 2,
+		segments,
+		&points,
+	)
+
+	if rotation != 0 {
+		pivotOffset := gmath.scaleFromPivot(pivot) * size
+		center := rectangle.xy + pivotOffset
+
+		for &point in points {
+			point = gmath.rotatePoint(point, center, rotation)
+		}
+	}
+
+	drawPolygonLines(points[:], color, thickness, drawLayer, sortKey)
+}
+
+// @ref
 // Draws a triangle outline.
 // Expects points to be listed in a **counter-clockwise** order.
 drawTriangleLines :: proc(
