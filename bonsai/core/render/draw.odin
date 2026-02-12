@@ -773,6 +773,134 @@ drawNineSlice :: proc(
 	}
 }
 
+drawRoundedRectangle :: proc(
+	rectangle: gmath.Rectangle,
+	cornerRadius: f32,
+	color: gmath.Color,
+	rotation: f32 = 0.0, // in radians
+	pivot := gmath.Pivot.bottomLeft,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	size := gmath.getRectangleSize(rectangle)
+	cornerRadiusClamped := min(cornerRadius, min(size.x, size.y) * 0.5) // clamp radius
+
+	pivotOffset := gmath.scaleFromPivot(pivot) * size
+	worldPivot := rectangle.xy + pivotOffset
+
+	transform := gmath.Matrix4(1)
+	if rotation != 0 {
+		transform *= gmath.matrixTranslate(worldPivot)
+		transform *= gmath.matrixRotateZ(rotation)
+		transform *= gmath.matrixTranslate(-worldPivot)
+	}
+
+	transformRectangle :: proc(
+		rect: gmath.Rectangle,
+		transform: gmath.Matrix4,
+	) -> [4]gmath.Vector2 {
+		bottomLeft := gmath.transformPoint(transform, gmath.Vector2{rect.x, rect.y})
+		topLeft := gmath.transformPoint(transform, gmath.Vector2{rect.x, rect.w})
+		topRight := gmath.transformPoint(transform, gmath.Vector2{rect.z, rect.w})
+		bottomRight := gmath.transformPoint(transform, gmath.Vector2{rect.z, rect.y})
+		return {bottomLeft, topLeft, topRight, bottomRight}
+	}
+
+	centerRectangle := gmath.Rectangle {
+		rectangle.x + cornerRadiusClamped,
+		rectangle.y,
+		rectangle.z - cornerRadiusClamped,
+		rectangle.w,
+	}
+	drawQuadProjected(
+		positions = transformRectangle(centerRectangle, transform),
+		colors = {color, color, color, color},
+		uvs = {DEFAULT_UV.xy, DEFAULT_UV.xw, DEFAULT_UV.zw, DEFAULT_UV.zy},
+		textureIndex = WHITE_TEXTURE_INDEX,
+		quadSize = gmath.getRectangleSize(centerRectangle),
+		colorOverride = {},
+		flags = {},
+		drawLayer = drawLayer,
+		sortKey = sortKey,
+	)
+
+	leftRectangle := gmath.Rectangle {
+		rectangle.x,
+		rectangle.y + cornerRadiusClamped,
+		rectangle.x + cornerRadiusClamped,
+		rectangle.w - cornerRadiusClamped,
+	}
+	drawQuadProjected(
+		positions = transformRectangle(leftRectangle, transform),
+		colors = {color, color, color, color},
+		uvs = {DEFAULT_UV.xy, DEFAULT_UV.xw, DEFAULT_UV.zw, DEFAULT_UV.zy},
+		textureIndex = WHITE_TEXTURE_INDEX,
+		quadSize = gmath.getRectangleSize(leftRectangle),
+		colorOverride = {},
+		flags = {},
+		drawLayer = drawLayer,
+		sortKey = sortKey,
+	)
+
+	rightRectangle := gmath.Rectangle {
+		rectangle.z - cornerRadiusClamped,
+		rectangle.y + cornerRadiusClamped,
+		rectangle.z,
+		rectangle.w - cornerRadiusClamped,
+	}
+	drawQuadProjected(
+		positions = transformRectangle(rightRectangle, transform),
+		colors = {color, color, color, color},
+		uvs = {DEFAULT_UV.xy, DEFAULT_UV.xw, DEFAULT_UV.zw, DEFAULT_UV.zy},
+		textureIndex = WHITE_TEXTURE_INDEX,
+		quadSize = gmath.getRectangleSize(rightRectangle),
+		colorOverride = {},
+		flags = {},
+		drawLayer = drawLayer,
+		sortKey = sortKey,
+	)
+
+	arcs := [4]struct {
+		center:     gmath.Vector2,
+		startAngle: f32,
+		endAngle:   f32,
+	} {
+		{
+			{rectangle.x + cornerRadiusClamped, rectangle.w - cornerRadiusClamped},
+			gmath.PI * 0.5,
+			gmath.PI,
+		},
+		{
+			{rectangle.z - cornerRadiusClamped, rectangle.w - cornerRadiusClamped},
+			0,
+			gmath.PI * 0.5,
+		},
+		{
+			{rectangle.z - cornerRadiusClamped, rectangle.y + cornerRadiusClamped},
+			gmath.PI * 1.5,
+			gmath.PI * 2,
+		},
+		{
+			{rectangle.x + cornerRadiusClamped, rectangle.y + cornerRadiusClamped},
+			gmath.PI,
+			gmath.PI * 1.5,
+		},
+	}
+
+	for arc in arcs {
+		rotatedCenter := gmath.transformPoint(transform, arc.center)
+		drawArc(
+			center = rotatedCenter,
+			radius = cornerRadiusClamped,
+			startAngle = arc.startAngle + rotation,
+			endAngle = arc.endAngle + rotation,
+			color = color,
+			drawLayer = drawLayer,
+			sortKey = sortKey,
+		)
+	}
+}
+
 // @ref
 // Helper to draw a sprite scaled to fit inside a target rectangle.
 // Maintains aspect ratio (letterboxing).
