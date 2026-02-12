@@ -179,6 +179,29 @@ _drawSpriteF32Rotation :: proc(
 }
 
 // @ref
+// Draws a quadratic bezier curve (`start` -> `control` -> `end`).
+drawBezierQuad :: proc(
+	start, control, end: gmath.Vector2,
+	color: gmath.Color,
+	thickness: f32 = 1.0,
+	segments: uint = 32,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	previousPosition := start
+
+	for i in 1 ..= segments {
+		t := f32(i) / f32(segments)
+		inverseT := 1.0 - t
+
+		position := (inverseT * inverseT) * start + (2 * inverseT * t) * control + (t * t) * end
+
+		drawLine(previousPosition, position, color, thickness, drawLayer, sortKey)
+		previousPosition = position
+	}
+}
+
+// @ref
 // Draws a line between `start` and `end` with a specified `thickness`.
 // :::note
 // Uses [`drawRectangleTransform`](#drawrectangletransform) internally to stretch a white pixel.
