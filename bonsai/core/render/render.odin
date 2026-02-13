@@ -45,6 +45,11 @@ package render
 // the tileset file name like so: **tilesetName_{**W**}x{**H**}.png**, where **W** is width of one tile in pixels, and **H** is height
 // of one tile in pixels. Each tile gets saved to the atlas with its edges extruded by one pixel, to ensure there's no
 // edge bleeding issue. When no suffix is provided, the default size for a tile in a tileset is **16x16 pixels**.
+//
+// The CLI also handles **font scaling** via filenames. Naming a font **fontName_{**N**}.ttf**
+// (e.g., `PixelCode_12.ttf`) marks it as a **Pixel Font** with a native size of **N**. These are baked
+// at integer multiples of **N** to preserve the pixel grid. Fonts without a suffix are treated as **Vector Fonts**
+// and are baked at the requested size (with oversampling) for smooth edges.
 // :::
 
 import "bonsai:core"
