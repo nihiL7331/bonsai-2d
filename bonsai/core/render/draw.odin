@@ -773,6 +773,10 @@ drawNineSlice :: proc(
 	}
 }
 
+// @ref
+// Draws a filled rounded rectangle.
+// The corners are generated as arcs with the specified `cornerRadius`.
+// If `cornerRadius` is `0`, it falls back to a standard rectangle.
 drawRoundedRectangle :: proc(
 	rectangle: gmath.Rectangle,
 	cornerRadius: f32,
@@ -1102,6 +1106,237 @@ drawRectangleTransform :: proc(
 		drawLayer,
 		flags,
 		parameters,
+		sortKey,
+	)
+}
+
+// @ref
+// Draws a rectangle with a horizontal gradient.
+drawRectangleGradientHorizontal :: proc(
+	rectangle: gmath.Rectangle,
+	colorLeft: gmath.Color,
+	colorRight: gmath.Color,
+	rotation: f32 = 0.0,
+	pivot := gmath.Pivot.bottomLeft,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	drawRectangleGradient(
+		rectangle,
+		colorLeft,
+		colorLeft,
+		colorRight,
+		colorRight,
+		rotation,
+		pivot,
+		drawLayer,
+		sortKey,
+	)
+}
+
+// @ref
+// Draws a rectangle with a vertical gradient.
+drawRectangleGradientVertical :: proc(
+	rectangle: gmath.Rectangle,
+	colorBottom: gmath.Color,
+	colorTop: gmath.Color,
+	rotation: f32 = 0.0,
+	pivot := gmath.Pivot.bottomLeft,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	drawRectangleGradient(
+		rectangle,
+		colorBottom,
+		colorTop,
+		colorTop,
+		colorBottom,
+		rotation,
+		pivot,
+		drawLayer,
+		sortKey,
+	)
+}
+
+// @ref
+// Draws a rectangle with a specific color for each corner.
+drawRectangleGradient :: proc(
+	rectangle: gmath.Rectangle,
+	colorBottomLeft: gmath.Color,
+	colorTopLeft: gmath.Color,
+	colorTopRight: gmath.Color,
+	colorBottomRight: gmath.Color,
+	rotation: f32 = 0.0,
+	pivot := gmath.Pivot.bottomLeft,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	size := gmath.getRectangleSize(rectangle)
+	pivotOffset := gmath.scaleFromPivot(pivot) * size
+
+	transform := gmath.Matrix4(1)
+	transform *= gmath.matrixTranslate(rectangle.xy + pivotOffset)
+	if rotation != 0 {
+		transform *= gmath.matrixRotateZ(rotation)
+	}
+	transform *= gmath.matrixTranslate(-pivotOffset)
+
+	localBottomLeft := gmath.Vector2{0, 0}
+	localTopLeft := gmath.Vector2{0, size.y}
+	localTopRight := gmath.Vector2{size.x, size.y}
+	localBottomRight := gmath.Vector2{size.x, 0}
+
+	worldBottomLeft := gmath.transformPoint(transform, localBottomLeft)
+	worldTopLeft := gmath.transformPoint(transform, localTopLeft)
+	worldTopRight := gmath.transformPoint(transform, localTopRight)
+	worldBottomRight := gmath.transformPoint(transform, localBottomRight)
+
+	drawQuadProjected(
+		positions = {worldBottomLeft, worldTopLeft, worldTopRight, worldBottomRight},
+		colors = {colorBottomLeft, colorTopLeft, colorTopRight, colorBottomRight},
+		uvs = {DEFAULT_UV.xy, DEFAULT_UV.xw, DEFAULT_UV.zw, DEFAULT_UV.zy},
+		textureIndex = WHITE_TEXTURE_INDEX,
+		quadSize = size,
+		colorOverride = {},
+		flags = {},
+		drawLayer = drawLayer,
+		sortKey = sortKey,
+	)
+}
+
+// @ref
+// Draws a filled triangle with different colors at each vertex.
+drawTriangleGradient :: proc(
+	point1: gmath.Vector2,
+	point2: gmath.Vector2,
+	point3: gmath.Vector2,
+	color1: gmath.Color,
+	color2: gmath.Color,
+	color3: gmath.Color,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	drawQuadProjected(
+		positions = {point1, point2, point3, point3},
+		colors = {color1, color2, color3, color3},
+		uvs = {DEFAULT_UV.xy, DEFAULT_UV.xw, DEFAULT_UV.zw, DEFAULT_UV.zw},
+		textureIndex = WHITE_TEXTURE_INDEX,
+		quadSize = {1, 1},
+		colorOverride = {},
+		flags = {},
+		drawLayer = drawLayer,
+		sortKey = sortKey,
+	)
+}
+
+// @ref
+// Draws a filled circle with a gradient from the center to the edge.
+drawCircleGradient :: proc(
+	center: gmath.Vector2,
+	radius: f32,
+	colorInner: gmath.Color,
+	colorOuter: gmath.Color,
+	segments: uint = 32,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	if segments < 3 do return
+
+	angleStep := gmath.TAU / f32(segments)
+	currentAngle: f32 = gmath.PI / 2.0
+	previousPosition := center + gmath.angleToVector(currentAngle) * radius
+
+	for _ in 1 ..= segments {
+		currentAngle += angleStep
+		nextPosition := center + gmath.angleToVector(currentAngle) * radius
+
+		drawTriangleGradient(
+			center,
+			previousPosition,
+			nextPosition,
+			colorInner,
+			colorOuter,
+			colorOuter,
+			drawLayer,
+			sortKey,
+		)
+
+		previousPosition = nextPosition
+	}
+}
+
+// @ref
+// Draws a rectangle with a gradient from the center outwards.
+// Useful for vignettes or button highlights.
+drawRectangleGradientRadial :: proc(
+	rectangle: gmath.Rectangle,
+	colorInner: gmath.Color,
+	colorOuter: gmath.Color,
+	rotation: f32 = 0.0,
+	pivot := gmath.Pivot.bottomLeft,
+	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
+) {
+	size := gmath.getRectangleSize(rectangle)
+	pivotOffset := gmath.scaleFromPivot(pivot) * size
+
+	localCenter := size * 0.5
+	localBottomLeft := gmath.Vector2{0, 0}
+	localTopLeft := gmath.Vector2{0, size.y}
+	localTopRight := gmath.Vector2{size.x, size.y}
+	localBottomRight := gmath.Vector2{size.x, 0}
+
+	transform := gmath.Matrix4(1)
+	transform *= gmath.matrixTranslate(rectangle.xy + pivotOffset)
+	if rotation != 0 {
+		transform *= gmath.matrixRotateZ(rotation)
+	}
+	transform *= gmath.matrixTranslate(-pivotOffset)
+
+	worldCenter := gmath.transformPoint(transform, localCenter)
+	worldBottomLeft := gmath.transformPoint(transform, localBottomLeft)
+	worldTopLeft := gmath.transformPoint(transform, localTopLeft)
+	worldTopRight := gmath.transformPoint(transform, localTopRight)
+	worldBottomRight := gmath.transformPoint(transform, localBottomRight)
+
+	drawTriangleGradient(
+		worldCenter,
+		worldBottomLeft,
+		worldTopLeft,
+		colorInner,
+		colorOuter,
+		colorOuter,
+		drawLayer,
+		sortKey,
+	)
+	drawTriangleGradient(
+		worldCenter,
+		worldTopLeft,
+		worldTopRight,
+		colorInner,
+		colorOuter,
+		colorOuter,
+		drawLayer,
+		sortKey,
+	)
+	drawTriangleGradient(
+		worldCenter,
+		worldTopRight,
+		worldBottomRight,
+		colorInner,
+		colorOuter,
+		colorOuter,
+		drawLayer,
+		sortKey,
+	)
+	drawTriangleGradient(
+		worldCenter,
+		worldBottomRight,
+		worldBottomLeft,
+		colorInner,
+		colorOuter,
+		colorOuter,
+		drawLayer,
 		sortKey,
 	)
 }
