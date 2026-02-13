@@ -1024,8 +1024,6 @@ drawRectangleTransform :: proc(
 	mutUv := uv
 	mutTextureIndex := textureIndex
 
-	drawFrame := getDrawFrame()
-
 	if mutUv == DEFAULT_UV {
 		mutUv = getAtlasUv(sprite)
 
@@ -1039,6 +1037,7 @@ drawRectangleTransform :: proc(
 	}
 
 	when ODIN_DEBUG {
+		drawFrame := getDrawFrame()
 		assert(drawFrame.reset.coordSpace != {}, "No coordinate space set.")
 	}
 

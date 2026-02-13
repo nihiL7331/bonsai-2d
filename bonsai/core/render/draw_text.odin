@@ -260,10 +260,10 @@ _drawTextSimpleFontVector3Angle :: proc(
 
 		charSize := gmath.abs(gmath.Vector2{quad.x0 - quad.x1, quad.y0 - quad.y1})
 
-		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 		topRight := gmath.Vector2{quad.x1, -quad.y0}
 
 		when ODIN_DEBUG {
+			bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 			assert(bottomLeft + charSize == topRight, "Font sizing error (find size)")
 		}
 
@@ -374,10 +374,10 @@ _drawTextSimpleFontF32Angle :: proc(
 
 		charSize := gmath.abs(gmath.Vector2{quad.x0 - quad.x1, quad.y0 - quad.y1})
 
-		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 		topRight := gmath.Vector2{quad.x1, -quad.y0}
 
 		when ODIN_DEBUG {
+			bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 			assert(bottomLeft + charSize == topRight, "Font sizing error (find size)")
 		}
 
