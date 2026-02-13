@@ -48,15 +48,18 @@ _drawTextWithDropShadowVector3Angle :: proc(
 		return gmath.Vector2{0, 0}
 	}
 
+	scaleFactor := f32(fontSize) / f32(font.pixelSize)
+	effectiveScale := scale * scaleFactor
+
 	// draw shadow
 	_drawTextSimpleFontVector3Angle(
 		position + shadowOffset,
 		text,
 		font = &font,
-		fontSize = fontSize,
+		fontSize = font.pixelSize,
 		rotation = rotation,
 		color = dropShadowColor * color, // tint the shadow by the main color
-		scale = scale,
+		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		colorOverride = colorOverride,
@@ -67,10 +70,10 @@ _drawTextWithDropShadowVector3Angle :: proc(
 		position,
 		text,
 		font = &font,
-		fontSize = fontSize,
+		fontSize = font.pixelSize,
 		rotation = rotation,
 		color = color,
-		scale = scale,
+		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		colorOverride = colorOverride,
@@ -102,15 +105,18 @@ _drawTextWithDropShadowF32Angle :: proc(
 		return gmath.Vector2{0, 0}
 	}
 
+	scaleFactor := f32(fontSize) / f32(font.pixelSize)
+	effectiveScale := scale * scaleFactor
+
 	// draw shadow
 	_drawTextSimpleFontF32Angle(
 		position + shadowOffset,
 		text,
 		font = &font,
-		fontSize = fontSize,
+		fontSize = font.pixelSize,
 		rotation = rotation,
 		color = dropShadowColor * color, // tint the shadow by the main color
-		scale = scale,
+		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		colorOverride = colorOverride,
@@ -121,10 +127,10 @@ _drawTextWithDropShadowF32Angle :: proc(
 		position,
 		text,
 		font = &font,
-		fontSize = fontSize,
+		fontSize = font.pixelSize,
 		rotation = rotation,
 		color = color,
-		scale = scale,
+		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		colorOverride = colorOverride,
@@ -166,14 +172,17 @@ _drawTextSimpleVector3Angle :: proc(
 		return gmath.Vector2{0, 0}
 	}
 
+	scaleFactor := f32(fontSize) / f32(font.pixelSize)
+	effectiveScale := scale * scaleFactor
+
 	return _drawTextSimpleFontVector3Angle(
 		position,
 		text,
-		&font,
-		fontSize,
-		rotation,
+		font = &font,
+		fontSize = font.pixelSize,
+		rotation = rotation,
 		color = color,
-		scale = scale,
+		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		colorOverride = colorOverride,
@@ -199,14 +208,17 @@ _drawTextSimpleF32Angle :: proc(
 		return gmath.Vector2{0, 0}
 	}
 
+	scaleFactor := f32(fontSize) / f32(font.pixelSize)
+	effectiveScale := scale * scaleFactor
+
 	return _drawTextSimpleFontF32Angle(
 		position,
 		text,
-		&font,
-		fontSize,
-		rotation,
+		font = &font,
+		fontSize = font.pixelSize,
+		rotation = rotation,
 		color = color,
-		scale = scale,
+		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		colorOverride = colorOverride,

@@ -115,8 +115,8 @@ Atlas :: struct {
 }
 
 // size constraints for the font bitmap texture.
-BITMAP_WIDTH :: 512
-BITMAP_HEIGHT :: 512
+BITMAP_WIDTH :: 1024
+BITMAP_HEIGHT :: 1024
 
 // texture index for font atlas
 FONT_TEXTURE_INDEX: u8 : 1
@@ -128,6 +128,7 @@ Font :: struct {
 	view:          sokol_gfx.View,
 	characterData: [96]stb_truetype.bakedchar,
 	name:          string,
+	pixelSize:     uint,
 }
 
 // @ref

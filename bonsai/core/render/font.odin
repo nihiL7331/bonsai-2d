@@ -22,8 +22,26 @@ _fontCache: map[FontKey]Font
 // @ref
 // Retrieves or loads a font for a specific size.
 // **Caches** the result to avoid re-baking the bitmap every frame.
-getFont :: proc(fontName: generated.FontName, size: uint) -> (Font, bool) {
-	key := FontKey{fontName, size}
+// Automatically calculates the best texture size based on the font **type**:
+// - Pixel Fonts: Snaps to the nearest integer multiple of the native size.
+// - Vector Fonts: Oversamples (default: 2x) for crisp rendering at small sizes.
+getFont :: proc(fontName: generated.FontName, requestedSize: uint) -> (Font, bool) {
+	nativeSize := generated.getFontNativeSize(fontName)
+
+	actualBakeSize := requestedSize
+	if nativeSize > 0 {
+		multiplier := (requestedSize + (nativeSize / 2)) / nativeSize
+		if multiplier == 0 {
+			multiplier = 1
+		}
+
+		actualBakeSize = multiplier * nativeSize
+	} else {
+		OVERSAMPLING_MULTIPLIER :: 2
+		actualBakeSize = requestedSize * 2
+	}
+
+	key := FontKey{fontName, actualBakeSize}
 
 	if fontName == .nil {
 		log.error("Got .nil font name.")
@@ -52,13 +70,14 @@ getFont :: proc(fontName: generated.FontName, size: uint) -> (Font, bool) {
 	defer delete(bitmap)
 
 	font := Font {
-		name = strings.clone(fmt.tprintf("%v", fontName)),
+		name      = strings.clone(fmt.tprintf("%v", fontName)),
+		pixelSize = actualBakeSize,
 	}
 
 	rowsBaked := stb_truetype.BakeFontBitmap(
 		raw_data(fontFileData),
 		0,
-		f32(size),
+		f32(actualBakeSize),
 		raw_data(bitmap),
 		BITMAP_WIDTH,
 		BITMAP_HEIGHT,
@@ -68,7 +87,11 @@ getFont :: proc(fontName: generated.FontName, size: uint) -> (Font, bool) {
 	)
 
 	if rowsBaked <= 0 {
-		log.errorf("Bitmap is too small for selected font name: %v, size: %v.", fontName, size)
+		log.errorf(
+			"Bitmap is too small for selected font name: %v, size: %v.",
+			fontName,
+			requestedSize,
+		)
 		return {}, false
 	}
 
