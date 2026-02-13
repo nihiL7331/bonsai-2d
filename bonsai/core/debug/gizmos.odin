@@ -86,7 +86,12 @@ when ODIN_DEBUG {
 // Draws a debug line between `start` and `end`.
 // Only rendered in **debug** builds.
 // Matches [`drawLine`](https://bonsai-framework.dev/reference/core/render/#drawline)
-drawLine :: proc(start, end: gmath.Vector2, color := colors.RED, space := DebugSpace.World) {
+drawLine :: proc(
+	start: gmath.Vector2,
+	end: gmath.Vector2,
+	color := colors.RED,
+	space := DebugSpace.World,
+) {
 	when ODIN_DEBUG {
 		command := GizmoLine{start, end, color}
 		_pushGizmo(command, space)
@@ -159,7 +164,12 @@ drawCircle :: proc(
 // Draws a debug arrow pointing from `start` to `end`.
 // Only rendered in **debug** builds.
 // Matches [`drawArrow`](https://bonsai-framework.dev/reference/core/render/#drawarrow)
-drawArrow :: proc(start, end: gmath.Vector2, color := colors.BLUE, space := DebugSpace.World) {
+drawArrow :: proc(
+	start: gmath.Vector2,
+	end: gmath.Vector2,
+	color := colors.BLUE,
+	space := DebugSpace.World,
+) {
 	when ODIN_DEBUG {
 		command := GizmoArrow{start, end, color}
 		_pushGizmo(command, space)
