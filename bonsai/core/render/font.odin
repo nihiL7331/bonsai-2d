@@ -137,6 +137,8 @@ getTextSize :: proc(fontName: generated.FontName, fontSize: uint, text: string) 
 		return gmath.Vector2{0, 0}
 	}
 
+	scaleFactor := f32(fontSize) / f32(font.pixelSize)
+
 	currentLineWidth: f32 = 0
 	maxLineWidth: f32 = 0
 	lineCount: f32 = 1
@@ -166,9 +168,9 @@ getTextSize :: proc(fontName: generated.FontName, fontSize: uint, text: string) 
 	}
 
 	//NOTE: this is just an approximation
-	totalHeight := lineCount * f32(fontSize)
+	totalHeight := lineCount * f32(font.pixelSize)
 
-	return gmath.Vector2{maxLineWidth, totalHeight}
+	return gmath.Vector2{maxLineWidth, totalHeight} * scaleFactor
 }
 
 // Cleans up all GPU resources associated with loaded fonts.
