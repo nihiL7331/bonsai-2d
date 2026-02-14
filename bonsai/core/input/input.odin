@@ -49,7 +49,7 @@ MAX_PLAYERS :: MAX_GAMEPADS + 1
 // @ref
 // Configuration constant for touch support. If set to `true`,
 // makes each touch (0-index) emulate a mouse click.
-TOUCH_EMULATE_MOUSE :: true
+TOUCH_EMULATE_MOUSE :: false
 
 // @ref
 // Configuration constant for touch emulation. If set to `true`,
@@ -65,12 +65,14 @@ _players: [MAX_PLAYERS]PlayerProfile
 // @ref
 // Main container for the **current frame**'s input state.
 Input :: struct {
-	keys:              [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
-	mousePosition:     gmath.Vector2,
-	mouseScroll:       gmath.Vector2,
-	gamepadKeys:       [MAX_GAMEPADS][GamepadButton]bit_set[InputFlag],
-	touches:           [MAX_TOUCHES]Touch,
-	virtualAxisValues: [MAX_GAMEPADS][GamepadAxis]f32,
+	keys:                  [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
+	mousePosition:         gmath.Vector2,
+	previousMousePosition: gmath.Vector2,
+	mouseDelta:            gmath.Vector2,
+	mouseScroll:           gmath.Vector2,
+	gamepadKeys:           [MAX_GAMEPADS][GamepadButton]bit_set[InputFlag],
+	touches:               [MAX_TOUCHES]Touch,
+	virtualAxisValues:     [MAX_GAMEPADS][GamepadAxis]f32,
 }
 
 // @ref
@@ -508,6 +510,12 @@ getMousePosition :: proc() -> gmath.Vector2 {
 }
 
 // @ref
+// Returns the vector by which the mouse moved in the last frame.
+getMouseDelta :: proc() -> gmath.Vector2 {
+	return _inputState.mouseDelta
+}
+
+// @ref
 // Returns the current vertical scroll delta (mouse wheel).
 getScrollY :: proc() -> f32 {
 	return _inputState.mouseScroll.y
@@ -519,6 +527,9 @@ resetInputState :: proc(input: ^Input) {
 	for &key in input.keys {
 		key -= ~{.down}
 	}
+
+	input.mouseDelta = getMousePosition() - _convertRawCoordinates(input.previousMousePosition)
+	input.previousMousePosition = input.mousePosition
 	input.mouseScroll = {}
 
 	for &touch in input.touches {
