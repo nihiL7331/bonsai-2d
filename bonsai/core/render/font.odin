@@ -139,9 +139,9 @@ getTextSize :: proc(fontName: generated.FontName, fontSize: uint, text: string) 
 
 	scaleFactor := f32(fontSize) / f32(font.pixelSize)
 
-	currentLineWidth: f32 = 0
-	maxLineWidth: f32 = 0
-	lineCount: f32 = 1
+	currentLineWidth: f32 = 0.0
+	maxLineWidth: f32 = 0.0
+	lineCount: int = 1
 
 	START_CHAR :: 32
 	CHAR_COUNT :: 96
@@ -167,8 +167,7 @@ getTextSize :: proc(fontName: generated.FontName, fontSize: uint, text: string) 
 		maxLineWidth = currentLineWidth
 	}
 
-	//NOTE: this is just an approximation
-	totalHeight := lineCount * f32(font.pixelSize)
+	totalHeight := f32(lineCount) * f32(font.pixelSize)
 
 	return gmath.Vector2{maxLineWidth, totalHeight} * scaleFactor
 }
