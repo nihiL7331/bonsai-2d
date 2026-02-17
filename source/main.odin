@@ -110,10 +110,13 @@ frame :: proc "c" () {
 	input.updateGamepads()
 
 	render.coreRenderFrameStart()
+	debug.uiStart()
 
 	game_app.update()
 	game_app.draw()
 
+	debug.uiDraw()
+	debug.uiEnd()
 	debug.flushGizmos()
 	render.coreRenderFrameEnd()
 
