@@ -37,6 +37,7 @@ _drawTextWithDropShadowVector3Angle :: proc(
 	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
 	shadowOffset := gmath.Vector2{1, -1} * scale
@@ -62,6 +63,7 @@ _drawTextWithDropShadowVector3Angle :: proc(
 		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
+		sortKey = sortKey,
 		colorOverride = colorOverride,
 	)
 
@@ -76,6 +78,7 @@ _drawTextWithDropShadowVector3Angle :: proc(
 		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
+		sortKey = sortKey,
 		colorOverride = colorOverride,
 	)
 
@@ -94,6 +97,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
 	shadowOffset := gmath.Vector2{1, -1} * scale
@@ -119,6 +123,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
+		sortKey = sortKey,
 		colorOverride = colorOverride,
 	)
 
@@ -133,6 +138,7 @@ _drawTextWithDropShadowF32Angle :: proc(
 		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
+		sortKey = sortKey,
 		colorOverride = colorOverride,
 	)
 
@@ -164,6 +170,7 @@ _drawTextSimpleVector3Angle :: proc(
 	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
 	font, ok := getFont(fontName, fontSize)
@@ -185,6 +192,7 @@ _drawTextSimpleVector3Angle :: proc(
 		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
+		sortKey = sortKey,
 		colorOverride = colorOverride,
 	)
 }
@@ -200,6 +208,7 @@ _drawTextSimpleF32Angle :: proc(
 	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
 ) -> gmath.Vector2 {
 	font, ok := getFont(fontName, fontSize)
@@ -221,6 +230,7 @@ _drawTextSimpleF32Angle :: proc(
 		scale = effectiveScale,
 		pivot = pivot,
 		drawLayer = drawLayer,
+		sortKey = sortKey,
 		colorOverride = colorOverride,
 	)
 }
@@ -246,6 +256,7 @@ _drawTextSimpleFontVector3Angle :: proc(
 	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
 ) -> (
 	textBounds: gmath.Vector2,
@@ -340,6 +351,8 @@ _drawTextSimpleFontVector3Angle :: proc(
 			textureIndex = 1,
 			colorOverride = colorOverride,
 			color = color,
+			drawLayer = drawLayer,
+			sortKey = sortKey,
 		)
 
 		cursorX += advanceX
@@ -360,6 +373,7 @@ _drawTextSimpleFontF32Angle :: proc(
 	scale := gmath.Vector2{1, 1},
 	pivot := gmath.Pivot.bottomLeft,
 	drawLayer := DrawLayer.nil,
+	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
 ) -> (
 	textBounds: gmath.Vector2,
@@ -454,6 +468,8 @@ _drawTextSimpleFontF32Angle :: proc(
 			textureIndex = 1,
 			colorOverride = colorOverride,
 			color = color,
+			drawLayer = drawLayer,
+			sortKey = sortKey,
 		)
 
 		cursorX += advanceX
