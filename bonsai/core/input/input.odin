@@ -62,6 +62,11 @@ _inputState: Input
 @(private = "package")
 _players: [MAX_PLAYERS]PlayerProfile
 
+InputSpace :: enum {
+	World,
+	Screen,
+}
+
 // @ref
 // Main container for the **current frame**'s input state.
 Input :: struct {
@@ -487,10 +492,22 @@ getInputVector :: proc(playerIndex: uint = 0) -> gmath.Vector2 {
 }
 
 @(private = "package")
-_convertRawCoordinates :: proc(coordinates: gmath.Vector2) -> gmath.Vector2 {
-	drawFrame := render.getDrawFrame()
+_convertRawCoordinates :: proc(
+	coordinates: gmath.Vector2,
+	space: Maybe(InputSpace) = nil,
+) -> gmath.Vector2 {
 	coreContext := core.getCoreContext()
-	projectionMatrix := drawFrame.reset.coordSpace.projectionMatrix
+	projectionMatrix: gmath.Matrix4
+	if inputSpace, ok := space.?; ok {
+		if inputSpace == .World {
+			projectionMatrix = render.getWorldSpace().projectionMatrix
+		} else if inputSpace == .Screen {
+			projectionMatrix = render.getScreenSpace().projectionMatrix
+		}
+	} else {
+		drawFrame := render.getDrawFrame()
+		projectionMatrix = drawFrame.reset.coordSpace.projectionMatrix
+	}
 
 	normalX := (coordinates.x / (f32(coreContext.windowWidth) * 0.5)) - 1.0
 	normalY := (coordinates.y / (f32(coreContext.windowHeight) * 0.5)) - 1.0
@@ -505,8 +522,10 @@ _convertRawCoordinates :: proc(coordinates: gmath.Vector2) -> gmath.Vector2 {
 // @ref
 // Converts the raw screen mouse coordinates into World/UI space coordinates
 // by un-projecting them using the current renderer's projection matrix.
-getMousePosition :: proc() -> gmath.Vector2 {
-	return _convertRawCoordinates(_inputState.mousePosition)
+// Accepts optional `space` argument. If set, returns the mouse position in
+// selected space. Otherwise returns the mouse position in currently set space.
+getMousePosition :: proc(space: Maybe(InputSpace) = nil) -> gmath.Vector2 {
+	return _convertRawCoordinates(_inputState.mousePosition, space)
 }
 
 // @ref
