@@ -71,6 +71,7 @@ InputSpace :: enum {
 // Main container for the **current frame**'s input state.
 Input :: struct {
 	keys:                  [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
+	characterQueue:        [dynamic]rune, // for text input
 	mousePosition:         gmath.Vector2,
 	previousMousePosition: gmath.Vector2,
 	mouseDelta:            gmath.Vector2,
@@ -540,9 +541,18 @@ getScrollY :: proc() -> f32 {
 	return _inputState.mouseScroll.y
 }
 
+// @ref
+// Returns a queue of characters triggered this frame.
+// Useful for text input boxes.
+getCharacterQueue :: proc() -> []rune {
+	return _inputState.characterQueue[:]
+}
+
 // resets per-frame flags.
 // called internally from main.odin at the end of a frame.
 resetInputState :: proc(input: ^Input) {
+	clear(&input.characterQueue)
+
 	for &key in input.keys {
 		key -= ~{.down}
 	}
@@ -567,6 +577,8 @@ inputEventCallback :: proc "c" (event: ^sokol_app.Event, ctx: runtime.Context) {
 	inputState := &_inputState
 
 	#partial switch event.type {
+	case .CHAR:
+		append(&_inputState.characterQueue, rune(event.char_code))
 	case .MOUSE_SCROLL:
 		inputState.mouseScroll.x = event.scroll_x
 		inputState.mouseScroll.y = event.scroll_y
