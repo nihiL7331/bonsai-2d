@@ -540,6 +540,62 @@ pow :: proc(
 }
 
 // @ref
+// Returns the natural logarithm (base **e**) of `input`.
+// - For **scalars**: Standard natural logarithm.
+// - For **vectors**: Component-wise natural logarithm.
+ln :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = ln(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.ln(input)
+	} else {
+		return T(math.round(math.ln_f64(f64(input))))
+	}
+}
+
+// @ref
+// Returns the logarithm of `input` in the specified `base`
+log :: proc(
+	base: $T,
+	input: T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		#assert(len(base) == len(input), "Dimension mismatch in log(vector, vector)")
+	}
+	return ln(input) / ln(base)
+}
+
+// @ref
+// Returns the base-10 logarithm of `input`.
+log10 :: proc(
+	input: $T,
+) -> T where intrinsics.type_is_array(T) ||
+	intrinsics.type_is_float(T) ||
+	intrinsics.type_is_integer(T) {
+	when intrinsics.type_is_array(T) {
+		result: T
+		for i in 0 ..< len(input) {
+			result[i] = log10(input[i])
+		}
+		return result
+	} else when intrinsics.type_is_float(T) {
+		return math.log10(input)
+	} else {
+		return T(math.round(math.log10_f64(f64(input))))
+	}
+}
+
+// @ref
 // Remaps `input` from the `[inMin, inMax]` range to the `[outMin, outMax]` range.
 //
 // :::note[Example]
