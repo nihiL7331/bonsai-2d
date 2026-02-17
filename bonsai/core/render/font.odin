@@ -37,8 +37,8 @@ getFont :: proc(fontName: generated.FontName, requestedSize: uint) -> (Font, boo
 
 		actualBakeSize = multiplier * nativeSize
 	} else {
-		OVERSAMPLING_MULTIPLIER :: 2
-		actualBakeSize = requestedSize * 2
+		OVERSAMPLING_MULTIPLIER :: 4
+		actualBakeSize = requestedSize * OVERSAMPLING_MULTIPLIER
 	}
 
 	key := FontKey{fontName, actualBakeSize}
