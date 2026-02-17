@@ -263,7 +263,24 @@ _drawTextSimpleFontVector3Angle :: proc(
 ) {
 	// find size
 	totalTextSize: gmath.Vector2
-	for char, i in text {
+	currentLineWidth: f32 = 0.0
+	maxLineWidth: f32 = 0.0
+	lineCount: int = 1
+
+	minGlyphY: f32 = 0.0
+	maxGlyphY: f32 = 0.0
+	firstChar := true
+
+	for char in text {
+		if char == '\n' {
+			maxLineWidth = max(maxLineWidth, currentLineWidth)
+			currentLineWidth = 0
+			lineCount += 1
+			continue
+		}
+
+		if char < 32 || char >= 128 do continue
+
 		advanceX: f32
 		advanceY: f32
 		quad: stb_truetype.aligned_quad
@@ -278,32 +295,38 @@ _drawTextSimpleFontVector3Angle :: proc(
 			&quad,
 			false,
 		)
-		// calculate char dimensions
-		// x0, y0 - top-left, x1, y1 - bottom-right in STB
 
-		charSize := gmath.abs(gmath.Vector2{quad.x0 - quad.x1, quad.y0 - quad.y1})
+		bottomY := -quad.y1
+		topY := -quad.y0
 
-		topRight := gmath.Vector2{quad.x1, -quad.y0}
-
-		when ODIN_DEBUG {
-			bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
-			assert(bottomLeft + charSize == topRight, "Font sizing error (find size)")
-		}
-
-		if i == len(text) - 1 {
-			totalTextSize.x += charSize.x
+		if firstChar {
+			minGlyphY = bottomY
+			maxGlyphY = topY
+			firstChar = false
 		} else {
-			totalTextSize.x += advanceX
+			minGlyphY = min(bottomY, minGlyphY)
+			maxGlyphY = max(topY, maxGlyphY)
 		}
 
-		totalTextSize.y = max(totalTextSize.y, topRight.y)
+		currentLineWidth += advanceX
+	}
+
+	maxLineWidth = max(maxLineWidth, currentLineWidth)
+	totalTextSize.x = maxLineWidth
+	totalTextSize = f32(lineCount) * f32(fontSize)
+
+	glyphHeight := maxGlyphY - minGlyphY
+	centeringOffset := (f32(fontSize) - glyphHeight) * 0.5 - minGlyphY
+
+	if firstChar {
+		centeringOffset = 0
 	}
 
 	pivotOffset := totalTextSize * -gmath.scaleFromPivot(pivot)
 
 	// draw characters
 	cursorX: f32
-	cursorY: f32
+	cursorY := f32(lineCount - 1) * f32(fontSize)
 
 	//draw
 	for char in text {
@@ -312,6 +335,9 @@ _drawTextSimpleFontVector3Angle :: proc(
 			cursorY -= f32(fontSize)
 			continue
 		}
+
+		if char < 32 || char >= 128 do continue
+
 		advanceX: f32
 		advanceY: f32
 		quad: stb_truetype.aligned_quad
@@ -331,7 +357,7 @@ _drawTextSimpleFontVector3Angle :: proc(
 		size := gmath.Vector2{abs(quad.x0 - quad.x1), abs(quad.y0 - quad.y1)}
 		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 
-		offsetToRenderAt := gmath.Vector2{cursorX, cursorY} + bottomLeft
+		offsetToRenderAt := gmath.Vector2{cursorX, cursorY + centeringOffset} + bottomLeft
 		offsetToRenderAt += pivotOffset
 
 		uv := gmath.Vector4{quad.s0, quad.t1, quad.s1, quad.t0}
@@ -380,7 +406,24 @@ _drawTextSimpleFontF32Angle :: proc(
 ) {
 	// find size
 	totalTextSize: gmath.Vector2
-	for char, i in text {
+	currentLineWidth: f32 = 0.0
+	maxLineWidth: f32 = 0.0
+	lineCount: int = 1
+
+	minGlyphY: f32 = 0.0
+	maxGlyphY: f32 = 0.0
+	firstChar := true
+
+	for char in text {
+		if char == '\n' {
+			maxLineWidth = max(maxLineWidth, currentLineWidth)
+			currentLineWidth = 0
+			lineCount += 1
+			continue
+		}
+
+		if char < 32 || char >= 128 do continue
+
 		advanceX: f32
 		advanceY: f32
 		quad: stb_truetype.aligned_quad
@@ -398,29 +441,37 @@ _drawTextSimpleFontF32Angle :: proc(
 		// calculate char dimensions
 		// x0, y0 - top-left, x1, y1 - bottom-right in STB
 
-		charSize := gmath.abs(gmath.Vector2{quad.x0 - quad.x1, quad.y0 - quad.y1})
+		bottomY := -quad.y1
+		topY := -quad.y0
 
-		topRight := gmath.Vector2{quad.x1, -quad.y0}
-
-		when ODIN_DEBUG {
-			bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
-			assert(bottomLeft + charSize == topRight, "Font sizing error (find size)")
-		}
-
-		if i == len(text) - 1 {
-			totalTextSize.x += charSize.x
+		if firstChar {
+			minGlyphY = bottomY
+			maxGlyphY = topY
+			firstChar = false
 		} else {
-			totalTextSize.x += advanceX
+			minGlyphY = min(bottomY, minGlyphY)
+			maxGlyphY = max(topY, maxGlyphY)
 		}
 
-		totalTextSize.y = max(totalTextSize.y, topRight.y)
+		currentLineWidth += advanceX
+	}
+
+	maxLineWidth = max(maxLineWidth, currentLineWidth)
+	totalTextSize.x = maxLineWidth
+	totalTextSize.y = f32(lineCount) * f32(fontSize)
+
+	glyphHeight := maxGlyphY - minGlyphY
+	centeringOffset := (f32(fontSize) - glyphHeight) * 0.5 - minGlyphY
+
+	if firstChar {
+		centeringOffset = 0
 	}
 
 	pivotOffset := totalTextSize * -gmath.scaleFromPivot(pivot)
 
 	// draw characters
 	cursorX: f32
-	cursorY: f32
+	cursorY := f32(lineCount - 1) * f32(fontSize)
 
 	//draw
 	for char in text {
@@ -429,6 +480,9 @@ _drawTextSimpleFontF32Angle :: proc(
 			cursorY -= f32(fontSize)
 			continue
 		}
+
+		if char < 32 || char >= 128 do continue
+
 		advanceX: f32
 		advanceY: f32
 		quad: stb_truetype.aligned_quad
@@ -448,7 +502,7 @@ _drawTextSimpleFontF32Angle :: proc(
 		size := gmath.Vector2{abs(quad.x0 - quad.x1), abs(quad.y0 - quad.y1)}
 		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
 
-		offsetToRenderAt := gmath.Vector2{cursorX, cursorY} + bottomLeft
+		offsetToRenderAt := gmath.Vector2{cursorX, cursorY + centeringOffset} + bottomLeft
 		offsetToRenderAt += pivotOffset
 
 		uv := gmath.Vector4{quad.s0, quad.t1, quad.s1, quad.t0}
