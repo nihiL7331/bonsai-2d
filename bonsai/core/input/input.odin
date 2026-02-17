@@ -72,6 +72,7 @@ InputSpace :: enum {
 Input :: struct {
 	keys:                  [_KEY_CODE_CAPACITY]bit_set[InputFlag], //bitset of 4 bits (down, pressed, released, repeat)
 	characterQueue:        [dynamic]rune, // for text input
+	isInputCaptured:       bool, // if true, something (e.g. a text box) is consuming the input
 	mousePosition:         gmath.Vector2,
 	previousMousePosition: gmath.Vector2,
 	mouseDelta:            gmath.Vector2,
@@ -281,10 +282,15 @@ getInputState :: proc() -> ^Input {
 	return &_inputState
 }
 
+isKeyPressedRaw :: proc(code: KeyCode) -> bool {
+	return .pressed in _inputState.keys[code]
+}
+
 // @ref
 // Checks if a physical key was **pressed** this frame.
 // Returns **true** only on the frame the key went down.
 isKeyPressed :: proc(code: KeyCode) -> bool {
+	if _inputState.isInputCaptured do return false
 	return .pressed in _inputState.keys[code]
 }
 
@@ -292,6 +298,7 @@ isKeyPressed :: proc(code: KeyCode) -> bool {
 // Checks if a physical key was **released** this frame.
 // Returns **true** only on the frame the key went up.
 isKeyReleased :: proc(code: KeyCode) -> bool {
+	if _inputState.isInputCaptured do return false
 	return .released in _inputState.keys[code]
 }
 
@@ -299,6 +306,7 @@ isKeyReleased :: proc(code: KeyCode) -> bool {
 // Checks if a physical key is currently **held down**.
 // Returns **true** as long as the key is held.
 isKeyDown :: proc(code: KeyCode) -> bool {
+	if _inputState.isInputCaptured do return false
 	return .down in _inputState.keys[code]
 }
 
@@ -539,6 +547,14 @@ getMouseDelta :: proc() -> gmath.Vector2 {
 // Returns the current vertical scroll delta (mouse wheel).
 getScrollY :: proc() -> f32 {
 	return _inputState.mouseScroll.y
+}
+
+// @ref
+// Sets whether input is currently captured.
+// If `true`, [`isKeyDown`](#iskeydown)/[`isKeyPressed`](#iskeypressed)/[`isKeyReleased`](#iskeyreleased)
+// will return `false`.
+setCaptured :: proc(captured: bool) {
+	_inputState.isInputCaptured = captured
 }
 
 // @ref
