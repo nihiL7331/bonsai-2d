@@ -89,6 +89,9 @@ _actualQuadData: [MAX_QUADS]Quad
 @(private = "file")
 _scissorState: ScissorState
 
+@(private = "file")
+_scissorStack: [dynamic]gmath.Rectangle
+
 // @ref
 // Sets the background clear color.
 setClearColor :: proc(col: gmath.Vector4) {
@@ -185,6 +188,54 @@ getCanvasSpace :: proc(width, height: f32) -> CoordSpace {
 }
 
 // @ref
+// Pushes a new scissor rectangle onto the stack.
+// Automatically intersects with the previous scissor to ensure nested clipping works.
+pushScissor :: proc(rectangle: gmath.Rectangle) {
+	targetRectangle := rectangle
+
+	if len(_scissorStack) > 0 {
+		parentRectangle := _scissorStack[len(_scissorStack) - 1]
+
+		targetRectangle.x = max(parentRectangle.x, rectangle.x)
+		targetRectangle.y = max(parentRectangle.y, rectangle.y)
+		targetRectangle.z = min(parentRectangle.z, rectangle.z)
+		targetRectangle.w = min(parentRectangle.w, rectangle.w)
+
+		if targetRectangle.x > targetRectangle.z {
+			targetRectangle.x = parentRectangle.x
+			targetRectangle.z = parentRectangle.x
+		}
+		if targetRectangle.y > targetRectangle.w {
+			targetRectangle.y = parentRectangle.y
+			targetRectangle.w = parentRectangle.y
+		}
+	}
+
+	append(&_scissorStack, targetRectangle)
+
+	setScissorCoordinates(_getScissorRectangle(targetRectangle))
+}
+
+// @ref
+// Pops the current scissor, restoring the previous state.
+// If the stack becomes empty, scissoring is disabled.
+popScissor :: proc() {
+	if len(_scissorStack) == 0 {
+		log.warn("Attempted to pop an empty scissor stack.")
+		return
+	}
+
+	pop(&_scissorStack)
+
+	if len(_scissorStack) > 0 {
+		parentRectangle := _scissorStack[len(_scissorStack) - 1]
+		setScissorCoordinates(_getScissorRectangle(parentRectangle))
+	} else {
+		clearScissor()
+	}
+}
+
+// @ref
 // Sets the **scissor** (clipping) rectangle.
 // Flushes the batch if the scissor state changes.
 setScissorCoordinates :: proc(coordinates: gmath.Vector4) {
@@ -196,10 +247,8 @@ setScissorCoordinates :: proc(coordinates: gmath.Vector4) {
 	_scissorState.coordinates = coordinates
 }
 
-// @ref
-// Maps a **screen-space** rectangle to a screen-space scissor rectangle.
-// Used for clipping rendering to specific regions (masking).
-setScissorRectangle :: proc(rectangle: gmath.Rectangle) {
+@(private = "file")
+_getScissorRectangle :: proc(rectangle: gmath.Rectangle) -> gmath.Rectangle {
 	coreContext := core.getCoreContext()
 
 	projection := _drawFrame.reset.coordSpace.projectionMatrix
@@ -230,7 +279,7 @@ setScissorRectangle :: proc(rectangle: gmath.Rectangle) {
 	scissorWidth := (topRightNdc.x + 1.0) * 0.5 * frameBufferWidth - scissorX
 	scissorHeight := (topRightNdc.y + 1.0) * 0.5 * frameBufferHeight - scissorY
 
-	setScissorCoordinates(gmath.Vector4{scissorX, scissorY, scissorWidth, scissorHeight})
+	return gmath.Rectangle{scissorX, scissorY, scissorWidth, scissorHeight}
 }
 
 // @ref
@@ -247,6 +296,8 @@ clearScissor :: proc() {
 // Called in main.odin.
 init :: proc() {
 	coreContext := core.getCoreContext()
+
+	_scissorStack = make([dynamic]gmath.Rectangle, 0, 10) // max 10 nested scissors
 
 	sokol_gfx.setup(
 		{
@@ -314,7 +365,7 @@ coreRenderFrameStart :: proc() {
 		_renderContext.bindings.views[shaders.VIEW_uFontTex] = _atlas.view //HACK: do that to avoid crash when font isnt loaded
 	}
 
-
+	clear(&_scissorStack)
 	_scissorState.enabled = false
 
 	setCanvas(_renderContext.defaultCanvasId, clear = true)
@@ -465,6 +516,8 @@ flushBatch :: proc() {
 // Called internally by **main.odin**.
 shutdown :: proc() {
 	destroyFonts()
+
+	delete(_scissorStack)
 
 	for i := 1; i < len(_renderContext.canvases); i += 1 {
 		destroyCanvas(CanvasId(i))
