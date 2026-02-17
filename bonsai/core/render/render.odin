@@ -974,6 +974,14 @@ drawQuadProjected :: proc(
 		mutDrawLayer = _drawFrame.reset.activeDrawLayer
 	}
 
+	// HACK:
+	// encode the index into sortKey to ensure stable sorting
+	// (if object is called to draw before an object of the same sortKey,
+	// they preserve the order)
+	currentCount := len(_drawFrame.reset.quads[drawLayer])
+	bias := f32(currentCount) * 0.000001
+	finalSortKey := sortKey + bias
+
 	quadArray := &_drawFrame.reset.quads[mutDrawLayer]
 
 	if len(quadArray) >= cap(quadArray) {
@@ -985,10 +993,10 @@ drawQuadProjected :: proc(
 
 	vertices := &quadArray[oldLength]
 
-	vertices[0].position = {positions[0].x, positions[0].y, sortKey}
-	vertices[1].position = {positions[1].x, positions[1].y, sortKey}
-	vertices[2].position = {positions[2].x, positions[2].y, sortKey}
-	vertices[3].position = {positions[3].x, positions[3].y, sortKey}
+	vertices[0].position = {positions[0].x, positions[0].y, finalSortKey}
+	vertices[1].position = {positions[1].x, positions[1].y, finalSortKey}
+	vertices[2].position = {positions[2].x, positions[2].y, finalSortKey}
+	vertices[3].position = {positions[3].x, positions[3].y, finalSortKey}
 
 	vertices[0].color = colors[0]; vertices[1].color = colors[1]
 	vertices[2].color = colors[2]; vertices[3].color = colors[3]
