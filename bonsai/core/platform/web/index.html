@@ -82,6 +82,46 @@ Feel free to edit it to your likings.-->
     <script type="text/javascript" src="odin.js"></script>
 
     <script>
+      function setupHotReload() {
+        const host = window.location.hostname;
+        const httpPort = window.location.port ? parseInt(window.location.port) : 80;
+        const wsPort = httpPort + 1;
+
+        const wsUrl = `ws://${host}:${wsPort}`;
+        console.log(`Attempting hot-reload connection to ${wsUrl}...`);
+
+        const ws = new WebSocket(wsUrl);
+        ws.binaryType = "arraybuffer";
+
+        ws.onopen = () => console.log("Web hot-reload connected.");
+
+        ws.onmessage = (event) => {
+          wasmExports.hotReloadReset();
+
+          const buffer = event.data;
+          const dataView = new DataView(buffer);
+
+          const jsonLength = dataView.getUint32(0, true);
+
+          const jsonBytes = new Uint8Array(buffer, 4, jsonLength);
+          const pngBytes = new Uint8Array(buffer, 4 + jsonLength);
+
+          const jsonPointer = wasmExports.hotReloadAlloc(jsonBytes.length);
+          const pngPointer = wasmExports.hotReloadAlloc(pngBytes.length);
+
+          const wasmMemory = new Uint8Array(wasmExports.memory.buffer);
+          wasmMemory.set(jsonBytes, jsonPointer);
+          wasmMemory.set(pngBytes, pngPointer);
+
+          wasmExports.hotReloadPushData(jsonPointer, jsonBytes.length, pngPointer, pngBytes.length);
+        };
+
+        ws.onclose = () => {
+          console.log("Hot-reload disconnected. Retrying in 2 seconds...");
+          setTimeout(setupHotReload, 2000);
+        }
+      }
+
       var odinMemoryInterface = new odin.WasmMemoryInterface();
 
       // `4` for `js_wasm32` target, `8` for `js_wasm64p32` target.
@@ -94,6 +134,8 @@ Feel free to edit it to your likings.-->
           if (loader) loader.style.opacity = 0;
 
           wasmExports._start();
+
+          setupHotReload();
         },
 
         instantiateWasm: (imports, successCallback) => {
@@ -179,6 +221,7 @@ Feel free to edit it to your likings.-->
           ).then(function (output) {
             odinMemoryInterface.setExports(output.instance.exports);
             odinMemoryInterface.setMemory(output.instance.exports.memory);
+
             return successCallback(output.instance);
           });
         },

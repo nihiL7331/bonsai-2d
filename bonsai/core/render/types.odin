@@ -2,6 +2,7 @@ package render
 
 import "bonsai:core/gmath"
 import "bonsai:core/gmath/colors"
+import "bonsai:generated"
 
 import sokol_gfx "bonsai:libs/sokol/gfx"
 import stb_truetype "bonsai:libs/stb/truetype"
@@ -13,6 +14,19 @@ import stb_truetype "bonsai:libs/stb/truetype"
 // Editing just this variable doesnt change where the atlas is generated.
 // :::
 ATLAS_PATH :: "bonsai/core/render/atlas/atlas.png"
+
+// @ref
+// Path relative to project root pointing to the generated sprite UV/size data.
+// :::caution
+// This isn't the only place where this variable exists.
+// Editing just this variable doesnt change where the sprite data is stored.
+// :::
+BINARY_PATH :: ".bonsai/cache/sprites/sprites.bin"
+
+// @ref
+// Path relative to project root pointing to the blank sprite atlas.
+// Used when there's no images in assets/images directory.
+BLANK_ATLAS_PATH :: "bonsai/core/render/atlas/blank.png"
 
 // @ref
 // Maximum number of quads per batch flush.
@@ -70,9 +84,28 @@ Shader :: struct {
 ShaderDescriptionFunction :: proc(backend: sokol_gfx.Backend) -> sokol_gfx.Shader_Desc // {}
 
 // @ref
+// Struct used to read and convert binary data to data stored in
+// [`spriteData`](#spritedata) as [`SpriteData`](https://bonsai-framework.dev/reference/generated/#spritedata)
+RawSpriteData :: struct #packed {
+	u0:     f32,
+	v0:     f32,
+	u1:     f32,
+	v1:     f32,
+	sizeX:  f32,
+	sizeY:  f32,
+	frames: f32,
+}
+
+// @ref
+// Stores UV, size and frame info for each [`SpriteName`](https://bonsai-framework.dev/reference/generated/#spritename)
+// enum from the sprite atlas.
+spriteData: [generated.SpriteName]generated.SpriteData
+
+// @ref
 // Internal context holding the global **Sokol** GFX state.
 // Manages active bindings (atlas/font) and stores the list of loaded [`Shaders`](#shader)
 RenderContext :: struct {
+	atlas:                Atlas,
 	passAction:           sokol_gfx.Pass_Action,
 	inPass:               bool,
 	bindings:             sokol_gfx.Bindings,
@@ -114,8 +147,12 @@ Atlas :: struct {
 	image: sokol_gfx.Image,
 }
 
-// size constraints for the font bitmap texture.
+// @ref
+// Width constraint for the font bitmap texture.
 BITMAP_WIDTH :: 1024
+
+// @ref
+// Height constraint for the font bitmap texture.
 BITMAP_HEIGHT :: 1024
 
 // texture index for font atlas

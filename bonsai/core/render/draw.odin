@@ -44,10 +44,10 @@ _drawSpriteVector3Rotation :: proc(
 	sortKey: f32 = 0.0,
 	isCullingEnabled := false,
 ) {
-	setTexture(_atlas.view)
+	setTexture(_renderContext.atlas.view)
 
 	rectangleSize := getSpriteSize(sprite)
-	frameCount := generated.getFrameCount(sprite)
+	frameCount := getFrameCount(sprite)
 
 	// assuming horizontal strip animation layout
 	rectangleSize.x /= f32(frameCount)
@@ -122,10 +122,10 @@ _drawSpriteF32Rotation :: proc(
 	sortKey: f32 = 0.0,
 	isCullingEnabled := false,
 ) {
-	setTexture(_atlas.view)
+	setTexture(_renderContext.atlas.view)
 
 	rectangleSize := getSpriteSize(sprite)
-	frameCount := generated.getFrameCount(sprite)
+	frameCount := getFrameCount(sprite)
 
 	// assuming horizontal strip animation layout
 	rectangleSize.x /= f32(frameCount)
@@ -1031,7 +1031,7 @@ drawRectangleTransform :: proc(
 	if mutUv == DEFAULT_UV {
 		mutUv = getAtlasUv(sprite)
 
-		frameCount := generated.getFrameCount(sprite)
+		frameCount := getFrameCount(sprite)
 		frameSize := mutSize
 		frameSize.x /= f32(frameCount)
 		uvSize := gmath.getRectangleSize(mutUv)

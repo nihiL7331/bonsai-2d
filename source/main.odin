@@ -1,5 +1,6 @@
 package main
 
+import "bonsai:core/platform"
 // This file is a bridge between the bonsai framework
 // and the project. It loads and runs all essential functions.
 // Most of the time it doesn't have to be edited.
@@ -96,6 +97,12 @@ lastFrameTime: f64
 
 frame :: proc "c" () {
 	context = odinContext
+
+	imageData, imageWidth, imageHeight, jsonData, pending := platform.pollHotReload()
+	if pending {
+		render.updateAtlas(imageData, imageWidth, imageHeight)
+		render.updateSpriteData(jsonData)
+	}
 
 	if input.isKeyPressed(.ENTER) && input.isKeyDown(.LEFT_ALT) {
 		sokol_app.toggle_fullscreen()

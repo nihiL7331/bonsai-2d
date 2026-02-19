@@ -74,11 +74,8 @@ PLAYSPACE_QUAD_SIZE :: 256
 TOOLTIP_QUAD_SIZE :: 256
 UI_QUAD_SIZE :: 1024
 
-@(private = "file")
-_renderContext: RenderContext
-
 @(private = "package")
-_atlas: Atlas
+_renderContext: RenderContext
 
 @(private = "file")
 _drawFrame: DrawFrame
@@ -308,7 +305,8 @@ init :: proc() {
 	)
 
 	// load the atlas generated at build-time
-	loadAtlas(ATLAS_PATH)
+	loadSpriteMetadata()
+	loadAtlas()
 
 	// create dynamic vertex buffer
 	_renderContext.bindings.vertex_buffers[0] = sokol_gfx.make_buffer(
@@ -360,9 +358,10 @@ init :: proc() {
 coreRenderFrameStart :: proc() {
 	resetDrawFrame()
 
-	if _atlas.view.id != sokol_gfx.INVALID_ID {
-		_renderContext.bindings.views[shaders.VIEW_uTex] = _atlas.view
-		_renderContext.bindings.views[shaders.VIEW_uFontTex] = _atlas.view //HACK: do that to avoid crash when font isnt loaded
+	atlas := &_renderContext.atlas
+	if atlas.view.id != sokol_gfx.INVALID_ID {
+		_renderContext.bindings.views[shaders.VIEW_uTex] = atlas.view
+		_renderContext.bindings.views[shaders.VIEW_uFontTex] = atlas.view //HACK: do that to avoid crash when font isnt loaded
 	}
 
 	clear(&_scissorStack)
@@ -535,9 +534,10 @@ shutdown :: proc() {
 
 	sokol_gfx.destroy_sampler(_renderContext.defaultCanvasSampler)
 
-	if _atlas.view.id != sokol_gfx.INVALID_ID {
-		sokol_gfx.destroy_view(_atlas.view)
-		sokol_gfx.destroy_image(_atlas.image)
+	atlas := &_renderContext.atlas
+	if atlas.view.id != sokol_gfx.INVALID_ID {
+		sokol_gfx.destroy_view(atlas.view)
+		sokol_gfx.destroy_image(atlas.image)
 	}
 }
 
@@ -866,13 +866,19 @@ setFontTexture :: proc(view: sokol_gfx.View) {
 // @ref
 // Helper to retrieve **texture info** from `SpriteName`.
 getAtlasUv :: proc(sprite: generated.SpriteName) -> gmath.Vector4 {
-	return generated.getSpriteData(sprite).uv
+	return spriteData[sprite].uv
 }
 
 // @ref
 // Helper to retrieve **size** from [`SpriteName`](https://bonsai-framework.dev/reference/generated/#spritename).
 getSpriteSize :: proc(sprite: generated.SpriteName) -> gmath.Vector2 {
-	return generated.getSpriteData(sprite).size
+	return spriteData[sprite].size
+}
+
+// @ref
+// Helper to retrieve **frame count** from [`SpriteName`](https://bonsai-framework.dev/reference/generated/#spritename).
+getFrameCount :: proc(sprite: generated.SpriteName) -> int {
+	return spriteData[sprite].frames
 }
 
 @(private = "file")
@@ -1096,11 +1102,57 @@ drawCanvas :: proc(
 
 // image loading helpers
 
-loadAtlas :: proc(filepath: string) {
+loadSpriteMetadata :: proc(filepath: string = BINARY_PATH) {
+	binData, success := platform.read_entire_file(filepath)
+	if !success {
+		log.errorf("Failed to load sprite metadata at: %v.", filepath)
+		return
+	}
+	defer delete(binData)
+
+	rawSprites := mem.slice_data_cast([]RawSpriteData, binData)
+
+	if len(rawSprites) != len(generated.SpriteName) {
+		log.warnf(
+			"Binary sprite data length (%d) does not match Enum size (%d).",
+			len(rawSprites),
+			len(generated.SpriteName),
+		)
+	}
+
+	maxItems := min(len(rawSprites), len(generated.SpriteName))
+
+	for index in 0 ..< maxItems {
+		rawSprite := rawSprites[index]
+		spriteEnum := generated.SpriteName(index)
+
+		spriteData[spriteEnum] = generated.SpriteData {
+			uv     = {rawSprite.u0, rawSprite.v0, rawSprite.u1, rawSprite.v1},
+			size   = {rawSprite.sizeX, rawSprite.sizeY},
+			frames = int(rawSprite.frames),
+		}
+	}
+}
+
+loadAtlas :: proc(filepath: string = ATLAS_PATH) {
+	atlas := &_renderContext.atlas
+
+	if atlas.view.id != sokol_gfx.INVALID_ID {
+		sokol_gfx.destroy_view(atlas.view)
+	}
+
+	if atlas.image.id != sokol_gfx.INVALID_ID {
+		sokol_gfx.destroy_image(atlas.image)
+	}
+
 	pngData, success := platform.read_entire_file(filepath)
 	if !success {
-		log.warnf("Failed to read atlas file at: %v. Defaulting to blank atlas.", filepath)
-		loadAtlas("bonsai/core/render/atlas/blank.png")
+		if filepath != BLANK_ATLAS_PATH {
+			log.warnf("Failed to read atlas file at: %v. Defaulting to blank atlas.", filepath)
+			loadAtlas(BLANK_ATLAS_PATH)
+		} else {
+			log.error("Blank fallback is also missing.")
+		}
 		return
 	}
 	defer delete(pngData)
@@ -1125,8 +1177,64 @@ loadAtlas :: proc(filepath: string) {
 		return
 	}
 
-	_atlas.image = sgImage
-	_atlas.view = sokol_gfx.make_view({texture = sokol_gfx.Texture_View_Desc({image = sgImage})})
+	atlas.image = sgImage
+	atlas.view = sokol_gfx.make_view({texture = sokol_gfx.Texture_View_Desc({image = sgImage})})
+	_renderContext.bindings.views[0] = atlas.view
+}
+
+updateAtlas :: proc(data: [^]byte, width: i32, height: i32) {
+	atlas := &_renderContext.atlas
+
+	if atlas.image.id != sokol_gfx.INVALID_ID {
+		sokol_gfx.destroy_image(atlas.image)
+	}
+	if atlas.view.id != sokol_gfx.INVALID_ID {
+		sokol_gfx.destroy_view(atlas.view)
+	}
+
+	description: sokol_gfx.Image_Desc
+	description.width = width
+	description.height = height
+	description.pixel_format = .RGBA8
+	description.data.subimage[0][0] = {
+		ptr  = data,
+		size = uint(width * height * 4),
+	}
+
+	sgImage := sokol_gfx.make_image(description)
+	if sgImage.id == sokol_gfx.INVALID_ID {
+		log.error("Failed to make an image.")
+		return
+	}
+
+	atlas.image = sgImage
+	atlas.view = sokol_gfx.make_view({texture = sokol_gfx.Texture_View_Desc({image = sgImage})})
+	_renderContext.bindings.views[0] = atlas.view
+}
+
+updateSpriteData :: proc(data: []u8) {
+	rawSprites := mem.slice_data_cast([]RawSpriteData, data)
+
+	if len(rawSprites) != len(generated.SpriteName) {
+		log.warnf(
+			"Binary sprite data length (%d) does not match Enum size (%d).",
+			len(rawSprites),
+			len(generated.SpriteName),
+		)
+	}
+
+	maxItems := min(len(rawSprites), len(generated.SpriteName))
+
+	for index in 0 ..< maxItems {
+		rawSprite := rawSprites[index]
+		spriteEnum := generated.SpriteName(index)
+
+		spriteData[spriteEnum] = generated.SpriteData {
+			uv     = {rawSprite.u0, rawSprite.v0, rawSprite.u1, rawSprite.v1},
+			size   = {rawSprite.sizeX, rawSprite.sizeY},
+			frames = int(rawSprite.frames),
+		}
+	}
 }
 
 getImageData :: proc(
