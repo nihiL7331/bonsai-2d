@@ -1102,6 +1102,10 @@ drawCanvas :: proc(
 
 // image loading helpers
 
+// @ref
+// Loads/reloads the sprite data from a binary file
+// with the structure matching the [`RawSpriteData`](#rawspritedata)
+// struct. 
 loadSpriteMetadata :: proc(filepath: string = BINARY_PATH) {
 	binData, success := platform.read_entire_file(filepath)
 	if !success {
