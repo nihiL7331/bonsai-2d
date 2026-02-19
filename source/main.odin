@@ -12,7 +12,8 @@ import "core:log"
 import "bonsai:core"
 import "bonsai:core/audio"
 import "bonsai:core/clock"
-import "bonsai:core/debug"
+import "bonsai:core/debug/gizmos"
+import "bonsai:core/debug/ui"
 import "bonsai:core/gmath"
 import "bonsai:core/input"
 import "bonsai:core/logger"
@@ -117,14 +118,14 @@ frame :: proc "c" () {
 	input.updateGamepads()
 
 	render.coreRenderFrameStart()
-	debug.uiStart()
+	ui.start()
 
 	game_app.update()
 	game_app.draw()
 
-	debug.uiDraw()
-	debug.uiEnd()
-	debug.flushGizmos()
+	ui.draw()
+	ui.end()
+	gizmos.flush()
 	render.coreRenderFrameEnd()
 
 	input.resetInputState(input.getInputState())

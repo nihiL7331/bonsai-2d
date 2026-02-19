@@ -1,4 +1,4 @@
-package debug
+package ui
 
 import "bonsai:core/gmath"
 import "bonsai:generated"
@@ -11,7 +11,7 @@ when !ODIN_DEBUG {
 
 // @ref
 // Configuration struct defining the visual appearence of the UI.
-UiStyle :: struct {
+Style :: struct {
 	backgroundColor:        gmath.Color,
 	hotColor:               gmath.Color,
 	activeColor:            gmath.Color,
@@ -37,7 +37,7 @@ UiStyle :: struct {
 
 // @ref
 // Default style configuration (Dark theme).
-DEFAULT_STYLE :: UiStyle {
+DEFAULT_STYLE :: Style {
 	backgroundColor        = gmath.Color{0.2, 0.2, 0.2, 0.9},
 	hotColor               = gmath.Color{0.6, 0.6, 0.6, 1.0},
 	activeColor            = gmath.Color{0.4, 0.4, 0.4, 1.0},
@@ -63,8 +63,8 @@ DEFAULT_STYLE :: UiStyle {
 
 // @ref
 // Union of all possible drawing commands recorded by the UI system.
-// These are executed in [`uiDraw`](#uidraw) at the end of the frame.
-UiCommand :: union {
+// These are executed in [`draw`](#draw) at the end of the frame.
+Command :: union {
 	LineCommand,
 	RectangleCommand,
 	TriangleCommand,
@@ -114,7 +114,7 @@ WindowState :: struct {
 	isCollapsed:      bool,
 	scrollY:          f32,
 	contentHeight:    f32,
-	commands:         [dynamic]UiCommand,
+	commands:         [dynamic]Command,
 	zIndex:           f32,
 	lastFrameSeen:    u64,
 	scissorRectangle: gmath.Rectangle,
@@ -125,7 +125,7 @@ when ODIN_DEBUG {
 	// Internal global state for the Immediate mode UI.
 	// Stores layout cursors, input state, and widget persistence maps.
 	@(private = "file")
-	_UiState :: struct {
+	_State :: struct {
 		hotId:               u64, // widget currently hovered
 		activeId:            u64, // widget currently clicked
 		cursor:              gmath.Vector2, // current layout position
@@ -156,11 +156,11 @@ when ODIN_DEBUG {
 		comboWidth:          f32, // width of currently open combo
 		isRecordingPopup:    bool, // true if inside uiBeginCombo
 		popupCursor:         gmath.Vector2, // layout cursor for the popup
-		popupCommands:       [dynamic]UiCommand, // draw list for popup
+		popupCommands:       [dynamic]Command, // draw list for popup
 		mousePosition:       gmath.Vector2, // store it to avoid unneeded matrix inverses
 	}
 
 
 	@(private = "package")
-	_ui: _UiState
+	_ui: _State
 }

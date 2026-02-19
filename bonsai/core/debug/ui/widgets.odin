@@ -1,13 +1,13 @@
-package debug
+package ui
 
 import "bonsai:core/clock"
 import "bonsai:core/gmath"
 import "bonsai:core/input"
 import "bonsai:core/render"
-import "core:reflect"
 
 import "base:intrinsics"
 import "core:fmt"
+import "core:reflect"
 import "core:strings"
 import "core:unicode/utf8"
 
@@ -25,7 +25,7 @@ when !ODIN_DEBUG {
 // @ref
 // Shows a tooltip if the **previous** widget is hovered.
 // Call this immediately after the widget you want to describe.
-uiTooltip :: proc(text: string) {
+tooltip :: proc(text: string) {
 	when ODIN_DEBUG {
 		isHovered := gmath.rectangleContains(_ui.lastWidgetRectangle, _ui.mousePosition)
 		if isHovered && _ui.currentWindowId == _ui.hoveredWindowId {
@@ -37,46 +37,43 @@ uiTooltip :: proc(text: string) {
 // @ref
 // Draws a color picker (preview box + RGB(A) sliders).
 // Returns `true` if the color changed.
-uiColorPicker :: proc(label: string, color: ^gmath.Color, alpha: bool = true) -> bool {
+colorPicker :: proc(label: string, color: ^gmath.Color, alpha: bool = true) -> bool {
 	when ODIN_DEBUG {
 		changed := false
 
-		if uiHeader(label) {
-			uiIndent()
+		if header(label) {
+			indent()
 
-			previewRectangle := _uiAdvance(
-				DEFAULT_STYLE.colorPreviewWidth,
-				DEFAULT_STYLE.itemHeight,
-			)
+			previewRectangle := _advance(DEFAULT_STYLE.colorPreviewWidth, DEFAULT_STYLE.itemHeight)
 			_pushRectangle(previewRectangle, color^, true)
 			_pushRectangle(previewRectangle, DEFAULT_STYLE.textColor, true, true)
 
 			r := color.r
-			if uiSlider(&r, 0.0, 1.0, "R") {
+			if slider(&r, 0.0, 1.0, "R") {
 				color.r = r
 				changed = true
 			}
 
 			g := color.g
-			if uiSlider(&g, 0.0, 1.0, "G") {
+			if slider(&g, 0.0, 1.0, "G") {
 				color.g = g
 				changed = true
 			}
 
 			b := color.b
-			if uiSlider(&b, 0.0, 1.0, "B") {
+			if slider(&b, 0.0, 1.0, "B") {
 				color.b = b
 				changed = true
 			}
 
 			if alpha {
 				a := color.a
-				if uiSlider(&a, 0.0, 1.0, "A") {
+				if slider(&a, 0.0, 1.0, "A") {
 					color.a = a
 					changed = true
 				}
 			}
-			uiUnindent()
+			unindent()
 		}
 
 		return changed
@@ -88,7 +85,7 @@ uiColorPicker :: proc(label: string, color: ^gmath.Color, alpha: bool = true) ->
 // @ref
 // Draws a simple line plot for a slice of numbers.
 // Useful for FPS counters or physics debugging.
-uiPlot :: proc(
+plot :: proc(
 	label: string,
 	values: []f32,
 	minimumValue: f32 = 0.0,
@@ -96,15 +93,15 @@ uiPlot :: proc(
 	height: f32 = 0.0,
 ) {
 	when ODIN_DEBUG {
-		width := uiGetAvailableWidth()
+		width := getAvailableWidth()
 		actualHeight := height
 		if actualHeight == 0 {
 			actualHeight = DEFAULT_STYLE.plotHeight
 		}
 
-		rectangle := _uiAdvance(width, actualHeight)
+		rectangle := _advance(width, actualHeight)
 
-		if !uiIsRectangleVisible(rectangle) do return
+		if !isRectangleVisible(rectangle) do return
 
 		_pushScissor(gmath.rectangleExpand(rectangle, DEFAULT_STYLE.outlineThickness * 2))
 
@@ -210,7 +207,7 @@ uiPlot :: proc(
 						gmath.Vector2{position.x, rectangle.w},
 						gmath.Color{1.0, 1.0, 1.0, 0.5},
 					)
-					uiTooltip(fmt.tprintf("%.2f", values[i]))
+					tooltip(fmt.tprintf("%.2f", values[i]))
 				}
 
 				if i > 0 {
@@ -256,12 +253,12 @@ uiPlot :: proc(
 
 // @ref
 // Draws a static text label.
-uiLabel :: proc(text: string) {
+label :: proc(text: string) {
 	when ODIN_DEBUG {
 		textSize := render.getTextSize(DEFAULT_STYLE.font, DEFAULT_STYLE.fontSize, text)
-		rectangle := _uiAdvance(textSize.x, max(textSize.y, DEFAULT_STYLE.itemHeight))
+		rectangle := _advance(textSize.x, max(textSize.y, DEFAULT_STYLE.itemHeight))
 
-		if !uiIsRectangleVisible(rectangle) do return
+		if !isRectangleVisible(rectangle) do return
 
 		_pushText(
 			gmath.getRectangleCenter(rectangle),
@@ -274,15 +271,15 @@ uiLabel :: proc(text: string) {
 
 // @ref
 // Starts a tab bar container.
-// Must be followed by [`uiTabItem`](#uitabitem)
-// calls and ended with [`uiEndTabBar`](#uiendtabbar).
-uiBeginTabBar :: proc(idString: string) -> bool {
+// Must be followed by [`tabItem`](#tabitem)
+// calls and ended with [`endTabBar`](#endtabbar).
+beginTabBar :: proc(idString: string) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetId(idString)
+		id := _getId(idString)
 
 		_ui.currentTabBarId = id
 
-		uiBeginRow()
+		beginRow()
 		return true
 	} else {
 		return false
@@ -291,10 +288,10 @@ uiBeginTabBar :: proc(idString: string) -> bool {
 
 // @ref
 // Ends the tab bar container.
-uiEndTabBar :: proc() {
+endTabBar :: proc() {
 	when ODIN_DEBUG {
-		uiEndRow()
-		uiSeparator()
+		endRow()
+		separator()
 
 		_ui.cursor.y -= _ui.tabContentHeight
 		_ui.tabContentHeight = 0
@@ -305,9 +302,9 @@ uiEndTabBar :: proc() {
 // @ref
 // Draws a tab button.
 // Returns `true` if this tab is currently selected.
-uiBeginTabItem :: proc(label: string) -> bool {
+beginTabItem :: proc(label: string) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetId(label)
+		id := _getId(label)
 		barId := _ui.currentTabBarId
 		if barId == 0 do return false
 
@@ -322,9 +319,9 @@ uiBeginTabItem :: proc(label: string) -> bool {
 		width :=
 			render.getTextSize(DEFAULT_STYLE.font, DEFAULT_STYLE.fontSize, label).x +
 			DEFAULT_STYLE.padding * 2
-		rectangle := _uiAdvance(width, DEFAULT_STYLE.itemHeight)
+		rectangle := _advance(width, DEFAULT_STYLE.itemHeight)
 
-		isHovered, isClicked, _ := _uiInteract(rectangle, id)
+		isHovered, isClicked, _ := _interact(rectangle, id)
 
 		if isClicked {
 			_ui.tabBars[barId] = id
@@ -365,8 +362,8 @@ uiBeginTabItem :: proc(label: string) -> bool {
 
 // @ref
 // Ends the current tab item content block.
-// Must be called if [`uiBeginTabItem`](#uibegintabitem) returns true.
-uiEndTabItem :: proc() {
+// Must be called if [`beginTabItem`](#begintabitem) returns true.
+endTabItem :: proc() {
 	when ODIN_DEBUG {
 		contentTop := _ui.tabSavedCursor.y - DEFAULT_STYLE.itemHeight - DEFAULT_STYLE.padding
 		height := contentTop - _ui.cursor.y
@@ -382,15 +379,15 @@ uiEndTabItem :: proc() {
 // Draws a slider.
 // Modifies `value` directly via a pointer.
 // Returns `true` if the value was changed this frame.
-// Function overload for [`uiSliderFloat`](#uisliderfloat)/[`uiSliderInteger`](#uisliderinteger)
-uiSlider :: proc {
-	uiSliderFloat,
-	uiSliderInteger,
+// Function overload for [`sliderFloat`](#sliderfloat)/[`sliderInteger`](#sliderinteger)
+slider :: proc {
+	sliderFloat,
+	sliderInteger,
 }
 
 // @ref
 // Draws a float slider.
-uiSliderFloat :: proc(
+sliderFloat :: proc(
 	value: ^f32,
 	minimumValue: f32,
 	maximumValue: f32,
@@ -399,7 +396,7 @@ uiSliderFloat :: proc(
 	step: f32 = 0.0,
 ) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetIdPointer(label, rawptr(value))
+		id := _getIdPointer(label, rawptr(value))
 
 		totalWidth := width
 		textSize := gmath.Vector2{0, 0}
@@ -409,9 +406,9 @@ uiSliderFloat :: proc(
 			totalWidth += DEFAULT_STYLE.padding + textSize.x
 		}
 
-		rectangle := _uiAdvance(totalWidth, DEFAULT_STYLE.itemHeight)
+		rectangle := _advance(totalWidth, DEFAULT_STYLE.itemHeight)
 
-		if !uiIsRectangleVisible(rectangle) do return false
+		if !isRectangleVisible(rectangle) do return false
 
 		sliderRectangle := gmath.Rectangle {
 			rectangle.x,
@@ -420,7 +417,7 @@ uiSliderFloat :: proc(
 			rectangle.w,
 		}
 
-		_, _, isActive := _uiInteract(sliderRectangle, id)
+		_, _, isActive := _interact(sliderRectangle, id)
 		valueChanged := false
 
 		if isActive {
@@ -516,7 +513,7 @@ uiSliderFloat :: proc(
 
 // @ref
 // Draws a integer slider.
-uiSliderInteger :: proc(
+sliderInteger :: proc(
 	value: ^int,
 	minimumValue: int,
 	maximumValue: int,
@@ -529,7 +526,7 @@ uiSliderInteger :: proc(
 	floatMaximum := f32(maximumValue)
 	floatStep := f32(step)
 
-	if uiSlider(&floatValue, floatMinimum, floatMaximum, label, width, floatStep) {
+	if slider(&floatValue, floatMinimum, floatMaximum, label, width, floatStep) {
 		value^ = int(floatValue)
 		return true
 	}
@@ -540,14 +537,14 @@ uiSliderInteger :: proc(
 // @ref
 // Draws a clickable button.
 // Returns `true` if clicked.
-uiButton :: proc(text: string, width: f32 = 60.0) -> bool {
+button :: proc(text: string, width: f32 = 60.0) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetId(text)
-		rectangle := _uiAdvance(width, DEFAULT_STYLE.itemHeight)
+		id := _getId(text)
+		rectangle := _advance(width, DEFAULT_STYLE.itemHeight)
 
-		if !uiIsRectangleVisible(rectangle) do return false
+		if !isRectangleVisible(rectangle) do return false
 
-		isHovered, isClicked, isActive := _uiInteract(rectangle, id)
+		isHovered, isClicked, isActive := _interact(rectangle, id)
 
 		color := DEFAULT_STYLE.buttonColor
 		if isHovered {
@@ -577,9 +574,9 @@ uiButton :: proc(text: string, width: f32 = 60.0) -> bool {
 // Manages a temporary builder internally.
 // Updates `text` only when **enter** is pressed or focus is lost.
 // Returns `true` if the user pressed **enter**.
-uiInputText :: proc(text: ^string, label: string = "", width: f32 = 60.0) -> bool {
+inputText :: proc(text: ^string, label: string = "", width: f32 = 60.0) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetIdPointer(label, text)
+		id := _getIdPointer(label, text)
 		committed := false
 
 		if _ui.activeId == id {
@@ -589,7 +586,7 @@ uiInputText :: proc(text: ^string, label: string = "", width: f32 = 60.0) -> boo
 				return false
 			}
 
-			if uiInputTextBuilder(label, builder, width, idOverride = id) {
+			if inputTextBuilder(label, builder, width, idOverride = id) {
 				committed = true
 			}
 
@@ -602,7 +599,7 @@ uiInputText :: proc(text: ^string, label: string = "", width: f32 = 60.0) -> boo
 			temporaryBuilder := strings.builder_make(context.temp_allocator)
 			strings.write_string(&temporaryBuilder, text^)
 
-			uiInputTextBuilder(label, &temporaryBuilder, width, idOverride = id)
+			inputTextBuilder(label, &temporaryBuilder, width, idOverride = id)
 
 			if _ui.activeId == id {
 				newBuilder := strings.builder_make()
@@ -619,8 +616,8 @@ uiInputText :: proc(text: ^string, label: string = "", width: f32 = 60.0) -> boo
 
 // @ref
 // Low-level builder for text input.
-// Handles the core interaction and rendering logic for [`uiInputText`](#uiinputtext)
-uiInputTextBuilder :: proc(
+// Handles the core interaction and rendering logic for [`inputText`](#inputtext)
+inputTextBuilder :: proc(
 	label: string,
 	builder: ^strings.Builder,
 	width: f32 = 60.0,
@@ -629,7 +626,7 @@ uiInputTextBuilder :: proc(
 	when ODIN_DEBUG {
 		id := idOverride
 		if id == 0 {
-			id = _uiGetIdPointer(label, builder)
+			id = _getIdPointer(label, builder)
 		}
 
 		labelSize := gmath.Vector2{0, 0}
@@ -641,9 +638,9 @@ uiInputTextBuilder :: proc(
 		if len(label) > 0 {
 			totalWidth += DEFAULT_STYLE.padding + labelSize.x
 		}
-		rectangle := _uiAdvance(totalWidth, DEFAULT_STYLE.itemHeight)
+		rectangle := _advance(totalWidth, DEFAULT_STYLE.itemHeight)
 
-		if !uiIsRectangleVisible(rectangle) do return false
+		if !isRectangleVisible(rectangle) do return false
 
 		boxRectangle := gmath.Rectangle{rectangle.x, rectangle.y, rectangle.x + width, rectangle.w}
 
@@ -760,9 +757,9 @@ uiInputTextBuilder :: proc(
 // Draws a checkbox.
 // Modifies `value` directly via a pointer.
 // Returns `true` if the value was toggled this frame.
-uiCheckbox :: proc(label: string, value: ^bool) -> bool {
+checkbox :: proc(label: string, value: ^bool) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetIdPointer(label, rawptr(value))
+		id := _getIdPointer(label, rawptr(value))
 
 		boxSize := DEFAULT_STYLE.itemHeight
 		textPadding := DEFAULT_STYLE.padding
@@ -770,11 +767,11 @@ uiCheckbox :: proc(label: string, value: ^bool) -> bool {
 		textSize := render.getTextSize(DEFAULT_STYLE.font, DEFAULT_STYLE.fontSize, label)
 		totalWidth := boxSize + textPadding + textSize.x
 
-		rectangle := _uiAdvance(totalWidth, DEFAULT_STYLE.itemHeight)
+		rectangle := _advance(totalWidth, DEFAULT_STYLE.itemHeight)
 
-		if !uiIsRectangleVisible(rectangle) do return false
+		if !isRectangleVisible(rectangle) do return false
 
-		_, isClicked, _ := _uiInteract(rectangle, id)
+		_, isClicked, _ := _interact(rectangle, id)
 
 		if isClicked {
 			value^ = !value^
@@ -815,15 +812,15 @@ uiCheckbox :: proc(label: string, value: ^bool) -> bool {
 // Starts a dropdown menu (combo box).
 // - `preview`: The text to display on the closed button.
 // Returns `true` if the dropdown is open and items should be rendered.
-// **Must** be ended with [`uiEndCombo`](#uiendcombo).
-uiBeginCombo :: proc(label: string, preview: string, width: f32 = 50.0) -> bool {
+// **Must** be ended with [`endCombo`](#endcombo).
+beginCombo :: proc(label: string, preview: string, width: f32 = 50.0) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetId(label)
+		id := _getId(label)
 
 		labelSize := render.getTextSize(DEFAULT_STYLE.font, DEFAULT_STYLE.fontSize, label)
 		totalWidth := width + DEFAULT_STYLE.padding + labelSize.x
 
-		rectangle := _uiAdvance(totalWidth, DEFAULT_STYLE.itemHeight)
+		rectangle := _advance(totalWidth, DEFAULT_STYLE.itemHeight)
 		buttonRectangle := gmath.Rectangle {
 			rectangle.x,
 			rectangle.y,
@@ -831,7 +828,7 @@ uiBeginCombo :: proc(label: string, preview: string, width: f32 = 50.0) -> bool 
 			rectangle.w,
 		}
 
-		isHovered, isClicked, _ := _uiInteract(buttonRectangle, id)
+		isHovered, isClicked, _ := _interact(buttonRectangle, id)
 
 		if isClicked {
 			if _ui.openComboId == id {
@@ -902,8 +899,8 @@ uiBeginCombo :: proc(label: string, preview: string, width: f32 = 50.0) -> bool 
 
 // @ref
 // Ends the dropdown menu block.
-// Must be called if [`uiBeginCombo`](#uibegincombo) returns `true`.
-uiEndCombo :: proc() {
+// Must be called if [`beginCombo`](#begincombo) returns `true`.
+endCombo :: proc() {
 	when ODIN_DEBUG {
 		_ui.isRecordingPopup = false
 
@@ -916,9 +913,9 @@ uiEndCombo :: proc() {
 // @ref
 // Draws a selectable item inside a dropdown menu.
 // Returns `true` if clicked.
-uiSelectable :: proc(text: string, selected: bool) -> bool {
+selectable :: proc(text: string, selected: bool) -> bool {
 	when ODIN_DEBUG {
-		rectangle := _uiAdvance(_ui.comboWidth, DEFAULT_STYLE.itemHeight)
+		rectangle := _advance(_ui.comboWidth, DEFAULT_STYLE.itemHeight)
 
 		isHovered := gmath.rectangleContains(rectangle, _ui.mousePosition)
 
@@ -955,7 +952,7 @@ uiSelectable :: proc(text: string, selected: bool) -> bool {
 // - `currentItemIndex`: Pointer to the index of the selected item
 // - `items`: Slice of strings to display.
 // Returns `true` if the selection changed.
-uiComboString :: proc(
+comboString :: proc(
 	label: string,
 	currentItemIndex: ^int,
 	items: []string,
@@ -975,14 +972,14 @@ uiComboString :: proc(
 
 		preview := items[currentItemIndex^]
 
-		if uiBeginCombo(label, preview, width) {
+		if beginCombo(label, preview, width) {
 			for item, i in items {
-				if uiSelectable(item, i == currentItemIndex^) {
+				if selectable(item, i == currentItemIndex^) {
 					currentItemIndex^ = i
 					changed = true
 				}
 			}
-			uiEndCombo()
+			endCombo()
 		}
 
 		return changed
@@ -995,7 +992,7 @@ uiComboString :: proc(
 // Draws a combo box for any `enum`.
 // Automatically extracts enum names.
 // - `value`: Pointer to the enum variable.
-uiComboEnum :: proc(
+comboEnum :: proc(
 	label: string,
 	value: ^$T,
 	width: f32 = 50.0,
@@ -1032,9 +1029,9 @@ uiComboEnum :: proc(
 
 		preview := enumInfo.names[currentIndex]
 
-		if uiBeginCombo(label, preview, width) {
+		if beginCombo(label, preview, width) {
 			for name, i in enumInfo.names {
-				if uiSelectable(name, i == currentIndex) {
+				if selectable(name, i == currentIndex) {
 					newValue := enumInfo.values[i]
 
 					switch size_of(T) {
@@ -1052,7 +1049,7 @@ uiComboEnum :: proc(
 				}
 			}
 
-			uiEndCombo()
+			endCombo()
 		}
 
 		return changed
@@ -1064,7 +1061,7 @@ uiComboEnum :: proc(
 // internal helper to handle standard widget interaction.
 // returns the state flags for the widget.
 @(private = "file")
-_uiInteract :: proc(
+_interact :: proc(
 	rectangle: gmath.Rectangle,
 	id: u64,
 ) -> (

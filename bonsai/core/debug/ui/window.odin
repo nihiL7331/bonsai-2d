@@ -1,4 +1,4 @@
-package debug
+package ui
 
 import "bonsai:core/clock"
 import "bonsai:core/gmath"
@@ -36,9 +36,9 @@ WindowGeometry :: struct {
 // button is drawn. If clicked, `isOpen^` becomes `false`
 // and the window stops rendering.
 // :::caution
-// You must call `uiEndWindow()` after your widgets.
+// You must call [`endWindow()`](#endwindow) after your widgets.
 // :::
-uiWindow :: proc(
+window :: proc(
 	title: string,
 	rectangle: gmath.Rectangle,
 	isOpen: ^bool = nil,
@@ -47,10 +47,10 @@ uiWindow :: proc(
 	when ODIN_DEBUG {
 		if isOpen != nil && !isOpen^ do return false
 
-		id, state := _uiWindowInitializeState(title, rectangle, idSuffix)
-		closeId := _uiGetId(fmt.tprintf("##%sClose", title))
-		collapseId := _uiGetId(fmt.tprintf("##%sCollapse", title))
-		resizeId := _uiGetId(fmt.tprintf("##%sResize", title))
+		id, state := _windowInitializeState(title, rectangle, idSuffix)
+		closeId := _getId(fmt.tprintf("##%sClose", title))
+		collapseId := _getId(fmt.tprintf("##%sCollapse", title))
+		resizeId := _getId(fmt.tprintf("##%sResize", title))
 
 		MIN_HEIGHT := DEFAULT_STYLE.titleHeight + (DEFAULT_STYLE.padding * 2)
 		MIN_WIDTH :: 25.0
@@ -61,25 +61,17 @@ uiWindow :: proc(
 			state.size.y = MIN_HEIGHT
 		}
 
-		geometry := _uiWindowCalculateGeometry(title, state, isOpen != nil)
+		geometry := _windowCalculateGeometry(title, state, isOpen != nil)
 
-		if _uiWindowHandleInput(
-			id,
-			closeId,
-			collapseId,
-			resizeId,
-			state,
-			geometry,
-			isOpen != nil,
-		) {
+		if _windowHandleInput(id, closeId, collapseId, resizeId, state, geometry, isOpen != nil) {
 			isOpen^ = false
 			return false
 		}
 
-		renderGeometry := _uiWindowCalculateGeometry(title, state, isOpen != nil)
+		renderGeometry := _windowCalculateGeometry(title, state, isOpen != nil)
 
 		_ui.currentWindowId = id
-		_uiWindowRender(
+		_windowRender(
 			id,
 			closeId,
 			collapseId,
@@ -91,7 +83,7 @@ uiWindow :: proc(
 		)
 
 		if !state.isCollapsed {
-			_uiWindowSetupLayout(id, state, renderGeometry)
+			_windowSetupLayout(id, state, renderGeometry)
 			return true
 		}
 
@@ -105,8 +97,8 @@ uiWindow :: proc(
 // @ref
 // Ends the current window block.
 // Calculates content height, draws scrollbar, and cleans up window state.
-// **Must** be called if [`uiWindow`](#uiwindow) returns `true`.
-uiEndWindow :: proc() {
+// **Must** be called if [`window`](#window) returns `true`.
+endWindow :: proc() {
 	when ODIN_DEBUG {
 		if _ui.currentWindowId != 0 {
 			state := &_ui.windows[_ui.currentWindowId]
@@ -145,7 +137,7 @@ uiEndWindow :: proc() {
 					handleY + handleHeight,
 				}
 
-				barId := _uiGetId("##Scrollbar")
+				barId := _getId("##Scrollbar")
 
 				isBarHovered := gmath.rectangleContains(barRectangle, _ui.mousePosition)
 				isHandleHovered := gmath.rectangleContains(handleRectangle, _ui.mousePosition)
@@ -188,16 +180,16 @@ uiEndWindow :: proc() {
 // Returns `true` if open.
 // :::note[Usage]
 // ```Odin
-// if debug.uiHeader("Physics") {
-//   debug.uiSlider(...)
+// if ui.header("Physics") {
+//   ui.slider(...)
 // }
 // ```
 // :::
-uiHeader :: proc(text: string, width: f32 = 60.0) -> bool {
+header :: proc(text: string, width: f32 = 60.0) -> bool {
 	when ODIN_DEBUG {
-		id := _uiGetId(text)
+		id := _getId(text)
 		isOpen := _ui.headers[id]
-		rectangle := _uiAdvance(width, DEFAULT_STYLE.itemHeight)
+		rectangle := _advance(width, DEFAULT_STYLE.itemHeight)
 
 		isHovered :=
 			gmath.rectangleContains(rectangle, _ui.mousePosition) &&
@@ -256,7 +248,7 @@ uiHeader :: proc(text: string, width: f32 = 60.0) -> bool {
 //
 
 @(private = "file")
-_uiWindowInitializeState :: proc(
+_windowInitializeState :: proc(
 	title: string,
 	rectangle: gmath.Rectangle,
 	idSuffix: string,
@@ -269,7 +261,7 @@ _uiWindowInitializeState :: proc(
 		if len(idSuffix) > 0 {
 			fullIdString = fmt.tprintf("%s%s", title, idSuffix)
 		}
-		id := _uiGetId(fullIdString)
+		id := _getId(fullIdString)
 
 		if id not_in _ui.windows {
 			_ui.windows[id] = WindowState {
@@ -282,7 +274,7 @@ _uiWindowInitializeState :: proc(
 		state := &_ui.windows[id]
 		state.lastFrameSeen = clock.getTicks()
 
-		state.commands = make([dynamic]UiCommand, 0, 64, context.temp_allocator)
+		state.commands = make([dynamic]Command, 0, 64, context.temp_allocator)
 
 		return id, state
 	} else {
@@ -291,7 +283,7 @@ _uiWindowInitializeState :: proc(
 }
 
 @(private = "file")
-_uiWindowCalculateGeometry :: proc(
+_windowCalculateGeometry :: proc(
 	title: string,
 	state: ^WindowState,
 	hasCloseButton: bool,
@@ -370,7 +362,7 @@ _uiWindowCalculateGeometry :: proc(
 }
 
 @(private = "file")
-_uiWindowHandleInput :: proc(
+_windowHandleInput :: proc(
 	id: u64,
 	closeId: u64,
 	collapseId: u64,
@@ -501,7 +493,7 @@ _uiWindowHandleInput :: proc(
 }
 
 @(private = "file")
-_uiWindowRender :: proc(
+_windowRender :: proc(
 	id: u64,
 	closeId: u64,
 	collapseId: u64,
@@ -603,7 +595,7 @@ _uiWindowRender :: proc(
 }
 
 @(private = "file")
-_uiWindowSetupLayout :: proc(id: u64, state: ^WindowState, geometry: WindowGeometry) {
+_windowSetupLayout :: proc(id: u64, state: ^WindowState, geometry: WindowGeometry) {
 	when ODIN_DEBUG {
 		_ui.currentWindowId = id
 

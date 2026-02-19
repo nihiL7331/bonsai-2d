@@ -1,14 +1,15 @@
-package debug
+package gizmos
 
 import "core:strings"
-
-_ :: strings
 
 import "bonsai:core/gmath"
 import "bonsai:core/gmath/colors"
 import "bonsai:core/render"
 
-_ :: render
+when !ODIN_DEBUG {
+	_ :: strings
+	_ :: render
+}
 
 DebugSpace :: enum {
 	World,
@@ -237,9 +238,10 @@ drawGrid :: proc(
 	}
 }
 
-// flushes all queued gizmos to the renderer
-// called at the end of the frame internally in main.odin
-flushGizmos :: proc() {
+// @ref
+// Flushes all queued gizmos to the renderer.
+// Called at the end of the frame internally in main.odin.
+flush :: proc() {
 	when ODIN_DEBUG {
 		if len(_worldQueue) > 0 {
 			render.setWorldSpace()

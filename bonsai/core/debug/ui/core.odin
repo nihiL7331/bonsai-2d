@@ -1,4 +1,4 @@
-package debug
+package ui
 
 import "bonsai:core/clock"
 import "bonsai:core/gmath"
@@ -23,7 +23,7 @@ when !ODIN_DEBUG {
 // Initializes the UI state for the new frame.
 // Resets per-frame counters, clears command buffers, and performs window hit-testing.
 // Called internally at the start of each frame.
-uiStart :: proc() {
+start :: proc() {
 	when ODIN_DEBUG {
 		_ui.cursor = render.getViewportPivot(.topLeft)
 		_ui.startX = 0
@@ -60,7 +60,7 @@ uiStart :: proc() {
 		clear(&_ui.idStack)
 
 		if _ui.popupCommands == nil {
-			_ui.popupCommands = make([dynamic]UiCommand)
+			_ui.popupCommands = make([dynamic]Command)
 		}
 		clear(&_ui.popupCommands)
 
@@ -108,7 +108,7 @@ uiStart :: proc() {
 // Executes all deferred UI commands.
 // Sorts windows by Z-index, renders them back-to-front, then renders popups and tooltips on top.
 // Called internally at the end of the frame.
-uiDraw :: proc() {
+draw :: proc() {
 	when ODIN_DEBUG {
 		windows := make([dynamic]WindowState, 0, len(_ui.windows), context.temp_allocator)
 
@@ -129,7 +129,7 @@ uiDraw :: proc() {
 
 			for cmd in window.commands {
 				visualZ += 0.1
-				_uiExecuteCommand(cmd, visualZ)
+				_executeCommand(cmd, visualZ)
 			}
 		}
 
@@ -138,11 +138,11 @@ uiDraw :: proc() {
 
 			for cmd in _ui.popupCommands {
 				popupZ += 0.1
-				_uiExecuteCommand(cmd, visualZ)
+				_executeCommand(cmd, visualZ)
 			}
 		}
 
-		_uiDrawTooltip()
+		_drawTooltip()
 		_ui.tooltipText = ""
 	}
 }
@@ -151,7 +151,7 @@ uiDraw :: proc() {
 // Finalizes the UI frame state.
 // Commits focus changes and resets active widget state on mouse release.
 // Called internally at the end of each frame.
-uiEnd :: proc() {
+end :: proc() {
 	when ODIN_DEBUG {
 		if input.isKeyPressed(.LEFT_MOUSE) && _ui.nextFocusedWindowId != 0 {
 			_ui.focusedWindowId = _ui.nextFocusedWindowId
@@ -164,9 +164,9 @@ uiEnd :: proc() {
 }
 
 @(private = "package")
-_uiGetIdPointer :: proc(text: string, pointer: rawptr) -> u64 {
+_getIdPointer :: proc(text: string, pointer: rawptr) -> u64 {
 	when ODIN_DEBUG {
-		seed := _uiGetCurrentSeed()
+		seed := _getCurrentSeed()
 		textHash := hash.fnv64a(transmute([]byte)text, seed = seed)
 		pointerInt := uintptr(pointer)
 		pointerBytes := transmute([size_of(uintptr)]byte)pointerInt
@@ -177,9 +177,9 @@ _uiGetIdPointer :: proc(text: string, pointer: rawptr) -> u64 {
 }
 
 @(private = "package")
-_uiGetId :: proc(text: string) -> u64 {
+_getId :: proc(text: string) -> u64 {
 	when ODIN_DEBUG {
-		seed := _uiGetCurrentSeed()
+		seed := _getCurrentSeed()
 
 		return hash.fnv64a(transmute([]byte)text, seed = seed)
 	} else {
@@ -189,9 +189,9 @@ _uiGetId :: proc(text: string) -> u64 {
 
 // @ref
 // Pushes an integer identifier onto the ID stack.
-uiPushIdInt :: proc(value: int) {
+pushIdInt :: proc(value: int) {
 	when ODIN_DEBUG {
-		seed := _uiGetCurrentSeed()
+		seed := _getCurrentSeed()
 
 		valueBytes := transmute([size_of(int)]byte)value
 		newId := hash.fnv64a(valueBytes[:], seed = seed)
@@ -202,9 +202,9 @@ uiPushIdInt :: proc(value: int) {
 
 // @ref
 // Pushes a string identifier onto the ID stack.
-uiPushIdString :: proc(value: string) {
+pushIdString :: proc(value: string) {
 	when ODIN_DEBUG {
-		seed := _uiGetCurrentSeed()
+		seed := _getCurrentSeed()
 		newId := hash.fnv64a(transmute([]byte)value, seed = seed)
 		append(&_ui.idStack, newId)
 	}
@@ -212,9 +212,9 @@ uiPushIdString :: proc(value: string) {
 
 // @ref
 // Pushes a pointer identifier onto the ID stack.
-uiPushIdPointer :: proc(pointer: rawptr) {
+pushIdPointer :: proc(pointer: rawptr) {
 	when ODIN_DEBUG {
-		seed := _uiGetCurrentSeed()
+		seed := _getCurrentSeed()
 
 		pointerInt := uintptr(pointer)
 		pointerBytes := transmute([size_of(uintptr)]byte)pointerInt
@@ -226,7 +226,7 @@ uiPushIdPointer :: proc(pointer: rawptr) {
 
 // @ref
 // Pops the last identifier from the stack.
-uiPopId :: proc() {
+popId :: proc() {
 	when ODIN_DEBUG {
 		if len(_ui.idStack) > 0 {
 			pop(&_ui.idStack)
@@ -237,10 +237,10 @@ uiPopId :: proc() {
 // @ref
 // Generic overload for functions used to pushing variable based
 // identifiers onto the ID stack.
-uiPushId :: proc {
-	uiPushIdInt,
-	uiPushIdString,
-	uiPushIdPointer,
+pushId :: proc {
+	pushIdInt,
+	pushIdString,
+	pushIdPointer,
 }
 
 //
@@ -248,7 +248,7 @@ uiPushId :: proc {
 //
 
 @(private = "file")
-_uiDrawTooltip :: proc() {
+_drawTooltip :: proc() {
 	when ODIN_DEBUG {
 		if len(_ui.tooltipText) == 0 do return
 
@@ -428,7 +428,7 @@ _popScissor :: proc() {
 }
 
 @(private = "file")
-_uiGetCurrentSeed :: proc() -> u64 {
+_getCurrentSeed :: proc() -> u64 {
 	when ODIN_DEBUG {
 		if len(_ui.idStack) > 0 {
 			return _ui.idStack[len(_ui.idStack) - 1]
@@ -446,7 +446,7 @@ _uiGetCurrentSeed :: proc() -> u64 {
 }
 
 @(private = "file")
-_uiExecuteCommand :: proc(cmd: UiCommand, zIndex: f32) {
+_executeCommand :: proc(cmd: Command, zIndex: f32) {
 	when ODIN_DEBUG {
 		switch command in cmd {
 		case LineCommand:
