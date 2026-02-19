@@ -1,5 +1,30 @@
 package ui
 
+// @overview
+// The `ui` package provides a robust Immediate Mode GUI
+// for in-engine tooling, editors, and debug overlays.
+//
+// Features:
+// - **Comprehensive Widgets:** Includes interactable controls like [`button`](#button),
+//   [`checkbox`](#checkbox), [`slider`](#slider), [`inputText`](#inputtext),
+//   [`colorPicker`](#colorpicker), and debug tools like [`plot`](#plot).
+// - **Layouts:** Organize your interfaces using draggable
+//   [`window`](#window)s, collapsible [`header`](#header)s, [`beginTabBar`](#beginttabbar)
+//   systems, and horizontal [`beginRow`](#beginrow)s.
+// - **State Tracking:** Utilizes an internal [`_State`](#_state) tracker and an ID stack
+//   ([`pushId`](#pushid) / [`popId`](#popid)) to safely handle overlapping windows,
+//   focus states, and dynamically generated UI elements inside loops.
+// - **Styling:** Easily tweak colors, sizing, fonts, and padding via
+//   the [`Style`](#style) struct and the [`DEFAULT_STYLE`](#default_style) configuration.
+//
+// The overall lifecycle ([`start`](#start), [`draw`](#draw), and [`end`](#end))
+// is managed automatically by the engine's main loop.
+// During the frame, calling a widget function (like [`button`](#button))
+// will immediately return `true` if interacted with, allowing instant logic execution.
+// Visually, the UI commands are queued into a `Command` buffer and deferred until [`draw`](#draw)
+// is called. This deferred rendering guarantees proper Z-indexing, clipping (scissoring),
+// and overlapping of popup menus and tooltips.
+
 import "bonsai:core/clock"
 import "bonsai:core/gmath"
 import "bonsai:core/input"

@@ -1,5 +1,22 @@
 package gizmos
 
+// @overview
+// The `gizmos` package provides a suite of immediate-mode visual debugging tools
+// designed to help easily visualize game state, math, and spatial logic.
+//
+// Features:
+// - **Zero Overhead in Release:** Gizmo rendering commands are strictly limited to
+//   **debug** builds.
+// - **Primitive Visualization:** Quickly draw points, lines, arrows, rectangles,
+//   and circles (both solid and wireframe) to debug hitboxes, velocity vectors,
+//   raycasts, and triggers.
+// - **Coordinate Spaces:** Supports specifying [`DebugSpace`](#debugspace) to easily decouple
+//   UI-space debugging from World-space debugging.
+//
+// You can call `draw*` functions from anywhere within your game loop.
+// These calls are batched into a queue and automatically dispatched to the
+// renderer when [`flush`](#flush) is called internally at the end of the frame.
+
 import "core:strings"
 
 import "bonsai:core/gmath"
@@ -11,6 +28,8 @@ when !ODIN_DEBUG {
 	_ :: render
 }
 
+// @ref
+// Space in which the debug visual should be rendered.
 DebugSpace :: enum {
 	World,
 	Screen,
