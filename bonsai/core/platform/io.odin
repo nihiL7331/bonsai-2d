@@ -29,8 +29,8 @@ package platform
 
 IS_WEB :: ODIN_ARCH == .wasm64p32 || ODIN_ARCH == .wasm32
 
-import "desktop"
-import "web"
+import "bonsai:core/platform/desktop"
+import "bonsai:core/platform/web"
 
 // ghost use of packages, to avoid compiler errors
 _ :: desktop
