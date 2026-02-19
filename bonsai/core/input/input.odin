@@ -274,6 +274,10 @@ init :: proc() {
 	initGamepad()
 
 	_players[0].useKeyboard = true
+	bindAxis(.MoveY, .W, 1.0)
+	bindAxis(.MoveY, .S, -1.0)
+	bindAxis(.MoveX, .A, -1.0)
+	bindAxis(.MoveX, .D, 1.0)
 }
 
 // @ref
@@ -432,7 +436,7 @@ bindAction :: proc(action: Action, source: BindingSource, playerIndex: uint = 0)
 // @ref
 // Binds a physical input to an [`Axis`](#axis) with a specific scale.
 // Default `playerIndex` is **0**.
-// :::note(Example)
+// :::note[Example]
 // ```Odin
 // bindAxis(.MoveY, .W, 1.0)
 // bindAxis(.MoveY, .S, -1.0)
