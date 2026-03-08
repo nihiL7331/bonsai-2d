@@ -100,20 +100,65 @@ Feel free to edit it to your likings.-->
 
           const buffer = event.data;
           const dataView = new DataView(buffer);
+          const packetType = dataView.getUint8(0); // 0 if sprite, 1 if font
 
-          const jsonLength = dataView.getUint32(0, true);
+          if (packetType === 0) {
+            // [0 - 0] - packetType
+            // [1 - 4] - binLength
+            // [5 - binLength+5] - binBytes
+            // [binLength+6 - end] - pngBytes
+            const binLength = dataView.getUint32(1, true);
+            const binBytes = new Uint8Array(buffer, 5, binLength);
+            const pngBytes = new Uint8Array(buffer, 5 + binLength);
 
-          const jsonBytes = new Uint8Array(buffer, 4, jsonLength);
-          const pngBytes = new Uint8Array(buffer, 4 + jsonLength);
+            const binPointer = wasmExports.hotReloadAlloc(binBytes.length);
+            const pngPointer = wasmExports.hotReloadAlloc(pngBytes.length);
 
-          const jsonPointer = wasmExports.hotReloadAlloc(jsonBytes.length);
-          const pngPointer = wasmExports.hotReloadAlloc(pngBytes.length);
+            const wasmMemory = new Uint8Array(wasmExports.memory.buffer);
+            wasmMemory.set(binBytes, binPointer);
+            wasmMemory.set(pngBytes, pngPointer);
 
-          const wasmMemory = new Uint8Array(wasmExports.memory.buffer);
-          wasmMemory.set(jsonBytes, jsonPointer);
-          wasmMemory.set(pngBytes, pngPointer);
+            wasmExports.hotReloadPushSpriteData(
+              binPointer, binBytes.length, 
+              pngPointer, pngBytes.length
+            );
+          } else if (packetType === 1) {
+            // [0 - 0] - packetType
+            // [1 - 1] - nameLength
+            // [2 - nameLength+2] - nameBytes
+            // [nameLength+2 - nameLength+5] - binLength
+            // [nameLength+6 - nameLength+binLength+6] - binBytes
+            // [nameLength+binLength+7 - end] - pngBytes
+            const nameLength = dataView.getUint8(1);
 
-          wasmExports.hotReloadPushData(jsonPointer, jsonBytes.length, pngPointer, pngBytes.length);
+            const nameBytes = new Uint8Array(buffer, 2, nameLength);
+            const fontName = new TextDecoder().decode(nameBytes);
+            console.log(`Hot-reloading font: ${fontName}`);
+
+            const binLengthOffset = nameLength + 2;
+            const binLength = dataView.getUint32(binLengthOffset, true);
+
+            const binBytesOffset = binLengthOffset + 4;
+            const binBytes = new Uint8Array(buffer, binBytesOffset, binLength);
+
+            const pngBytesOffset = binBytesOffset + binLength;
+            const pngBytes = new Uint8Array(buffer, pngBytesOffset);
+
+            const namePointer = wasmExports.hotReloadAlloc(nameBytes.length);
+            const binPointer = wasmExports.hotReloadAlloc(binBytes.length);
+            const pngPointer = wasmExports.hotReloadAlloc(pngBytes.length);
+
+            const wasmMemory = new Uint8Array(wasmExports.memory.buffer);
+            wasmMemory.set(nameBytes, namePointer);
+            wasmMemory.set(binBytes, binPointer);
+            wasmMemory.set(pngBytes, pngPointer);
+
+            wasmExports.hotReloadPushFontData(
+              namePointer, nameBytes.length,
+              binPointer, binBytes.length,
+              pngPointer, pngBytes.length,
+            );
+          }
         };
 
         ws.onclose = () => {

@@ -699,10 +699,10 @@ inputTextBuilder :: proc(
 		textString := strings.to_string(builder^)
 
 		scissorRectangle := gmath.Rectangle {
-			rectangle.x + 2,
-			rectangle.y,
-			rectangle.z - 2,
-			rectangle.w,
+			boxRectangle.x + 2,
+			boxRectangle.y,
+			boxRectangle.z - 2,
+			boxRectangle.w,
 		}
 
 		_pushScissor(scissorRectangle)

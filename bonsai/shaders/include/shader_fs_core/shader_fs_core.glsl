@@ -24,9 +24,13 @@ layout(binding=0) uniform texture2D uTex;
 layout(binding=1) uniform texture2D uFontTex;
 
 // @ref
-// **Binding 0 (Sampler):** The default sampler state.
+// **Binding 0 (Sampler):** The default, nearest sampler.
 // Shared by both texture atlases.
-layout(binding=0) uniform sampler uDefaultSampler;
+layout(binding=0) uniform sampler uNearestSampler;
+
+// @ref
+// **Binding 1 (Sampler):** The optional, linear sampler.
+layout(binding=1) uniform sampler uLinearSampler;
 
 // @ref
 // **Input:** Interpolated world space position of the fragment.
@@ -71,6 +75,12 @@ in vec4 vColorOverride;
 in vec4 vParams;
 
 // @ref
+// Calculates the median of three values.
+float median(float r, float g, float b) {
+  return max(min(r, g), min(max(r, g), b));
+}
+
+// @ref
 // Retreives the correct pixel color for the current fragment.
 //
 // This function automatically detects if the primitive is a `Sprite` or a `Text`
@@ -91,9 +101,19 @@ vec4 getTexColor(vec4 bytes, vec2 uv) {
   int texIndex = int(bytes.x * 255.0 + 0.5);
   vec4 texColor = vec4(1.0);
   if (texIndex == 0) {
-    texColor = texture(sampler2D(uTex, uDefaultSampler), uv);
+    // sprite atlas
+    texColor = texture(sampler2D(uTex, uNearestSampler), uv);
   } else if (texIndex == 1) {
-    texColor.a = texture(sampler2D(uFontTex, uDefaultSampler), uv).r;
+    // pixel font
+    texColor = texture(sampler2D(uFontTex, uNearestSampler), uv);
+  } else if (texIndex == 2) {
+    // vector font (MSDF)
+    vec4 msd = texture(sampler2D(uFontTex, uLinearSampler), uv);
+    float sd = median(msd.r, msd.g, msd.b) - 0.5;
+    float edgeWidth = fwidth(sd) + 0.0001;
+    edgeWidth = min(edgeWidth, 0.08);
+    float alpha = clamp(sd / edgeWidth + 0.5, 0.0, 1.0);
+    texColor = vec4(1.0, 1.0, 1.0, alpha);
   }
 
   return texColor;
@@ -112,3 +132,4 @@ vec4 getTexColor(vec4 bytes, vec2 uv) {
 bool hasFlag(int flags, int flag) {
   return (flags & flag) != 0;
 }
+

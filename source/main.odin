@@ -1,6 +1,6 @@
 package main
 
-import "bonsai:core/platform"
+import "bonsai:generated"
 // This file is a bridge between the bonsai framework
 // and the project. It loads and runs all essential functions.
 // Most of the time it doesn't have to be edited.
@@ -17,6 +17,7 @@ import "bonsai:core/debug/ui"
 import "bonsai:core/gmath"
 import "bonsai:core/input"
 import "bonsai:core/logger"
+import "bonsai:core/platform"
 import "bonsai:core/platform/web"
 import "bonsai:core/render"
 
@@ -99,11 +100,26 @@ lastFrameTime: f64
 frame :: proc "c" () {
 	context = odinContext
 
-	imageData, imageWidth, imageHeight, jsonData, pending := platform.pollHotReload()
-	if pending {
-		render.updateAtlas(imageData, imageWidth, imageHeight)
-		render.updateSpriteData(jsonData)
+	pendingSpriteData := platform.pollHotReloadSprites()
+	if pendingSpriteData.isPending {
+		render.updateAtlas(
+			pendingSpriteData.imageData,
+			pendingSpriteData.imageWidth,
+			pendingSpriteData.imageHeight,
+		)
+		render.updateSpriteData(pendingSpriteData.binData)
 	}
+
+	pendingFontData := platform.pollHotReloadFonts()
+	for fontEnum in generated.FontName {
+		if fontEnum == .nil do continue
+
+		toUpdate := pendingFontData[fontEnum]
+		if toUpdate.isPending {
+			render.updateFontData(toUpdate, fontEnum)
+		}
+	}
+
 
 	if input.isKeyPressed(.ENTER) && input.isKeyDown(.LEFT_ALT) {
 		sokol_app.toggle_fullscreen()

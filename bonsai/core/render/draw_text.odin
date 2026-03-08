@@ -3,9 +3,6 @@ package render
 import "bonsai:core/gmath"
 import "bonsai:core/gmath/colors"
 import "bonsai:generated"
-import stb_truetype "bonsai:libs/stb/truetype"
-
-import "core:log"
 
 // @ref
 // Default text drawing alias **(includes drop shadow)**.
@@ -42,25 +39,15 @@ _drawTextWithDropShadowVector3Angle :: proc(
 ) -> gmath.Vector2 {
 	shadowOffset := gmath.Vector2{1, -1} * scale
 
-	// fetch font resource
-	font, ok := getFont(fontName, fontSize)
-	if !ok {
-		log.errorf("Failed to draw font: %v (text: %v)", fontName, text)
-		return gmath.Vector2{0, 0}
-	}
-
-	scaleFactor := f32(fontSize) / f32(font.pixelSize)
-	effectiveScale := scale * scaleFactor
-
 	// draw shadow
-	_drawTextSimpleFontVector3Angle(
+	_drawTextSimpleVector3Angle(
 		position + shadowOffset,
 		text,
-		font = &font,
-		fontSize = font.pixelSize,
+		fontName = fontName,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = dropShadowColor * color, // tint the shadow by the main color
-		scale = effectiveScale,
+		scale = scale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		sortKey = sortKey,
@@ -68,14 +55,14 @@ _drawTextWithDropShadowVector3Angle :: proc(
 	)
 
 	// draw main text
-	textDimensions := _drawTextSimpleFontVector3Angle(
+	textDimensions := _drawTextSimpleVector3Angle(
 		position,
 		text,
-		font = &font,
-		fontSize = font.pixelSize,
+		fontName = fontName,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = color,
-		scale = effectiveScale,
+		scale = scale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		sortKey = sortKey,
@@ -102,25 +89,15 @@ _drawTextWithDropShadowF32Angle :: proc(
 ) -> gmath.Vector2 {
 	shadowOffset := gmath.Vector2{1, -1} * scale
 
-	// fetch font resource
-	font, ok := getFont(fontName, fontSize)
-	if !ok {
-		log.errorf("Failed to draw font: %v (text: %v)", fontName, text)
-		return gmath.Vector2{0, 0}
-	}
-
-	scaleFactor := f32(fontSize) / f32(font.pixelSize)
-	effectiveScale := scale * scaleFactor
-
 	// draw shadow
-	_drawTextSimpleFontF32Angle(
+	_drawTextSimpleF32Angle(
 		position + shadowOffset,
 		text,
-		font = &font,
-		fontSize = font.pixelSize,
+		fontName = fontName,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = dropShadowColor * color, // tint the shadow by the main color
-		scale = effectiveScale,
+		scale = scale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		sortKey = sortKey,
@@ -128,14 +105,14 @@ _drawTextWithDropShadowF32Angle :: proc(
 	)
 
 	// draw main text
-	textDimensions := _drawTextSimpleFontF32Angle(
+	textDimensions := _drawTextSimpleF32Angle(
 		position,
 		text,
-		font = &font,
-		fontSize = font.pixelSize,
+		fontName = fontName,
+		fontSize = fontSize,
 		rotation = rotation,
 		color = color,
-		scale = effectiveScale,
+		scale = scale,
 		pivot = pivot,
 		drawLayer = drawLayer,
 		sortKey = sortKey,
@@ -163,7 +140,7 @@ drawTextSimple :: proc {
 _drawTextSimpleVector3Angle :: proc(
 	position: gmath.Vector2,
 	text: string,
-	fontName: generated.FontName = generated.FontName.PixelCode,
+	fontName: generated.FontName = .PixelCode,
 	fontSize: uint = 12,
 	rotation: gmath.Vector3, // in radians
 	color := colors.WHITE,
@@ -172,36 +149,133 @@ _drawTextSimpleVector3Angle :: proc(
 	drawLayer := DrawLayer.nil,
 	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
-) -> gmath.Vector2 {
-	font, ok := getFont(fontName, fontSize)
-	if !ok {
-		log.errorf("Failed to draw font: %v (text: %v)", fontName, text)
-		return gmath.Vector2{0, 0}
+) -> (
+	textBounds: gmath.Vector2,
+) {
+	font := &fontData[fontName]
+	if !font.isLoaded do return {}
+
+	setFontTexture(font)
+
+	fontScale: f32
+	finalFontSize: f32
+	if font.isPixel {
+		nativeSize := f32(font.nativeSize)
+		if nativeSize == 0 do nativeSize = 1
+		fontScale = f32(fontSize) / nativeSize
+		finalFontSize = nativeSize
+	} else {
+		fontScale = f32(fontSize) / 64.0 // fonts are packed at 64.0px scale in rust
+		finalFontSize = f32(fontSize)
 	}
 
-	scaleFactor := f32(fontSize) / f32(font.pixelSize)
-	effectiveScale := scale * scaleFactor
+	totalTextSize: gmath.Vector2
+	currentLineWidth: f32 = 0.0
+	maxLineWidth: f32 = 0.0
+	lineCount: int = 1
 
-	return _drawTextSimpleFontVector3Angle(
-		position,
-		text,
-		font = &font,
-		fontSize = font.pixelSize,
-		rotation = rotation,
-		color = color,
-		scale = effectiveScale,
-		pivot = pivot,
-		drawLayer = drawLayer,
-		sortKey = sortKey,
-		colorOverride = colorOverride,
-	)
+	for char in text {
+		if char == '\n' {
+			maxLineWidth = max(maxLineWidth, currentLineWidth)
+			currentLineWidth = 0
+			lineCount += 1
+			continue
+		}
+
+		if char == ' ' {
+			advance: f32 = f32(finalFontSize) * 0.35
+			if glyph, ok := font.glyphs[' ']; ok {
+				advance = glyph.advance
+			}
+			currentLineWidth += advance
+			continue
+		}
+
+		glyph, ok := font.glyphs[char]
+		if !ok do continue
+
+		currentLineWidth += glyph.advance
+	}
+
+	maxLineWidth = max(maxLineWidth, currentLineWidth)
+	totalTextSize.x = maxLineWidth
+	totalTextSize.y = f32(lineCount) * f32(finalFontSize)
+
+	minGlyphY: f32 = 0.0
+	maxGlyphY: f32 = f32(finalFontSize)
+
+	if glyphM, ok := font.glyphs['M']; ok {
+		maxGlyphY = glyphM.yOffset + glyphM.height
+	}
+	if glyphP, ok := font.glyphs['p']; ok {
+		minGlyphY = glyphP.yOffset
+	}
+
+	glyphHeight := maxGlyphY - minGlyphY
+	centeringOffset := (f32(finalFontSize) - glyphHeight) * 0.5 - minGlyphY
+
+	pivotOffset := totalTextSize * -gmath.scaleFromPivot(pivot)
+
+	cursorX: f32
+	cursorY := f32(lineCount - 1) * f32(finalFontSize)
+
+	for char in text {
+		if char == '\n' {
+			cursorX = 0
+			cursorY -= f32(finalFontSize)
+			continue
+		}
+
+		if char == ' ' {
+			advance: f32 = f32(finalFontSize) * 0.35
+			if glyph, ok := font.glyphs[' ']; ok {
+				advance = glyph.advance
+			}
+			cursorX += advance
+			continue
+		}
+
+		glyph, ok := font.glyphs[char]
+		if !ok do continue
+
+		size := gmath.Vector2{glyph.width, glyph.height}
+		bottomLeft := gmath.Vector2{glyph.xOffset, glyph.yOffset}
+
+		offsetToRenderAt := gmath.Vector2{cursorX, cursorY + centeringOffset} + bottomLeft
+		offsetToRenderAt += pivotOffset
+
+		uv := gmath.Vector4{glyph.u0, glyph.v0, glyph.u1, glyph.v1}
+
+		transform := gmath.Matrix4(1)
+		transform *= gmath.matrixTranslate(position)
+		if rotation != {} {
+			transform *= gmath.matrixRotate(rotation)
+		}
+		transform *= gmath.matrixScale(scale * fontScale)
+		transform *= gmath.matrixTranslate(offsetToRenderAt)
+
+		drawRectangleTransform(
+			transform,
+			size,
+			uv = uv,
+			textureIndex = font.isPixel ? 1 : 2,
+			colorOverride = colorOverride,
+			color = color,
+			drawLayer = drawLayer,
+			sortKey = sortKey,
+		)
+
+		cursorX += glyph.advance
+	}
+
+	return gmath.abs(totalTextSize * scale * fontScale)
 }
 
 @(private = "file")
 _drawTextSimpleF32Angle :: proc(
 	position: gmath.Vector2,
 	text: string,
-	fontName: generated.FontName = generated.FontName.PixelCode,
+	fontName: generated.FontName = .PixelCode,
 	fontSize: uint = 12,
 	rotation: f32 = 0.0, // in radians
 	color := colors.WHITE,
@@ -210,325 +284,20 @@ _drawTextSimpleF32Angle :: proc(
 	drawLayer := DrawLayer.nil,
 	sortKey: f32 = 0.0,
 	colorOverride := gmath.Color{},
-) -> gmath.Vector2 {
-	font, ok := getFont(fontName, fontSize)
-	if !ok {
-		log.errorf("Failed to draw font: %v (text: %v)", fontName, text)
-		return gmath.Vector2{0, 0}
-	}
-
-	scaleFactor := f32(fontSize) / f32(font.pixelSize)
-	effectiveScale := scale * scaleFactor
-
-	return _drawTextSimpleFontF32Angle(
+) -> (
+	textBounds: gmath.Vector2,
+) {
+	return _drawTextSimpleVector3Angle(
 		position,
 		text,
-		font = &font,
-		fontSize = font.pixelSize,
-		rotation = rotation,
-		color = color,
-		scale = effectiveScale,
-		pivot = pivot,
-		drawLayer = drawLayer,
-		sortKey = sortKey,
-		colorOverride = colorOverride,
+		fontName,
+		fontSize,
+		gmath.Vector3{0, 0, rotation},
+		color,
+		scale,
+		pivot,
+		drawLayer,
+		sortKey,
+		colorOverride,
 	)
-}
-
-// @ref
-// Internal primitive for drawing a single line of text.
-// Calculates layout, pivots, and batches the quads.
-// Accepts either a `f32` or a [`Vector3`](https://bonsai-framework.dev/reference/core/gmath/#vector3)
-// as the rotation. If a `f32` is provided, the text is rotated on the **Z axis**.
-drawTextSimpleFont :: proc {
-	_drawTextSimpleFontVector3Angle,
-	_drawTextSimpleFontF32Angle,
-}
-
-@(private = "file")
-_drawTextSimpleFontVector3Angle :: proc(
-	position: gmath.Vector2,
-	text: string,
-	font: ^Font,
-	fontSize: uint,
-	rotation: gmath.Vector3, // in radians
-	color := colors.WHITE,
-	scale := gmath.Vector2{1, 1},
-	pivot := gmath.Pivot.bottomLeft,
-	drawLayer := DrawLayer.nil,
-	sortKey: f32 = 0.0,
-	colorOverride := gmath.Color{},
-) -> (
-	textBounds: gmath.Vector2,
-) {
-	// find size
-	totalTextSize: gmath.Vector2
-	currentLineWidth: f32 = 0.0
-	maxLineWidth: f32 = 0.0
-	lineCount: int = 1
-
-	minGlyphY: f32 = 0.0
-	maxGlyphY: f32 = 0.0
-	firstChar := true
-
-	for char in text {
-		if char == '\n' {
-			maxLineWidth = max(maxLineWidth, currentLineWidth)
-			currentLineWidth = 0
-			lineCount += 1
-			continue
-		}
-
-		if char < 32 || char >= 128 do continue
-
-		advanceX: f32
-		advanceY: f32
-		quad: stb_truetype.aligned_quad
-
-		stb_truetype.GetBakedQuad(
-			&font.characterData[0],
-			BITMAP_WIDTH,
-			BITMAP_HEIGHT,
-			i32(char) - 32,
-			&advanceX,
-			&advanceY,
-			&quad,
-			false,
-		)
-
-		bottomY := -quad.y1
-		topY := -quad.y0
-
-		if firstChar {
-			minGlyphY = bottomY
-			maxGlyphY = topY
-			firstChar = false
-		} else {
-			minGlyphY = min(bottomY, minGlyphY)
-			maxGlyphY = max(topY, maxGlyphY)
-		}
-
-		currentLineWidth += advanceX
-	}
-
-	maxLineWidth = max(maxLineWidth, currentLineWidth)
-	totalTextSize.x = maxLineWidth
-	totalTextSize = f32(lineCount) * f32(fontSize)
-
-	glyphHeight := maxGlyphY - minGlyphY
-	centeringOffset := (f32(fontSize) - glyphHeight) * 0.5 - minGlyphY
-
-	if firstChar {
-		centeringOffset = 0
-	}
-
-	pivotOffset := totalTextSize * -gmath.scaleFromPivot(pivot)
-
-	// draw characters
-	cursorX: f32
-	cursorY := f32(lineCount - 1) * f32(fontSize)
-
-	//draw
-	for char in text {
-		if char == '\n' {
-			cursorX = 0
-			cursorY -= f32(fontSize)
-			continue
-		}
-
-		if char < 32 || char >= 128 do continue
-
-		advanceX: f32
-		advanceY: f32
-		quad: stb_truetype.aligned_quad
-		stb_truetype.GetBakedQuad(
-			&font.characterData[0],
-			BITMAP_WIDTH,
-			BITMAP_HEIGHT,
-			i32(char) - 32,
-			&advanceX,
-			&advanceY,
-			&quad,
-			false,
-		)
-		// x0, y0,  s0, t0 <=> top-left
-		// x1, y1,  s1, t1 <=> bottom-right
-
-		size := gmath.Vector2{abs(quad.x0 - quad.x1), abs(quad.y0 - quad.y1)}
-		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
-
-		offsetToRenderAt := gmath.Vector2{cursorX, cursorY + centeringOffset} + bottomLeft
-		offsetToRenderAt += pivotOffset
-
-		uv := gmath.Vector4{quad.s0, quad.t1, quad.s1, quad.t0}
-
-		transform := gmath.Matrix4(1)
-		transform *= gmath.matrixTranslate(position)
-		if rotation != {} {
-			transform *= gmath.matrixRotate(rotation)
-		}
-		transform *= gmath.matrixScale(scale)
-		transform *= gmath.matrixTranslate(offsetToRenderAt)
-
-		drawRectangleTransform(
-			transform,
-			size,
-			uv = uv,
-			textureIndex = 1,
-			colorOverride = colorOverride,
-			color = color,
-			drawLayer = drawLayer,
-			sortKey = sortKey,
-		)
-
-		cursorX += advanceX
-		cursorY += -advanceY
-	}
-
-	return gmath.abs(totalTextSize * scale)
-}
-
-@(private = "file")
-_drawTextSimpleFontF32Angle :: proc(
-	position: gmath.Vector2,
-	text: string,
-	font: ^Font,
-	fontSize: uint,
-	rotation: f32, // in radians
-	color := colors.WHITE,
-	scale := gmath.Vector2{1, 1},
-	pivot := gmath.Pivot.bottomLeft,
-	drawLayer := DrawLayer.nil,
-	sortKey: f32 = 0.0,
-	colorOverride := gmath.Color{},
-) -> (
-	textBounds: gmath.Vector2,
-) {
-	// find size
-	totalTextSize: gmath.Vector2
-	currentLineWidth: f32 = 0.0
-	maxLineWidth: f32 = 0.0
-	lineCount: int = 1
-
-	minGlyphY: f32 = 0.0
-	maxGlyphY: f32 = 0.0
-	firstChar := true
-
-	for char in text {
-		if char == '\n' {
-			maxLineWidth = max(maxLineWidth, currentLineWidth)
-			currentLineWidth = 0
-			lineCount += 1
-			continue
-		}
-
-		if char < 32 || char >= 128 do continue
-
-		advanceX: f32
-		advanceY: f32
-		quad: stb_truetype.aligned_quad
-
-		stb_truetype.GetBakedQuad(
-			&font.characterData[0],
-			BITMAP_WIDTH,
-			BITMAP_HEIGHT,
-			i32(char) - 32,
-			&advanceX,
-			&advanceY,
-			&quad,
-			false,
-		)
-		// calculate char dimensions
-		// x0, y0 - top-left, x1, y1 - bottom-right in STB
-
-		bottomY := -quad.y1
-		topY := -quad.y0
-
-		if firstChar {
-			minGlyphY = bottomY
-			maxGlyphY = topY
-			firstChar = false
-		} else {
-			minGlyphY = min(bottomY, minGlyphY)
-			maxGlyphY = max(topY, maxGlyphY)
-		}
-
-		currentLineWidth += advanceX
-	}
-
-	maxLineWidth = max(maxLineWidth, currentLineWidth)
-	totalTextSize.x = maxLineWidth
-	totalTextSize.y = f32(lineCount) * f32(fontSize)
-
-	glyphHeight := maxGlyphY - minGlyphY
-	centeringOffset := (f32(fontSize) - glyphHeight) * 0.5 - minGlyphY
-
-	if firstChar {
-		centeringOffset = 0
-	}
-
-	pivotOffset := totalTextSize * -gmath.scaleFromPivot(pivot)
-
-	// draw characters
-	cursorX: f32
-	cursorY := f32(lineCount - 1) * f32(fontSize)
-
-	//draw
-	for char in text {
-		if char == '\n' {
-			cursorX = 0
-			cursorY -= f32(fontSize)
-			continue
-		}
-
-		if char < 32 || char >= 128 do continue
-
-		advanceX: f32
-		advanceY: f32
-		quad: stb_truetype.aligned_quad
-		stb_truetype.GetBakedQuad(
-			&font.characterData[0],
-			BITMAP_WIDTH,
-			BITMAP_HEIGHT,
-			i32(char) - 32,
-			&advanceX,
-			&advanceY,
-			&quad,
-			false,
-		)
-		// x0, y0,  s0, t0 <=> top-left
-		// x1, y1,  s1, t1 <=> bottom-right
-
-		size := gmath.Vector2{abs(quad.x0 - quad.x1), abs(quad.y0 - quad.y1)}
-		bottomLeft := gmath.Vector2{quad.x0, -quad.y1}
-
-		offsetToRenderAt := gmath.Vector2{cursorX, cursorY + centeringOffset} + bottomLeft
-		offsetToRenderAt += pivotOffset
-
-		uv := gmath.Vector4{quad.s0, quad.t1, quad.s1, quad.t0}
-
-		transform := gmath.Matrix4(1)
-		transform *= gmath.matrixTranslate(position)
-		if rotation != 0 {
-			transform *= gmath.matrixRotateZ(rotation)
-		}
-		transform *= gmath.matrixScale(scale)
-		transform *= gmath.matrixTranslate(offsetToRenderAt)
-
-		drawRectangleTransform(
-			transform,
-			size,
-			uv = uv,
-			textureIndex = 1,
-			colorOverride = colorOverride,
-			color = color,
-			drawLayer = drawLayer,
-			sortKey = sortKey,
-		)
-
-		cursorX += advanceX
-		cursorY += -advanceY
-	}
-
-	return gmath.abs(totalTextSize * scale)
 }

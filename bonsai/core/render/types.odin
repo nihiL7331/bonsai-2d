@@ -5,7 +5,6 @@ import "bonsai:core/gmath/colors"
 import "bonsai:generated"
 
 import sokol_gfx "bonsai:libs/sokol/gfx"
-import stb_truetype "bonsai:libs/stb/truetype"
 
 // @ref
 // Path relative to project root pointing to the generated sprite atlas.
@@ -81,7 +80,7 @@ Shader :: struct {
 
 // @ref
 // Function signature for the auto-generated shader descriptors created by `sokol-shdc`.
-ShaderDescriptionFunction :: proc(backend: sokol_gfx.Backend) -> sokol_gfx.Shader_Desc // {}
+ShaderDescriptionFunction :: proc "c" (backend: sokol_gfx.Backend) -> sokol_gfx.Shader_Desc // {}
 
 // @ref
 // Struct used to read and convert binary data to data stored in
@@ -96,28 +95,44 @@ RawSpriteData :: struct #packed {
 	frames: f32,
 }
 
+GlyphData :: struct #packed {
+	id:      u32,
+	u0:      f32,
+	v0:      f32,
+	u1:      f32,
+	v1:      f32,
+	width:   f32,
+	height:  f32,
+	xOffset: f32,
+	yOffset: f32,
+	advance: f32,
+}
+
 // @ref
 // Stores UV, size and frame info for each [`SpriteName`](https://bonsai-framework.dev/reference/generated/#spritename)
 // enum from the sprite atlas.
 spriteData: [generated.SpriteName]generated.SpriteData
 
+fontData: [generated.FontName]Font
+
 // @ref
 // Internal context holding the global **Sokol** GFX state.
 // Manages active bindings (atlas/font) and stores the list of loaded [`Shaders`](#shader)
 RenderContext :: struct {
-	atlas:                Atlas,
-	passAction:           sokol_gfx.Pass_Action,
-	inPass:               bool,
-	bindings:             sokol_gfx.Bindings,
-	shaders:              [dynamic]Shader,
-	defaultShaderId:      ShaderId,
-	activeShaderId:       ShaderId,
-	customUniformsData:   [1024]byte,
-	customUniformsSize:   uint,
-	canvases:             [dynamic]Canvas,
-	defaultCanvasId:      CanvasId,
-	activeCanvasId:       CanvasId,
-	defaultCanvasSampler: sokol_gfx.Sampler,
+	atlas:              Atlas,
+	passAction:         sokol_gfx.Pass_Action,
+	inPass:             bool,
+	bindings:           sokol_gfx.Bindings,
+	shaders:            [dynamic]Shader,
+	defaultShaderId:    ShaderId,
+	activeShaderId:     ShaderId,
+	customUniformsData: [1024]byte,
+	customUniformsSize: uint,
+	canvases:           [dynamic]Canvas,
+	defaultCanvasId:    CanvasId,
+	activeCanvasId:     CanvasId,
+	nearestSampler:     sokol_gfx.Sampler,
+	linearSampler:      sokol_gfx.Sampler,
 }
 
 // @ref
@@ -128,7 +143,6 @@ Canvas :: struct {
 	depthImage:  sokol_gfx.Image,
 	readerView:  sokol_gfx.View,
 	attachments: sokol_gfx.Attachments,
-	sampler:     sokol_gfx.Sampler,
 	id:          CanvasId,
 	size:        gmath.Vector2,
 }
@@ -160,12 +174,22 @@ FONT_TEXTURE_INDEX: u8 : 1
 
 // @ref
 // Represents a loaded and baked font **ready for rendering**.
+// Font :: struct {
+// 	texture:       sokol_gfx.Image,
+// 	view:          sokol_gfx.View,
+// 	characterData: [96]stb_truetype.bakedchar,
+// 	name:          string,
+// 	pixelSize:     uint,
+// }
+
 Font :: struct {
-	texture:       sokol_gfx.Image,
-	view:          sokol_gfx.View,
-	characterData: [96]stb_truetype.bakedchar,
-	name:          string,
-	pixelSize:     uint,
+	image:      sokol_gfx.Image,
+	sampler:    sokol_gfx.Sampler,
+	view:       sokol_gfx.View,
+	glyphs:     map[rune]GlyphData,
+	isPixel:    bool,
+	nativeSize: u8,
+	isLoaded:   bool,
 }
 
 // @ref
