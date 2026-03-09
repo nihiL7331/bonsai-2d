@@ -11,8 +11,9 @@ import "core:reflect"
 import "core:strings"
 import "core:unicode/utf8"
 
+_ :: reflect
+
 when !ODIN_DEBUG {
-	_ :: reflect
 	_ :: gmath
 	_ :: strings
 	_ :: input
